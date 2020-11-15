@@ -1,0 +1,6 @@
+wxPython
+requests
+pycryptodome
+scikit-image
+shapely
+numpy
