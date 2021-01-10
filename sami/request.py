@@ -2,16 +2,16 @@
 
 from dataclasses import dataclass
 
-from .utils import Utils
 from .encryption import Encryption
-from .structures import Structures
+from .utils import get_timestamp, encode_json
+from .validation import is_valid_request, validate_export_structure
 
 
 def set_timestamp_on_call(func):
-    def wrapper(*args):
+    def wrapper(*args, **kwargs):
         self = args[0]
         self.set_timestamp()
-        return func(*args)
+        return func(*args, **kwargs)
     return wrapper
 
 
@@ -22,43 +22,20 @@ class Request:
     timestamp: int = None
     nonce: int = None
 
-    @staticmethod
-    def is_request_valid(req_data: dict) -> bool:
-        """
-        Takes a request information (as a dictionary) and checks whether it is valid.
-
-        :param req_data:
-        :return bool: True if the request is valid, False otherwise.
-        """
-        if not Utils._validate_fields(req_data, Structures.request_standard_structure):
-            return False
-        return True
-
     @classmethod
     def from_dict(cls, req_data: dict):
         """
-        Returns a new object instance from the passed data.
+        Returns a new object instance from the passed data if it is valid.
 
         :param dict req_data: A valid request as a dictionary.
-        :return: A Request object.
+        :return Request|None: A Request object or None.
         """
+        if not is_valid_request(req_data):
+            return
         status = req_data["status"]
         data = req_data["data"]
-        timestamp = req_data["status"]
+        timestamp = req_data["timestamp"]
         return cls(status, data, timestamp)
-
-    @classmethod
-    def from_json(cls, json_data: str):
-        """
-        Returns a new object instance from the passed data.
-
-        !!! DEPRECATED !!!
-
-        :param str json_data:
-        :return: A Request object.
-        """
-        req_data = Utils.decode_json(json_data)
-        return cls.from_dict(req_data)
 
     @set_timestamp_on_call
     def set_nonce(self, nonce):
@@ -68,13 +45,13 @@ class Request:
         """
         self.nonce = nonce
 
-    @set_timestamp_on_call
     def set_timestamp(self):
         """
         Sets instance attribute "timestamp".
         """
-        self.timestamp = Utils.get_timestamp()
+        self.timestamp = get_timestamp()
 
+    @validate_export_structure('request_standard_structure')
     @set_timestamp_on_call
     def to_dict(self) -> dict:
         """
@@ -87,7 +64,7 @@ class Request:
         """
         Returns the Request as a json-encoded string.
         """
-        return Utils.encode_json(self.to_dict())
+        return encode_json(self.to_dict())
 
     @set_timestamp_on_call
     def get_id(self) -> str:

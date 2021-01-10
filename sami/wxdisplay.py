@@ -17,106 +17,106 @@ import wx.xrc
 class MainMenu ( wx.Frame ):
 
 	def __init__( self, parent ):
-		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Secure chat app", pos = wx.DefaultPosition, size = wx.Size( 405,375 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Sami DCA", pos = wx.DefaultPosition, size = wx.Size( 405,375 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
 
 		self.SetSizeHints( wx.Size( 350,375 ), wx.DefaultSize )
 
-		mainMenu_bSizer = wx.BoxSizer( wx.VERTICAL )
+		main_menu_bSizer = wx.BoxSizer( wx.VERTICAL )
 
 		info_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"Info" ), wx.VERTICAL )
 
-		serverStatus_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+		server_status_bSizer = wx.BoxSizer( wx.HORIZONTAL )
 
-		self.serverStatusInfo_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Listening status: ", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.serverStatusInfo_staticText.Wrap( -1 )
+		self.server_status_info_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Listening status: ", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.server_status_info_staticText.Wrap( -1 )
 
-		self.serverStatusInfo_staticText.SetForegroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_WINDOWTEXT ) )
-		self.serverStatusInfo_staticText.SetBackgroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_APPWORKSPACE ) )
+		self.server_status_info_staticText.SetForegroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_WINDOWTEXT ) )
+		self.server_status_info_staticText.SetBackgroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_APPWORKSPACE ) )
 
-		serverStatus_bSizer.Add( self.serverStatusInfo_staticText, 0, wx.ALL, 5 )
+		server_status_bSizer.Add( self.server_status_info_staticText, 0, wx.ALL, 5 )
 
-		self.serverStatus_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Down", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.serverStatus_staticText.Wrap( -1 )
+		self.server_status_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Down", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.server_status_staticText.Wrap( -1 )
 
-		self.serverStatus_staticText.SetFont( wx.Font( wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, wx.EmptyString ) )
-		self.serverStatus_staticText.SetForegroundColour( wx.Colour( 255, 0, 0 ) )
+		self.server_status_staticText.SetFont( wx.Font( wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, wx.EmptyString ) )
+		self.server_status_staticText.SetForegroundColour( wx.Colour( 255, 0, 0 ) )
 
-		serverStatus_bSizer.Add( self.serverStatus_staticText, 0, wx.ALL, 5 )
-
-
-		info_sbSizer.Add( serverStatus_bSizer, 1, wx.EXPAND, 5 )
-
-		nodeName_bSizer = wx.BoxSizer( wx.HORIZONTAL )
-
-		self.nodeNameInfo_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Your name : ", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.nodeNameInfo_staticText.Wrap( -1 )
-
-		nodeName_bSizer.Add( self.nodeNameInfo_staticText, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL|wx.EXPAND, 5 )
-
-		self.nodeName_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.nodeName_staticText.Wrap( -1 )
-
-		self.nodeName_staticText.SetFont( wx.Font( wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, wx.EmptyString ) )
-
-		nodeName_bSizer.Add( self.nodeName_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.EXPAND, 5 )
+		server_status_bSizer.Add( self.server_status_staticText, 0, wx.ALL, 5 )
 
 
-		info_sbSizer.Add( nodeName_bSizer, 1, wx.EXPAND, 5 )
+		info_sbSizer.Add( server_status_bSizer, 1, wx.EXPAND, 5 )
+
+		node_name_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+
+		self.node_name_info_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Your name : ", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.node_name_info_staticText.Wrap( -1 )
+
+		node_name_bSizer.Add( self.node_name_info_staticText, 0, wx.EXPAND, 5 )
+
+		self.node_name_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.node_name_staticText.Wrap( -1 )
+
+		self.node_name_staticText.SetFont( wx.Font( wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, wx.EmptyString ) )
+
+		node_name_bSizer.Add( self.node_name_staticText, 0, wx.EXPAND, 5 )
 
 
-		mainMenu_bSizer.Add( info_sbSizer, 0, wx.EXPAND, 5 )
-
-		rsaKeys_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"RSA Keys" ), wx.VERTICAL )
-
-		self.rsaPrivateKeyStatus_staticText = wx.StaticText( rsaKeys_sbSizer.GetStaticBox(), wx.ID_ANY, u"RSA private key: ", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.rsaPrivateKeyStatus_staticText.Wrap( -1 )
-
-		rsaKeys_sbSizer.Add( self.rsaPrivateKeyStatus_staticText, 0, wx.ALL, 5 )
-
-		bSizer14 = wx.BoxSizer( wx.HORIZONTAL )
-
-		self.privateKey_filePicker = wx.FilePickerCtrl( rsaKeys_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, u"Select an RSA PrivateKey file", u"*.pem", wx.DefaultPosition, wx.DefaultSize, wx.FLP_DEFAULT_STYLE )
-		self.privateKey_filePicker.SetToolTip( u"Select an RSA private key file" )
-
-		bSizer14.Add( self.privateKey_filePicker, 1, wx.ALL|wx.EXPAND, 5 )
-
-		self.exportPubkey_button = wx.Button( rsaKeys_sbSizer.GetStaticBox(), wx.ID_ANY, u"Export pubkey", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.exportPubkey_button.Enable( False )
-
-		bSizer14.Add( self.exportPubkey_button, 0, wx.ALL, 5 )
+		info_sbSizer.Add( node_name_bSizer, 1, wx.EXPAND, 5 )
 
 
-		rsaKeys_sbSizer.Add( bSizer14, 1, wx.EXPAND, 5 )
+		main_menu_bSizer.Add( info_sbSizer, 0, wx.EXPAND, 5 )
 
-		self.createNewKeyPair_button = wx.Button( rsaKeys_sbSizer.GetStaticBox(), wx.ID_ANY, u"Create a new key pair", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.createNewKeyPair_button.SetToolTip( u"Create a new pair of RSA keys" )
+		rsa_keys_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"RSA keys" ), wx.VERTICAL )
 
-		rsaKeys_sbSizer.Add( self.createNewKeyPair_button, 0, wx.ALL|wx.EXPAND, 5 )
+		self.rsa_private_key_status_staticText = wx.StaticText( rsa_keys_sbSizer.GetStaticBox(), wx.ID_ANY, u"RSA private key: ", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.rsa_private_key_status_staticText.Wrap( -1 )
+
+		rsa_keys_sbSizer.Add( self.rsa_private_key_status_staticText, 0, wx.ALL, 5 )
+
+		rsa_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+
+		self.private_key_filePicker = wx.FilePickerCtrl( rsa_keys_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, u"Select an RSA PrivateKey file", u"*.pem", wx.DefaultPosition, wx.DefaultSize, wx.FLP_DEFAULT_STYLE )
+		self.private_key_filePicker.SetToolTip( u"Select an RSA private key file" )
+
+		rsa_bSizer.Add( self.private_key_filePicker, 1, wx.ALL|wx.EXPAND, 5 )
+
+		self.export_pubkey_button = wx.Button( rsa_keys_sbSizer.GetStaticBox(), wx.ID_ANY, u"Export pubkey", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.export_pubkey_button.Enable( False )
+
+		rsa_bSizer.Add( self.export_pubkey_button, 0, wx.ALL, 5 )
 
 
-		mainMenu_bSizer.Add( rsaKeys_sbSizer, 0, wx.EXPAND, 5 )
+		rsa_keys_sbSizer.Add( rsa_bSizer, 1, wx.EXPAND, 5 )
+
+		self.create_new_key_pair_button = wx.Button( rsa_keys_sbSizer.GetStaticBox(), wx.ID_ANY, u"Create a new key pair", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.create_new_key_pair_button.SetToolTip( u"Create a new pair of RSA keys" )
+
+		rsa_keys_sbSizer.Add( self.create_new_key_pair_button, 0, wx.ALL|wx.EXPAND, 5 )
+
+
+		main_menu_bSizer.Add( rsa_keys_sbSizer, 0, wx.EXPAND, 5 )
 
 		chat_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"Chat" ), wx.VERTICAL )
 
-		self.showConversations_Button = wx.Button( chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Chat with other nodes", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.showConversations_Button.Enable( False )
+		self.show_conversations_Button = wx.Button( chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Chat with other nodes", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.show_conversations_Button.Enable( False )
 
-		chat_sbSizer.Add( self.showConversations_Button, 0, wx.ALL|wx.EXPAND, 5 )
-
-
-		mainMenu_bSizer.Add( chat_sbSizer, 0, wx.EXPAND, 5 )
+		chat_sbSizer.Add( self.show_conversations_Button, 0, wx.ALL|wx.EXPAND, 5 )
 
 
-		self.SetSizer( mainMenu_bSizer )
+		main_menu_bSizer.Add( chat_sbSizer, 0, wx.EXPAND, 5 )
+
+
+		self.SetSizer( main_menu_bSizer )
 		self.Layout()
 
 		self.Centre( wx.BOTH )
 
 		# Connect Events
-		self.privateKey_filePicker.Bind( wx.EVT_FILEPICKER_CHANGED, self.load_private_key )
-		self.exportPubkey_button.Bind( wx.EVT_BUTTON, self.export_pubkey )
-		self.createNewKeyPair_button.Bind( wx.EVT_BUTTON, self.open_pair_creation_window )
-		self.showConversations_Button.Bind( wx.EVT_BUTTON, self.show_conversations )
+		self.private_key_filePicker.Bind( wx.EVT_FILEPICKER_CHANGED, self.load_private_key )
+		self.export_pubkey_button.Bind( wx.EVT_BUTTON, self.export_pubkey )
+		self.create_new_key_pair_button.Bind( wx.EVT_BUTTON, self.open_pair_creation_window )
+		self.show_conversations_Button.Bind( wx.EVT_BUTTON, self.show_conversations )
 
 	def __del__( self ):
 		pass
@@ -143,38 +143,38 @@ class MainMenu ( wx.Frame ):
 class CreateNewKeyPair ( wx.Frame ):
 
 	def __init__( self, parent ):
-		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Create a new key pair", pos = wx.DefaultPosition, size = wx.Size( 525,200 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
+		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Create a new key", pos = wx.DefaultPosition, size = wx.Size( 525,200 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
 
 		self.SetSizeHints( wx.Size( 525,200 ), wx.DefaultSize )
 
-		createNewKeyPair_bSizer = wx.BoxSizer( wx.VERTICAL )
+		create_new_key_pair_bSizer = wx.BoxSizer( wx.VERTICAL )
 
-		pairLocation_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"Location" ), wx.VERTICAL )
+		pair_location_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"Location" ), wx.VERTICAL )
 
-		self.pairCreationInfo1_staticText = wx.StaticText( pairLocation_sbSizer.GetStaticBox(), wx.ID_ANY, u"Note: as soon as you select a directory, the creation will launch.", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.pairCreationInfo1_staticText.Wrap( -1 )
+		self.pair_creation_info_1_staticText = wx.StaticText( pair_location_sbSizer.GetStaticBox(), wx.ID_ANY, u"Note: as soon as you select a directory, the creation will launch.", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.pair_creation_info_1_staticText.Wrap( -1 )
 
-		pairLocation_sbSizer.Add( self.pairCreationInfo1_staticText, 0, wx.ALL, 5 )
+		pair_location_sbSizer.Add( self.pair_creation_info_1_staticText, 0, wx.ALL, 5 )
 
-		self.keyPairLocation_dirPicker = wx.DirPickerCtrl( pairLocation_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, u"Select a folder where the keys will be stored", wx.DefaultPosition, wx.DefaultSize, wx.DIRP_DEFAULT_STYLE )
-		pairLocation_sbSizer.Add( self.keyPairLocation_dirPicker, 0, wx.ALL|wx.EXPAND, 5 )
+		self.key_pair_location_dirPicker = wx.DirPickerCtrl( pair_location_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, u"Select a folder where the keys will be stored", wx.DefaultPosition, wx.DefaultSize, wx.DIRP_DEFAULT_STYLE )
+		pair_location_sbSizer.Add( self.key_pair_location_dirPicker, 0, wx.ALL|wx.EXPAND, 5 )
 
-		self.pairCreationInfo2_staticText = wx.StaticText( pairLocation_sbSizer.GetStaticBox(), wx.ID_ANY, u"Files will be named \"private_[ID].pem\" and \"public_[ID].pem\".", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.pairCreationInfo2_staticText.Wrap( -1 )
+		self.pair_creation_info_2_staticText = wx.StaticText( pair_location_sbSizer.GetStaticBox(), wx.ID_ANY, u"File will be named \"private_[ID].pem\".", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.pair_creation_info_2_staticText.Wrap( -1 )
 
-		pairLocation_sbSizer.Add( self.pairCreationInfo2_staticText, 0, wx.ALL, 5 )
-
-
-		createNewKeyPair_bSizer.Add( pairLocation_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
+		pair_location_sbSizer.Add( self.pair_creation_info_2_staticText, 0, wx.ALL, 5 )
 
 
-		self.SetSizer( createNewKeyPair_bSizer )
+		create_new_key_pair_bSizer.Add( pair_location_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
+
+
+		self.SetSizer( create_new_key_pair_bSizer )
 		self.Layout()
 
 		self.Centre( wx.BOTH )
 
 		# Connect Events
-		self.keyPairLocation_dirPicker.Bind( wx.EVT_DIRPICKER_CHANGED, self.create_key_pair )
+		self.key_pair_location_dirPicker.Bind( wx.EVT_DIRPICKER_CHANGED, self.create_key_pair )
 
 	def __del__( self ):
 		pass
@@ -196,48 +196,48 @@ class ReceivedMessages ( wx.Frame ):
 
 		self.SetSizeHints( wx.Size( 300,300 ), wx.DefaultSize )
 
-		receivedself.messages_bSizer = wx.BoxSizer( wx.VERTICAL )
+		received_messages_bSizer = wx.BoxSizer( wx.VERTICAL )
 
-		self.filterNodes_searchCtrl = wx.SearchCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.filterNodes_searchCtrl.ShowSearchButton( True )
-		self.filterNodes_searchCtrl.ShowCancelButton( True )
-		self.filterNodes_searchCtrl.SetToolTip( u"Search for a node" )
+		self.filter_nodes_search_ctrl = wx.SearchCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.filter_nodes_search_ctrl.ShowSearchButton( True )
+		self.filter_nodes_search_ctrl.ShowCancelButton( True )
+		self.filter_nodes_search_ctrl.SetToolTip( u"Search for a node" )
 
-		receivedself.messages_bSizer.Add( self.filterNodes_searchCtrl, 0, wx.ALL|wx.EXPAND, 5 )
+		received_messages_bSizer.Add( self.filter_nodes_search_ctrl, 0, wx.ALL|wx.EXPAND, 5 )
 
-		self.chatContainerMain_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+		chat_container_main_bSizer = wx.BoxSizer( wx.HORIZONTAL )
 
-		self.chatContainer_bSizer = wx.BoxSizer( wx.VERTICAL )
-
-
-		self.chatContainerMain_bSizer.Add( self.chatContainer_bSizer, 1, wx.EXPAND, 5 )
+		chat_container_bSizer = wx.BoxSizer( wx.VERTICAL )
 
 
-		receivedself.messages_bSizer.Add( self.chatContainerMain_bSizer, 1, wx.EXPAND, 5 )
+		chat_container_main_bSizer.Add( chat_container_bSizer, 1, wx.EXPAND, 5 )
 
-		self.newChat_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"New conversation" ), wx.VERTICAL )
 
-		self.recipient_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+		received_messages_bSizer.Add( chat_container_main_bSizer, 1, wx.EXPAND, 5 )
 
-		self.recipient_staticText = wx.StaticText( self.newChat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send to:", wx.DefaultPosition, wx.DefaultSize, 0 )
+		new_chat_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"New conversation" ), wx.VERTICAL )
+
+		recipient_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+
+		self.recipient_staticText = wx.StaticText( new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send to:", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.recipient_staticText.Wrap( -1 )
 
-		self.recipient_bSizer.Add( self.recipient_staticText, 0, wx.ALIGN_CENTER_VERTICAL, 5 )
+		recipient_bSizer.Add( self.recipient_staticText, 0, wx.ALIGN_CENTER_VERTICAL, 5 )
 
 
-		self.newChat_sbSizer.Add( self.recipient_bSizer, 0, wx.EXPAND, 5 )
+		new_chat_sbSizer.Add( recipient_bSizer, 0, wx.EXPAND, 5 )
 
 
-		receivedself.messages_bSizer.Add( self.newChat_sbSizer, 0, wx.EXPAND, 5 )
+		received_messages_bSizer.Add( new_chat_sbSizer, 0, wx.EXPAND, 5 )
 
 
-		self.SetSizer( receivedself.messages_bSizer )
+		self.SetSizer( received_messages_bSizer )
 		self.Layout()
 
 		self.Centre( wx.BOTH )
 
 		# Connect Events
-		self.filterNodes_searchCtrl.Bind( wx.EVT_TEXT_ENTER, self.filter_search )
+		self.filter_nodes_search_ctrl.Bind( wx.EVT_TEXT_ENTER, self.filter_search )
 
 	def __del__( self ):
 		pass
@@ -261,25 +261,71 @@ class Conversation ( wx.Frame ):
 
 		conversation_bSizer = wx.BoxSizer( wx.HORIZONTAL )
 
-		messagesMain_bSizer8 = wx.BoxSizer( wx.VERTICAL )
+		messages_main_bSizer = wx.BoxSizer( wx.VERTICAL )
 
-		self.messages_bSizer = wx.BoxSizer( wx.VERTICAL )
+		messages_bSizer = wx.BoxSizer( wx.VERTICAL )
 
-		messagesMain_bSizer8.Add( self.messages_bSizer, 1, wx.EXPAND, 5 )
+		message_1_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"node1" ), wx.HORIZONTAL )
 
-		newMessage_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+		self.message_content_1_staticText = wx.StaticText( message_1_sbSizer.GetStaticBox(), wx.ID_ANY, u"Hey, how are you doing today ? I eat pastas on a daily basis though", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.message_content_1_staticText.Wrap( -1 )
 
-		self.newMessage_textCtrl = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
-		newMessage_bSizer.Add( self.newMessage_textCtrl, 1, wx.ALL|wx.EXPAND, 5 )
+		message_1_sbSizer.Add( self.message_content_1_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5 )
 
-		self.sendMessage_button = wx.Button( self, wx.ID_ANY, u"Send", wx.DefaultPosition, wx.DefaultSize, wx.BU_EXACTFIT )
-		newMessage_bSizer.Add( self.sendMessage_button, 0, wx.ALL, 5 )
+		self.message_timestamp_1_staticText = wx.StaticText( message_1_sbSizer.GetStaticBox(), wx.ID_ANY, u"11:12 14/04/2020", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.message_timestamp_1_staticText.Wrap( -1 )
 
-
-		messagesMain_bSizer8.Add( newMessage_bSizer, 0, wx.EXPAND, 5 )
+		message_1_sbSizer.Add( self.message_timestamp_1_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 
-		conversation_bSizer.Add( messagesMain_bSizer8, 1, wx.EXPAND, 5 )
+		messages_bSizer.Add( message_1_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
+
+		message_2_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"me (node5)" ), wx.HORIZONTAL )
+
+		self.message_content_2_staticText = wx.StaticText( message_2_sbSizer.GetStaticBox(), wx.ID_ANY, u"Nice, I eat bolognese along with banana", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.message_content_2_staticText.Wrap( -1 )
+
+		message_2_sbSizer.Add( self.message_content_2_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5 )
+
+		self.message_timestamp_2_staticText = wx.StaticText( message_2_sbSizer.GetStaticBox(), wx.ID_ANY, u"11:15 14/04/2020", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.message_timestamp_2_staticText.Wrap( -1 )
+
+		message_2_sbSizer.Add( self.message_timestamp_2_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
+
+
+		messages_bSizer.Add( message_2_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
+
+		message_3_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"node1" ), wx.HORIZONTAL )
+
+		self.message_content_3_staticText = wx.StaticText( message_3_sbSizer.GetStaticBox(), wx.ID_ANY, u"Thanks I like that too", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.message_content_3_staticText.Wrap( -1 )
+
+		message_3_sbSizer.Add( self.message_content_3_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5 )
+
+		self.message_timestamp_3_staticText = wx.StaticText( message_3_sbSizer.GetStaticBox(), wx.ID_ANY, u"11:16 14/04/2020", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.message_timestamp_3_staticText.Wrap( -1 )
+
+		message_3_sbSizer.Add( self.message_timestamp_3_staticText, 0, wx.ALL, 5 )
+
+
+		messages_bSizer.Add( message_3_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
+
+
+		messages_main_bSizer.Add( messages_bSizer, 1, wx.EXPAND, 5 )
+
+		new_message_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+
+		self.new_message_textCtrl = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+		new_message_bSizer.Add( self.new_message_textCtrl, 1, wx.ALL|wx.EXPAND, 5 )
+
+		self.send_message_button = wx.Button( self, wx.ID_ANY, u"Send", wx.DefaultPosition, wx.DefaultSize, wx.BU_EXACTFIT )
+		new_message_bSizer.Add( self.send_message_button, 0, wx.ALL, 5 )
+
+
+		messages_main_bSizer.Add( new_message_bSizer, 0, wx.EXPAND, 5 )
+
+
+		conversation_bSizer.Add( messages_main_bSizer, 1, wx.EXPAND, 5 )
 
 		self.messages_scrollBar = wx.ScrollBar( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.SB_VERTICAL )
 		conversation_bSizer.Add( self.messages_scrollBar, 0, wx.EXPAND, 5 )
@@ -291,7 +337,7 @@ class Conversation ( wx.Frame ):
 		self.Centre( wx.BOTH )
 
 		# Connect Events
-		self.sendMessage_button.Bind( wx.EVT_BUTTON, self.send_message_to_current_node )
+		self.send_message_button.Bind( wx.EVT_BUTTON, self.send_message_to_current_node )
 
 	def __del__( self ):
 		pass

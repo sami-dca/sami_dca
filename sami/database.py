@@ -2,6 +2,7 @@
 
 import os
 import shelve
+import logging
 
 
 class Database:
@@ -65,6 +66,7 @@ class Database:
         except FileExistsError:
             pass
         db = shelve.open(db_name)
+        logging.info(f'Opened database {db_name!r}')
         return db
 
     def column_exists(self, column: str) -> bool:
@@ -102,7 +104,10 @@ class Database:
         elif column_type == tuple:
             ins = {column_name: ()}
         else:
-            raise TypeError(f"Invalid column type: {column_type} for new column named \"{column_name}\"")
+            err_msg = f"[Database {self.db_name}] Invalid column type: " \
+                      f"{column_type} for new column named \"{column_name}\""
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
         self.db_columns.append(column_name)
         self.db.update(ins)
 
@@ -120,6 +125,7 @@ class Database:
         cl.update(pair)
         self.db[column] = cl
         self.db.sync()
+        logging.debug(f'[Database {self.db_name}] Inserted {pair!r} in column {column!r} (which is a dict).')
 
     def insert_list(self, column: str, value) -> None:
         """
@@ -135,6 +141,7 @@ class Database:
         cl.append(value)
         self.db[column] = cl
         self.db.sync()
+        logging.debug(f'[Database {self.db_name}] Inserted {value!r} in column {column!r} (which is a list).')
 
     def update(self, column: str, key: str, value) -> None:
         """
@@ -150,6 +157,7 @@ class Database:
         cl[key] = value  # Alters the copy.
         self.db[column] = cl  # Replace the original by the copy.
         self.db.sync()  # Update the database.
+        logging.debug(f'[Database {self.db_name}] Updated field {key!r} with {value!r} in column {column!r}.')
 
     def drop(self, column: str, key: str) -> None:
         """
@@ -161,6 +169,7 @@ class Database:
         # assert self.column_exists(column)
         # assert self.key_exists(column, key)
         self.db[column].pop(key)
+        logging.debug(f'[Database {self.db_name}] Dropped field {key!r} in column {column!r}.')
 
     def query_column(self, search_column: str) -> any:
         """
@@ -170,6 +179,7 @@ class Database:
         :return: The value of the column.
         """
         # assert self.column_exists(search_column)
+        logging.debug(f'[Database {self.db_name}] Requesting a query of the column {search_column!r}.')
         return self.db[search_column]
 
     def query(self, search_column: str, search_key: str) -> any:
@@ -182,4 +192,5 @@ class Database:
         """
         # assert self.column_exists(search_column)
         # assert self.key_exists(search_column, search_key)
+        logging.debug(f'[Database {self.db_name}] Requesting key {search_key!r} in column {search_column!r}.')
         return self.db[search_column][search_key]

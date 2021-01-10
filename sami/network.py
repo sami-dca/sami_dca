@@ -1,53 +1,43 @@
 # -*- coding: UTF8 -*-
 
+"""
+
+TODO:
+- Fix arguments of find_contact()
+- Implement PING protocol
+
+"""
+
+import select
 import socket
-from random import randint
+import random
+import logging
+
+from typing import Tuple
+from json.decoder import JSONDecodeError
+from unittest import mock
 
 from .node import Node
-from .utils import Utils
-from .nodes import Nodes
 from .config import Config
 from .request import Request
-from .contact import Contact
 from .requests import Requests
-from .contacts import Contacts
-from .structures import Structures
+from .utils import decode_json
 from .encryption import Encryption
-from .raw_requests import RawRequests
 from .message import Message, OwnMessage
+from .contact import Contact, OwnContact, Beacon
+from .validation import is_valid_received_message, is_valid_request, is_valid_contact, is_valid_node
 
 
 class Network:
 
-    def __init__(self, master_node, host: str, port: int):
-        self.raw_requests = RawRequests()
-        self.contacts = Contacts()
-        self.nodes = Nodes()
-
+    def __init__(self, master_node):
         self.master_node = master_node
 
-        self.host = host
-        self.port = port
+        self.host = Config.local_ip_address
 
-    def __del__(self):
-        self.master_node.display.mainFrame.set_server_display(False)
-
-    # Validation section
-
-    @staticmethod
-    def is_request_valid(request: dict) -> bool:
-        """
-        Takes a request as a JSON-encoded request and checks it is valid.
-        Valid does not mean trustworthy.
-
-        :param str request: A JSON-encoded dictionary.
-        """
-        if not Utils._validate_fields(request, Structures.request_standard_structure):
-            return False
-
-        return True
-
-    # Requests section
+    ####################
+    # Requests section #
+    ####################
 
     def route_request(self, request: Request, broadcast: bool = True) -> None:
         """
@@ -56,22 +46,28 @@ class Network:
         :param Request request: The request, as a Request object.
         :param bool broadcast: Whether we want to broadcast the message.
         The only case it should be set to False is if we are replying to a specific request.
+
+        TODO: Verify the request is not already in the raw_request database.
         """
 
         """
-        For each of the requests, we first verify it is valid, 
-        and then process it.
+        For each request, we first verify it is valid, and then process it.
         """
 
         def broadcast_and_store(req):
             if broadcast:
                 self.broadcast_request(req)
-            self.raw_requests.add_new_raw_request(req)
+            self.master_node.databases.raw_requests.add_new_raw_request(req)
+        # End of broadcast_and_store method.
 
         if request.status == "WUP_INI":  # What's Up Protocol Initialization
+            if not Requests.is_valid_wup_ini_request(request):
+                return
             self.handle_what_is_up_init(request)
             return
         elif request.status == "WUP_REP":
+            if not Requests.is_valid_wup_rep_request(request):
+                return
             self.handle_what_is_up_reply(request)  # What's Up Protocol Reply
             return
 
@@ -91,7 +87,7 @@ class Network:
         # Only those below are, and only if they are valid.
 
         if request.status == "MPP":  # Message Propagation Protocol
-            if not Message.is_received_message_valid(request.data):
+            if not is_valid_received_message(request.data):
                 return
             broadcast_and_store(request)
             self.handle_message(request)
@@ -101,14 +97,14 @@ class Network:
                 return
             broadcast_and_store(request)
             node = Node.from_dict(request.data)
-            self.nodes.add_node(node)
+            self.master_node.databases.nodes.add_node(node)
 
         elif request.status == "CSP":  # Contact Sharing Protocol
             if not Requests.is_valid_csp_request(request):
                 return
             broadcast_and_store(request)
             contact = Contact.from_dict(request.data)
-            self.contacts.add_contact(contact)
+            self.master_node.databases.contacts.add_contact(contact)
 
         elif request.status == "KEP":  # Keys Exchange Protocol
             if not Requests.is_valid_kep_request(request):
@@ -118,6 +114,8 @@ class Network:
 
         else:
             # The request has an invalid status.
+            logging.warning(f'Captured request calling unknown protocol: {request.status}.'
+                            f'Consider updating your client.')
             return
 
     def handle_raw_request(self, json_request: str) -> None:
@@ -127,23 +125,26 @@ class Network:
 
         :param str json_request: A request, as a JSON-encoded string.
         """
-        dict_request = Utils.decode_json(json_request)
+        dict_request = decode_json(json_request)
 
-        if not self.is_request_valid(dict_request):
+        if not is_valid_request(dict_request):
             return
 
         request = Request.from_dict(dict_request)
 
         self.route_request(request)
 
-    # Request handling section
-    # All methods of this section must have only one argument: request, as Request object.
+    ############################
+    # Request handling section #
+    ############################
+
+    # All methods of this section must have only one argument: request, a valid Request object.
 
     def negotiate_aes(self, request: Request) -> bool:
         """
         Negotiate an AES key.
         This function is called by two events:
-        - When we receive an Keys Exchange (KEP) request,
+        - When we receive a Keys Exchange (KEP) request,
         - When we discover a new node (Node Publication Protocol).
 
         :param Request request: A valid request.
@@ -170,7 +171,7 @@ class Network:
 
         def propagate(half_aes_key: bytes) -> None:
             """
-            Wrapper used to broadcast the AKE request over the network.
+            Wrapper used to broadcast the KEP request over the network.
 
             :param bytes half_aes_key: Half an AES key.
             """
@@ -183,7 +184,7 @@ class Network:
 
             :param str key_id: A key ID ; the Node's ID.
             :param bytes key: The AES key.
-            :param bytes|None nonce: The nonce.
+            :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
             self.master_node.conversations.store_aes(self.master_node.get_rsa_public_key(), key_id, key, nonce)
 
@@ -201,7 +202,7 @@ class Network:
 
         def continue_negotiation() -> None:
             """
-            Used when an AKE request is received but we haven't initialized it.
+            Used when an KEP request is received but we haven't initiated it.
             We then proceed to send the other half of the key.
             At the end of this function, we have a valid AES key for communicating with this node.
             """
@@ -227,12 +228,16 @@ class Network:
             propagate(half_aes_key)
             store(key_id, key, None)
 
-        if request.status == "KEP":
+        status = request.status
+
+        # We will take the author's RSA public key to encrypt our part of the AES key.
+        if status == "KEP":
             node = Node.from_dict(request.data["author"])
-        elif request.status == "NPP":
+        elif status == "NPP":
             node = Node.from_dict(request.data)
         else:
-            raise ValueError
+            raise ValueError(f"Invalid protocol {request.status} called function \"negotiate_aes()\".\n"
+                             f"Check your client is up to date.")
         key_id = node.get_id()
 
         # If the key is already negotiated, end.
@@ -241,42 +246,42 @@ class Network:
             return True
         # If the negotiation has been launched, check if it is expired.
         # If it is, remove it.
-        # If it is not expired, this means we are receiving the second part of the AES key,
+        # Otherwise, this means we are receiving the second part of the AES key,
         # and therefore we can conclude the negotiation.
+        # If the negotiation has not been launched, we will be initiating it.
         if self.master_node.conversation.is_aes_negotiation_launched(key_id):
             if self.master_node.conversations.is_aes_negotiation_expired(key_id):
                 self.master_node.conversations.remove_aes_key(key_id)
                 new_negotiation()
-            # If the negotiation has not yet expired, we then conclude it.
+                return False
+            # If the negotiation has not yet expired, we conclude it.
             else:
-                status = request.status
-                if status == "AKE":  # AKE request from a node.
+                if status == "KEP":
                     finish_negotiation()
                     return True
                 else:
                     raise ValueError(f"Invalid request status \"{status}\"")
-        # If the negotiation has not been launched, we will be initiating it.
         else:
-            status = request.status
             if status == "KEP":
                 continue_negotiation()
                 return True
             elif status == "NPP":
                 new_negotiation()
                 return False
-            else:
-                raise ValueError(f"Invalid request status \"{status}\"")
 
     def handle_message(self, request: Request) -> None:
         """
         This method is used when receiving a new message.
-        It is called after the request has been broadcasted back,
+        It is called after the request has been broadcasted back and stored in the raw_requests database,
         and will take care of storing the message if we can decrypt its content.
 
         :param Request request: A MPP request.
         """
         node = Node.from_dict(request.data["author"])
-        if not node.auto_aes():
+        if not node:
+            return
+
+        if not self.master_node.databases.conversations.is_aes_negotiated(node.id):
             # Here, the negotiation is not done yet, so we launch it.
             # If it returns False, meaning the negotiation is not over, we end the function.
             # Otherwise, we continue.
@@ -285,22 +290,19 @@ class Network:
 
         # The AES negotiation has been established, so we can proceed.
 
-        # Tries to set the AES values again.
-        # If for any reason it fails, end the function.
-        if not node.auto_aes():
+        aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes()
+        message_dec = Message.from_dict_encrypted(aes_key, nonce, request.data)
+
+        if not message_dec:
+            # We could not decrypt the message.
             return
 
-        aes_key, nonce = node.get_aes_attr()
-        message = Message.from_dict_encrypted(aes_key, nonce, request.data)
+        message_enc = Message.from_dict(request.data)
 
-        if message is None:
-            return
-
-        # At this point, the message has been read and we can store it in our own database.
+        # At this point, the message has been read and we can store it (encrypted) in our conversations database.
         self.master_node.conversations.store_new_message(
-            self.master_node.get_rsa_private_key(),
             node.get_id(),
-            message
+            message_enc
         )
 
     def handle_what_is_up_init(self, request: Request) -> None:
@@ -314,7 +316,7 @@ class Network:
         contact_info = request.data["author"]
         contact = Contact.from_dict(contact_info)
 
-        all_requests = self.raw_requests.get_all_raw_requests_since(request_timestamp)
+        all_requests = self.master_node.databases.raw_requests.get_all_raw_requests_since(request_timestamp)
         for request in all_requests.values():
             req = Request.from_dict(request)
             req = Requests.wup_rep(req)
@@ -343,8 +345,8 @@ class Network:
         """
         contact = Contact.from_raw_address(request.data["address"])
 
-        if not self.contacts.contact_exists(contact.get_id()):
-            self.contacts.add_contact(contact)
+        if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
+            self.master_node.databases.contacts.add_contact(contact)
 
         for node in self.master_node.nodes.get_all_node_ids():
             node_object = Node.from_dict(node)
@@ -360,112 +362,209 @@ class Network:
         """
         contact = Contact.from_raw_address(request.data["address"])
 
-        if not self.contacts.contact_exists(contact.get_id()):
-            self.contacts.add_contact(contact)
+        if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
+            self.master_node.databases.contacts.add_contact(contact)
 
-        for contact_id in self.contacts.get_all_contacts_ids():
-            contact_object = Contact.from_dict(self.contacts.get_contact_info(contact_id))
+        for contact_id in self.master_node.databases.contacts.get_all_contacts_ids():
+            contact_info = self.master_node.databases.contacts.get_contact_info(contact_id)
+            if not is_valid_contact(contact_info):
+                return
+            contact_object = Contact.from_dict(contact_info)
             req = Requests.csp(contact_object)
             self.send_request(req, contact)
 
-    # Protocols section
+    #####################
+    # Protocols section #
+    #####################
 
     def what_is_up(self) -> None:
         """
         Chooses a node (preferably a beacon) and asks for all requests since the last one we received.
         This method is called when a RSA private key is loaded into the client.
+
+        TODO: Take care of the case where we know less than 10 contacts
         """
+        last_received_request = self.master_node.databases.raw_requests.get_last_received()
+        req = Requests.wup_ini(last_received_request.timestamp)
 
-        def get_node_list_id(node_list: list, excluded: list) -> int:
-            while True:
-                random_id = randint(0, len(node_list) - 1)
-                if random_id not in excluded:
-                    break
-            return random_id
+        for contact in self.find_available_contact():
+            for _ in range(10):  # 10 tries
+                if self.send_request(req, contact):
+                    return
+                else:
+                    contact = self.find_available_contact()
 
-        all_requests = self.raw_requests.get_all_raw_requests()
-        # Gets the timestamp of the last request we receive.
-        # This is a hard-coded version, please optimize.
-        last_message_timestamp: int = 0
-        for request in all_requests:
-            if request["timestamp"] > last_message_timestamp:
-                last_message_timestamp = request["timestamp"]
-
-        # Create the WHATSUP_INIT request
-        req = Requests.wup_ini(last_message_timestamp)
-
-        # Find a beacon or a node and send the WHATSUP request.
-        if len(Config.beacons) > 0:
-            node_list = ("beacon", Config.beacons)
-        else:
-            all_contacts = self.contacts.get_all_contacts_ids()
-            if len(all_contacts) > 0:
-                node_list = ("node", all_contacts)
-            else:
-                # Here, we know no nodes nor beacons.
-                return
-
-        excluded = []
-        while True:
-            random_id = get_node_list_id(node_list[1], excluded)
-            excluded.append(random_id)
-            request_target = node_list[1][random_id]
-
-            if node_list[0] == "beacon":
-                address, port = request_target.split(":")
-                contact = Contact(address, port, Utils.get_timestamp())
-            elif node_list[1] == "node":
-                contact_info = self.contacts.get_contact_info(request_target)
-                address, port = contact_info["address"].split(":")
-                last_seen = contact_info["last_seen"]
-                contact = Contact(address, port, last_seen)
-            else:
-                raise ValueError
-
+    def request_nodes(self):
+        for contact in self.find_available_contact():
+            req = Requests.dnp(contact)
             if self.send_request(req, contact):
+                logging.info(f'Requested nodes to {contact}')
                 break
 
-    # Message section
+    def request_contacts(self):
+        for contact in self.find_available_contact():
+            req = Requests.dnp(contact)
+            if self.send_request(req, contact):
+                logging.info(f'Requested contacts to {contact}')
+                break
+
+    ###################
+    # Message section #
+    ###################
 
     @staticmethod
-    def read_message(msg: str, node: str) -> None or Message:
+    def read_message(msg: str, node: str) -> Message or None:
         """
         Tries to read a message received by a peer, to only check if it is correct (not decrypting it here).
 
         :param str msg: A message, as a JSON string.
         :param str node: A node, as a JSON string.
-        :return None|Message: None if the message is invalid, otherwise returns the message object.
+        :return Message|None: None if the message is invalid, otherwise returns the message object.
         """
-        if not Node.is_valid(Utils.decode_json(node)):
+        if not is_valid_node(decode_json(node)):
             return
 
         # Converts the JSON string to a dictionary.
-        unpacked_msg = Utils.decode_json(msg)
+        unpacked_msg = decode_json(msg)
 
-        if Message.is_received_message_valid(unpacked_msg):
-            message_object = Message.from_dict(unpacked_msg)
-            message_object.set_time_received()
-            message_object.set_id()
-        else:
+        message_object = Message.from_dict(unpacked_msg)
+
+        if not message_object:
+            # The message is invalid
             return
 
+        message_object.set_time_received()
+        message_object.set_id()
         # At this point, the message is valid and we can relay it to other nodes without danger.
         return message_object
 
     def prepare_message_for_recipient(self, node: Node, message: OwnMessage):
         """
         Prepare a message by encrypting its values.
-        This message is addresses to a specific node.
+        This message is addressed to a specific node.
         """
         aes_key, nonce = self.master_node.conversations.get_decrypted_aes(node.get_id())
         aes = Encryption.construct_aes_object(aes_key, nonce)
         message.prepare(aes)
 
-    # Network interactions section
+    ################################
+    # Network interactions section #
+    ################################
 
-    def listen(self) -> None:
+    def find_available_contact(self):
+        for contact in self.get_all_contacts():
+            # TODO: Add network verification
+            yield contact
+
+    def get_all_contacts(self):
+        """
+        Returns a contact if we know any.
+        It will prioritize choosing beacons before regular contacts.
+        The contact returned is not assured to be available on the network.
+
+        :return Contact|None: A Contact object if we could find one, None otherwise.
+        """
+
+        def _get_beacons(beacons_list: list) -> Contact or None:
+            for beacon_info in beacons_list:
+                beacon_obj = Beacon.from_raw_address(beacon_info)
+
+                if not beacon_obj:
+                    # The beacon information is invalid.
+                    logging.warning(f"A beacon is invalid: {beacon_info!r}")
+                    continue
+
+                yield beacon_info
+
+        def __get_contacts(beacons_list: list, contacts_list: list) -> Contact or None:
+            beacons = _get_beacons(beacons_list)
+            if beacons:
+                for beacon in beacons:
+                    yield beacon
+
+            for contact_obj in contacts_list:
+                yield contact_obj
+
+        # Gets the beacons and contacts lists.
+        beacons = Config.beacons
+        contacts = self.master_node.databases.contacts.get_all_contacts()
+
+        random.shuffle(beacons)
+        random.shuffle(contacts)
+        contacts = __get_contacts(beacons, contacts)
+
+        for contact in contacts:
+            yield contact
+
+    def listen_for_autodiscover_packets(self, stop_event) -> None:
+
+        def receive_all(sock: socket.socket) -> Tuple[bytes, Tuple[str, int]]:
+            """
+            Receives all parts of a network-sent message.
+
+            :param socket.socket sock: The socket object.
+            :return: The complete message and the information of the sender.
+            """
+            data = bytes()
+            while True:
+                # Could there be interlaced packets (two different addresses gathered during successive loops) ?
+                part, add = sock.recvfrom(Config.network_buffer_size)
+                data += part
+                if len(part) < Config.network_buffer_size:
+                    # Either 0 or end of data
+                    break
+            return data, add
+
+        def does_sock_have_data(sock) -> bool:
+            has_data, _, _ = select.select([sock], [], [])
+            if has_data:
+                return True
+            else:
+                return False
+
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            s.bind(("", Config.broadcast_port))
+            while not stop_event.wait(Config.multiprocessing_stop_delay):
+                if not does_sock_have_data(s):
+                    continue
+                request_raw, address = receive_all(sock=s)
+                logging.debug(f'Received packet: {request_raw!r} from {address!r}')
+                # The request is not assured to be JSON, could be text, raw bytes or anything else.
+                json_request = Encryption.decode_bytes(request_raw)
+                try:
+                    dict_request = decode_json(json_request)
+                except JSONDecodeError:
+                    continue
+                # TODO: Verify that the sender's address and the contact's information are the same IP.
+                if is_valid_contact(dict_request):
+                    contact = Contact.from_dict(dict_request)
+                    contact.set_last_seen()
+                    msg = f'We received a new contact by listening on the broadcast: {json_request!r}'
+                    # The following verification is already done in the add contact,
+                    # but we do it anyway to be able to tell if it was already present or not.
+                    if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
+                        self.master_node.databases.contacts.add_contact(contact)
+                    else:
+                        msg += ' (already registered)'
+                    logging.debug(msg)
+
+    def broadcast_autodiscover(self) -> None:
+        # Resource: https://github.com/ninedraft/python-udp
+        if len(self.master_node.databases.contacts.get_all_contacts_ids()) > Config.broadcast_limit:
+            return
+        own_contact = OwnContact()
+        own_contact_information = Encryption.encode_string(own_contact.to_json())
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(2)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            s.sendto(own_contact_information, ('<broadcast>', Config.broadcast_port))
+            logging.debug(f'Broadcast own contact information: {own_contact_information!r}')
+
+    def listen_for_requests(self, stop_event) -> None:
         """
         Setup a server and listens on a port.
+        It requires TCP connection to transmit information.
         """
 
         def receive_all(sock: socket.socket) -> bytes:
@@ -477,20 +576,34 @@ class Network:
             """
             data = bytes()
             while True:
-                part = sock.recv(Config.network_buff_size)
+                part = sock.recv(Config.network_buffer_size)
                 data += part
-                if len(part) < Config.network_buff_size:
+                if len(part) < Config.network_buffer_size:
                     # Either 0 or end of data
                     break
             return data
 
-        server_socket = socket.socket()
-        server_socket.bind((self.host, self.port))
-        server_socket.listen(Config.network_max_conn)
+        with socket.socket() as server_socket:
+            server_socket.bind((self.host, Config.port_receive))
+            server_socket.listen(Config.network_max_conn)
 
-        while True:
-            connection, address = server_socket.accept()
-            raw_request = receive_all(connection)
+            while not stop_event.wait(1):
+                connection, address = server_socket.accept()
+                raw_bytes_request = receive_all(connection)
+                json_request = Encryption.decode_bytes(raw_bytes_request)
+                try:
+                    dict_request = decode_json(json_request)
+                except JSONDecodeError:
+                    continue
+                request = Request.from_dict(dict_request)
+                if request:
+                    # Route the request
+                    self.route_request(request)
+                    # And store the remote contact if we don't know it.
+                    contact = Contact.from_raw_address(Config.contact_delimiter.join(address))
+                    contact.set_last_seen()
+                    self.master_node.databases.contacts.add_contact(contact)
+                connection.close()
 
     def broadcast_request(self, request: Request) -> None:
         """
@@ -498,14 +611,21 @@ class Network:
 
         :param Request request:
         """
-        known_contacts = {}
+        contacts = list(self.get_all_contacts())
+        for contact in contacts:
+            if self.send_request(request, contact):
+                break
 
-        for contact_id in self.master_node.contacts.list_peers():
-            known_contacts.update({contact_id: self.master_node.contacts.get_contact_info(contact_id)})
+        logging.info(f'Broadcast request {request.get_id()} to {len(contacts)} contacts.')
 
-        for contact_info in known_contacts:
-            contact_object = Contact.from_dict(contact_info)
-            self.send_request(request, contact_object)
+    def connect_and_send_dummy_data_to_self(self) -> None:
+        # Mock the ``to_json()`` method.
+        # As we don't want to actually send a dirty request, we will make it return an empty string.
+        # Sockets will send this
+        with mock.patch('sami.Request.to_json') as mock_req_to_json:
+            mock_req_to_json.return_value = ''
+            req = Request('', {}, 0, 0)
+            self.send_request(req, OwnContact())
 
     def send_request(self, request: Request, contact: Contact) -> None:
         """
@@ -513,11 +633,20 @@ class Network:
 
         :param Request request: The request to send.
         :param Contact contact: The contact to send the request to.
+
+        TODO : error handling
         """
-        # Initiate network connection with the contact.
-        # TODO : error handling
         address = contact.get_address()
         port = contact.get_port()
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect((address, port))  # Convert node.port to str ? !!! DEV !!!
-        client_socket.send(request.to_json())
+
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            # client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            client_socket.settimeout(Config.contact_connect_timeout)
+            try:
+                client_socket.connect((address, port))
+            except (socket.timeout, ConnectionRefusedError):
+                # We could not connect to the contact.
+                pass
+            else:
+                client_socket.send(Encryption.encode_string(request.to_json()))
+                logging.info(f'Sent request {request.get_id()} to {address}:{port}')

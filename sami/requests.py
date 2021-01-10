@@ -1,12 +1,14 @@
 # -*- coding: UTF8 -*-
 
 from .node import Node
-from .utils import Utils
+from .message import Message
 from .node import MasterNode
 from .request import Request
 from .encryption import Encryption
 from .structures import Structures
+from .utils import validate_fields
 from .contact import Contact, OwnContact
+from .validation import is_valid_node, is_valid_contact
 
 
 class Requests:
@@ -40,7 +42,7 @@ class Requests:
             "recipient": node_info
         }
 
-        return Request("KEP", data)
+        return Request(Requests.kep.__name__.upper(), data)
 
     @staticmethod
     def is_valid_kep_request(request: Request) -> bool:
@@ -50,16 +52,17 @@ class Requests:
         :param Request request: A KEP request.
         :return bool: True if the request is valid, False otherwise.
         """
-        if not Utils._validate_fields(request.to_dict(), Structures.ake_request_structure):
+        if not validate_fields(request.to_dict(), Structures.kep_request_structure):
             return False
 
         # Verify nodes values are valid.
-        if not Node.is_valid(request.data["author"]):
+        if not is_valid_node(request.data["author"]):
             return False
-        if not Node.is_valid(request.data["recipient"]):
+        if not is_valid_node(request.data["recipient"]):
             return False
 
         author_values = request.data["author"]
+        # The cast cannot raise errors as we validated the fields beforehand.
         rsa_n = int(author_values["rsa_n"])
         rsa_e = int(author_values["rsa_e"])
 
@@ -89,7 +92,7 @@ class Requests:
             "timestamp": last_timestamp,
             "author": own_contact.to_dict()
         }
-        return Request("WUP_INI", data)
+        return Request(Requests.wup_ini.__name__.upper(), data)
 
     @staticmethod
     def wup_rep(request: Request) -> Request:
@@ -100,7 +103,7 @@ class Requests:
         :return Request: A WUP_REP Request.
         """
         data = request.to_dict()
-        return Request("WUP_REP", data)
+        return Request(Requests.wup_rep.__name__.upper(), data)
 
     @staticmethod
     def is_valid_wup_ini_request(request: Request) -> bool:
@@ -110,9 +113,9 @@ class Requests:
         :param Request request: A WUP_INI request.
         :return bool: True if the request is valid, False otherwise.
         """
-        if not Utils._validate_fields(request.to_dict(), Structures.wup_ini_request_structure):
+        if not validate_fields(request.to_dict(), Structures.wup_ini_request_structure):
             return False
-        if not Node.is_valid(request.data["author"]):
+        if not is_valid_node(request.data["author"]):
             return False
         return True
 
@@ -124,9 +127,16 @@ class Requests:
         :param Request request: A WUP_REP request.
         :return bool: True if the request is valid, False otherwise.
         """
-        if not Utils._validate_fields(request.to_dict(), Structures.wup_rep_request_structure):
+        if not validate_fields(request.to_dict(), Structures.wup_rep_request_structure):
             return False
         return True
+
+    # MPP section
+
+    @staticmethod
+    def mpp(message: Message) -> Request:
+        data = message.to_dict()
+        return Request(Requests.npp.__name__.upper(), data)
 
     # NPP section
 
@@ -139,7 +149,7 @@ class Requests:
         :return Request: A NPP Request.
         """
         data = node.to_dict()
-        return Request("NPP", data)
+        return Request(Requests.npp.__name__.upper(), data)
 
     @staticmethod
     def is_valid_npp_request(request: Request) -> bool:
@@ -149,7 +159,7 @@ class Requests:
         :param Request request: A NPP request.
         :return bool: True if the request is valid, False otherwise.
         """
-        if not Node.is_valid(request.data):
+        if not is_valid_node(request.data):
             return False
         return True
 
@@ -164,7 +174,7 @@ class Requests:
         :return Request: A CSP Request.
         """
         data = contact.to_dict()
-        return Request("CSP", data)
+        return Request(Requests.csp.__name__.upper(), data)
 
     @staticmethod
     def is_valid_csp_request(request: Request) -> bool:
@@ -174,14 +184,14 @@ class Requests:
         :param Request request: A CSP request.
         :return bool: True if the request is valid, False otherwise.
         """
-        if not Contact.is_valid(request.data):
+        if not is_valid_contact(request.data):
             return False
         return True
 
     # Discover section
 
     @staticmethod
-    def dpp(contact: Contact) -> Request:
+    def dnp(contact: Contact) -> Request:
         """
         Creates a new Discover Pub request.
 
@@ -189,7 +199,7 @@ class Requests:
         :return Request: A DPP Request.
         """
         data = {}
-        return Request("DPP", data)
+        return Request(Requests.dnp.__name__.upper(), data)
 
     @staticmethod
     def dcp(contact: Contact) -> Request:
@@ -200,14 +210,14 @@ class Requests:
         :return Request: A DCP Request.
         """
         data = {}
-        return Request("DCP", data)
+        return Request(Requests.dcp.__name__.upper(), data)
 
     @staticmethod
     def is_valid_dp_request(request: Request) -> bool:
-        if not Utils._validate_fields(request.to_dict(), Structures.dp_request_structure):
+        if not validate_fields(request.to_dict(), Structures.dp_request_structure):
             return False
 
-        if not Contact.is_valid(request.data):
+        if not is_valid_contact(request.data):
             return False
 
         return True

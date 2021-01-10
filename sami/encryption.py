@@ -1,7 +1,7 @@
 # -*- coding: UTF8 -*-
 
-import os
 import base64
+import logging
 
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
@@ -9,15 +9,16 @@ from Crypto.Signature import pkcs1_15
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 
-from .node import Node
-from .utils import Utils
 from .config import Config
 from .structures import Structures
+from .utils import validate_fields
 
 
 class Encryption:
 
-    # RSA section
+    ###############
+    # RSA section #
+    ###############
 
     @staticmethod
     def create_rsa_pair(bits: int = Config.rsa_keys_length) -> RSA.RsaKey:
@@ -86,42 +87,13 @@ class Encryption:
             try:
                 rsa_private_key = RSA.import_key(k.read(), passphrase=passphrase)
             except (ValueError, IndexError, TypeError):
+                logging.warning(f'Could not open RSA private key from file {file_location!r}')
                 return
 
         if not Encryption.is_key_private(rsa_private_key):
             return
 
         return rsa_private_key
-
-    @staticmethod
-    def export_rsa_private_key_to_file(rsa_private_key: RSA.RsaKey, location: str, passphrase: str or None = None):
-        """
-        Exports a RSA private to a file.
-        It can be encrypted, using the passed "passphrase".
-
-        :param RSA.RsaKey rsa_private_key: A RSA private key.
-        :param str location: Directory to which the private key should be exported to.
-        :param str|None passphrase: A passphrase to encrypt the private key. Will be needed when importing it.
-        """
-        identifier = Node.get_id_from_rsa_key(rsa_private_key)
-        file_name = f"rsa_public_key-{identifier}.pem"
-        path = os.path.join(location, file_name)
-        with open(path, "wb") as fl:  # Might raise OSError, PermissionError, UnicodeError
-            fl.write(Encryption.get_public_key_from_private_key(rsa_private_key).export_key(passphrase=passphrase))
-
-    @staticmethod
-    def export_rsa_public_key_to_file(rsa_private_key: RSA.RsaKey, location: str) -> None:
-        """
-        Exports a RSA public key to a file.
-
-        :param RSA.RsaKey rsa_private_key: A RSA private key.
-        :param str location: Directory to which the public key should be exported to.
-        """
-        identifier = Node.get_id_from_rsa_key(rsa_private_key)
-        file_name = f"rsa_public_key-{identifier}.pem"
-        path = os.path.join(location, file_name)
-        with open(path, "wb") as fl:  # Might raise OSError, PermissionError, UnicodeError
-            fl.write(Encryption.get_public_key_from_private_key(rsa_private_key).export_key())
 
     @staticmethod
     def is_rsa_private_key_valid(rsa_private_key: RSA.RsaKey) -> bool:
@@ -256,7 +228,19 @@ class Encryption:
 
         return int(keys_length - (2 + sha_length * 2))
 
-    # Hashing section
+    @staticmethod
+    def get_public_key_hash(rsa_public_key: RSA.RsaKey):
+        """
+        Returns a hash of the public key's n and e.
+        Please refer to "Encryption.hash_iterable()" for more information.
+
+        :return RSA.RsaKey: A hash object.
+        """
+        return Encryption.hash_iterable([rsa_public_key.n, rsa_public_key.e])
+
+    ###################
+    # Hashing section #
+    ###################
 
     @staticmethod
     def hash_iterable(iterable) -> SHA256.SHA256Hash:
@@ -274,7 +258,9 @@ class Encryption:
         hash_object = SHA256.new(b)
         return hash_object
 
-    # Serialisation section
+    #########################
+    # Serialisation section #
+    #########################
 
     @staticmethod
     def serialize_bytes(b: bytes) -> str:
@@ -320,7 +306,9 @@ class Encryption:
         """
         return data.decode("utf-8")
 
-    # AES section
+    ###############
+    # AES section #
+    ###############
 
     @staticmethod
     def create_aes(length: int = Config.aes_keys_length, mode: int = Config.aes_mode) -> tuple:
@@ -368,12 +356,12 @@ class Encryption:
         :param RSA.RsaKey rsa_public_key: The RSA public key of the author.
         :return bool: True if the information is a valid AES key, False otherwise.
         """
-        Utils._validate_fields(key, Structures.aes_key_structure)
+        validate_fields(key, Structures.aes_key_structure)
         value = key["value"]
-        hash = key["hash"]
+        h_str = key["hash"]
         sig = Encryption.deserialize_string(key["sig"])
         h = Encryption.hash_iterable(value)
-        if hash is not h.hexdigest():
+        if h_str != h.hexdigest():
             return False
         if not Encryption.is_signature_valid(rsa_public_key, h, sig):
             return False
@@ -452,3 +440,33 @@ class Encryption:
         tag = Encryption.deserialize_string(se_tag)
         data = Encryption.decrypt_symmetric_raw(aes_key, en_data, tag)
         return data
+
+    #########
+    # Other #
+    #########
+
+    @staticmethod
+    def compute_pow(request):
+        """
+        Takes a request and returns the same with an additional nonce.
+        This nonce is computed with a Proof-of-Work algorithm.
+
+        :param Request request:
+        :return Request:
+        """
+        difficulty = Config.pow_difficulty
+        limit = 10 * (difficulty + 1)
+        iterations = 10 * limit
+        # We limit the PoW iterations.
+        # If we reach this limit (next "else" loop),
+        # we issue an error.
+        for n in range(iterations):
+            request.set_nonce(n)
+            j: str = request.to_json()
+            h = Encryption.hash_iterable(j)
+            hx = h.hexdigest
+            if hx[0:difficulty] == "0" * difficulty:
+                break
+        else:
+            raise logging.error(f'Could not compute proof-of-work in {iterations} iterations (difficulty={difficulty})')
+        return request

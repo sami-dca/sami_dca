@@ -1,22 +1,26 @@
 # -*- coding: UTF8 -*-
 
+import os
+
 from .config import Config
 from .message import Message
 from .request import Request
 from .database import Database
+from .validation import is_valid_request
 
 
 class RawRequests:
 
-    def __init__(self, db_name: str = "db/raw_requests.db"):
+    def __init__(self, db_name: str = "raw_requests.db"):
         """
         :param str db_name: The database path.
         """
-        self.db = RawRequestsDatabase(db_name)
+        db_path = os.path.join(Config.databases_directory, db_name)
+        self.db = RawRequestsDatabase(db_path)
 
     def purge_oldest(self, lifespan: int = Config.max_request_lifespan) -> None:
         """
-        This function will remove every request that is older than the specified lifespan.
+        This function will remove every request older than the specified lifespan.
 
         :param int lifespan: Lifespan in seconds. Please refer to Config.max_request_lifespan.
         """
@@ -35,7 +39,7 @@ class RawRequests:
 
         d = request.to_dict()
 
-        if not Request.is_request_valid(d):
+        if not is_valid_request(d):
             return
 
         self.db.add_new_raw_request(d)
@@ -50,7 +54,7 @@ class RawRequests:
 
     def get_all_raw_requests_since(self, timestamp: int) -> dict:
         """
-        Takes a timestamp and returns a dictionary containing every request with their timestamp between now and then.
+        Takes a timestamp and returns a dictionary containing every request received since.
 
         :param int timestamp: A timestamp, as POSIX seconds.
         :return dict: Requests: each key is a unique identifier for the request, the value is its raw content.
@@ -61,16 +65,20 @@ class RawRequests:
                 all_requests.pop(k)
         return all_requests
 
-    def get_raw_request(self, request_id: str) -> dict:
+    def get_raw_request(self, request_id: str) -> dict or None:
         """
-        Returns the request with passed ID.
+        Returns the request with passed ID ; nothing if the ID is unknown.
 
         :param str request_id: A request ID.
-        :return: A dictionary. It will be empty if the ID is unknown.
+        :return dict|None: A dictionary or None.
         """
-        if self.db.key_exists(self.db.requests_table, request_id):
+        if self.is_request_known(request_id):
             return self.db.query(self.db.requests_table, request_id)
-        return {}
+
+    def get_last_received(self) -> Request:
+        requests = self.get_all_raw_requests()
+        last_index = list(requests.keys())[-1]
+        return Request.from_dict(requests[last_index])
 
     def is_request_known(self, identifier: str) -> bool:
         """

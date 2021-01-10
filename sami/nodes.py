@@ -1,22 +1,25 @@
 # -*- coding: UTF8 -*-
 
-from .node import Node
+import os
+
+from .config import Config
 from .database import Database
 
 
 class Nodes:
 
-    def __init__(self, db_name: str = "db/nodes.db"):
-        self.db = NodesDatabase(db_name)
+    def __init__(self, db_name: str = "nodes.db"):
+        db_path = os.path.join(Config.databases_directory, db_name)
+        self.db = NodesDatabase(db_path)
 
-    def add_node(self, node: Node) -> None:
+    def add_node(self, node) -> None:
         """
         Stores a node information in the database if it does not exist already.
 
         :param Node node: A node object, the one to store.
         """
         node_id = node.get_id()
-        if not self.db.key_exists(self.db.nodes_table, node_id):
+        if not self.node_exists(node_id):
             self.db.insert_dict(self.db.nodes_table, {node_id: node.to_dict()})
 
     def get_all_node_ids(self) -> list:
@@ -25,16 +28,18 @@ class Nodes:
 
         :return list: A list of all the nodes ID we know.
         """
-        pass
+        return list(self.db.query_column(self.db.nodes_table).keys())
 
-    def get_node_info(self, node_id: str) -> dict:
+    def get_node_info(self, node_id: str) -> dict or None:
         """
         Gets a node ID and query the database to retrieve the node's information.
+        If the key doesn't exist in the database, returns None.
 
         :param str node_id: A node ID.
-        :return dict: A dictionary containing the information of the node.
+        :return dict|None: A dictionary containing the information of the node.
         """
-        pass
+        if self.node_exists(node_id):
+            return self.db.query(self.db.nodes_table, node_id)
 
     def node_exists(self, node_id: str) -> bool:
         """
@@ -43,7 +48,7 @@ class Nodes:
         :param str node_id: A node ID.
         :return bool: True if we know it, False otherwise.
         """
-        pass
+        return self.db.key_exists(self.db.nodes_table, node_id)
 
 
 class NodesDatabase(Database):
