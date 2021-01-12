@@ -5,6 +5,7 @@ import logging
 from .config import Config
 from .encryption import Encryption
 from .utils import get_timestamp, encode_json
+from .validation import validate_export_structure
 
 
 class Contact:
@@ -97,6 +98,7 @@ class Contact:
 
     # Export section
 
+    @validate_export_structure('simple_contact_structure')
     def to_dict(self) -> dict:
         return {
             "address": Config.contact_delimiter.join([self.address, self.port])
@@ -107,8 +109,13 @@ class Contact:
 
 
 class OwnContact:
-    def __init__(self):
-        self.address: str = Config.local_ip_address
+    def __init__(self, n_type: str):
+        if n_type == 'private':
+            self.address: str = Config.local_ip_address
+        elif n_type == 'public':
+            self.address: str = Config.public_ip_address
+        else:
+            logging.error(f'Invalid IP type: {n_type!r}')
         self.port: int = Config.port_receive
 
     def get_address(self) -> str:
@@ -117,6 +124,7 @@ class OwnContact:
     def get_port(self) -> int:
         return self.port
 
+    @validate_export_structure('simple_contact_structure')
     def to_dict(self) -> dict:
         return {
             "address": Config.contact_delimiter.join([self.address, str(self.port)])

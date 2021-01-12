@@ -4,8 +4,6 @@
 This is a synchronous job system.
 """
 
-import time
-
 from typing import List
 
 from .config import Config
@@ -39,7 +37,7 @@ class Jobs:
         self.stop_event = stop_event
 
     def run(self) -> None:
-        stop_delay = Config.multiprocessing_stop_delay
+        stop_delay = Config.mp_timeout
         while not self.stop_event.wait(stop_delay):
             self.jobs.sort(key=lambda x: x.remaining_time)
             next_job = self.jobs[0]

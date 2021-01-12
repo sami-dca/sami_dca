@@ -90,7 +90,7 @@ class Config:
     # How long, in seconds, we will let processes run in the background before killing them.
     # Must be a strictly positive number.
     # Default is 5
-    multiprocessing_stop_delay: int or float = 5
+    mp_timeout: int or float = 5
 
     # ---------------------------------------------
     # ----- DO NOT MODIFY ANYTHING UNDER THIS -----

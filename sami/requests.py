@@ -87,7 +87,7 @@ class Requests:
         :param int last_timestamp:
         :return Request: A WUP_INI Request.
         """
-        own_contact = OwnContact()
+        own_contact = OwnContact()  # TODO: needs type import
         data = {
             "timestamp": last_timestamp,
             "author": own_contact.to_dict()

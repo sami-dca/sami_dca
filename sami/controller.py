@@ -2,6 +2,7 @@
 
 import os
 import time
+import logging
 
 import wx  # pip install wxPython
 import wx.xrc
@@ -68,7 +69,7 @@ class Controller:
             self.parent = parent
             self.master_node = master_node
             self.network = network
-            self.keys_directory = None
+            self.keys_directory_path = None
 
         def set_server_display(self, status: bool) -> None:
             if status:
@@ -90,7 +91,7 @@ class Controller:
 
             private_key_path = event.GetPath()
 
-            self.keys_directory = get_directory(private_key_path)
+            self.keys_directory_path = get_directory(private_key_path)
 
             if not os.path.isfile(private_key_path):
                 return
@@ -110,10 +111,10 @@ class Controller:
             # Enable the export pubkey button
             self.export_pubkey_button.Enable(True)
 
-        def export_pubkey(self, event) -> None:
-            print("export_pubkey event type: ", type(event))
-            assert self.keys_directory is not None
-            self.master_node.export_rsa_public_key_to_file(self.master_node.rsa_public_key, self.keys_directory)
+        def export_pubkey(self, event: wx.CommandEvent) -> None:
+            assert self.keys_directory_path is not None
+            self.master_node.export_rsa_public_key_to_file(self.master_node.rsa_public_key, self.keys_directory_path)
+            logging.info(f'Exported public key to {self.keys_directory_path!r}')
 
         def open_pair_creation_window(self, event: wx.CommandEvent) -> None:
             keygen_window = Controller.CreateNewKeyPairWrapper(self, self.master_node, self.network)

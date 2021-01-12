@@ -8,7 +8,6 @@ TODO:
 
 """
 
-import select
 import socket
 import random
 import logging
@@ -515,19 +514,10 @@ class Network:
                     break
             return data, add
 
-        def does_sock_have_data(sock) -> bool:
-            has_data, _, _ = select.select([sock], [], [])
-            if has_data:
-                return True
-            else:
-                return False
-
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.bind(("", Config.broadcast_port))
-            while not stop_event.wait(Config.multiprocessing_stop_delay):
-                if not does_sock_have_data(s):
-                    continue
+            while not stop_event.wait(1):
                 request_raw, address = receive_all(sock=s)
                 logging.debug(f'Received packet: {request_raw!r} from {address!r}')
                 # The request is not assured to be JSON, could be text, raw bytes or anything else.
@@ -553,7 +543,7 @@ class Network:
         # Resource: https://github.com/ninedraft/python-udp
         if len(self.master_node.databases.contacts.get_all_contacts_ids()) > Config.broadcast_limit:
             return
-        own_contact = OwnContact()
+        own_contact = OwnContact('private')
         own_contact_information = Encryption.encode_string(own_contact.to_json())
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.settimeout(2)
@@ -625,7 +615,7 @@ class Network:
         with mock.patch('sami.Request.to_json') as mock_req_to_json:
             mock_req_to_json.return_value = ''
             req = Request('', {}, 0, 0)
-            self.send_request(req, OwnContact())
+            self.send_request(req, OwnContact('private'))
 
     def send_request(self, request: Request, contact: Contact) -> None:
         """
