@@ -72,6 +72,6 @@ class NodesDatabase(Database):
 
     """
 
-    def __init__(self, db_name: str):
+    def __init__(self, db_path: str):
         self.nodes_table = "nodes"
-        super().__init__(db_name, {self.nodes_table: dict})
+        super().__init__(db_path, {self.nodes_table: dict})

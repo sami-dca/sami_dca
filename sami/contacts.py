@@ -1,17 +1,20 @@
 # -*- coding: UTF8 -*-
 
-import logging
+import os
 
 from typing import List
 
+from .config import Config
 from .contact import Contact
 from .database import Database
+from .contact import OwnContact
 
 
 class Contacts:
 
-    def __init__(self, db_name: str = "db/contacts.db"):
-        self.db = ContactsDatabase(db_name)
+    def __init__(self, db_name: str = "contacts.db"):
+        db_path = os.path.join(Config.databases_directory, db_name)
+        self.db = ContactsDatabase(db_path)
 
     def add_contact(self, contact: Contact) -> None:
         """
@@ -34,7 +37,12 @@ class Contacts:
 
         :return List[str]: A list of contact IDs.
         """
-        return list(self.db.query_column(self.db.contacts_table).keys())
+        cs = list(self.db.query_column(self.db.contacts_table).keys())
+        cs = set(cs)
+        own_id = OwnContact('private').get_id()
+        if own_id in cs:
+            cs.remove(own_id)
+        return list(cs)
 
     def get_contact_info(self, contact_id: str) -> dict or None:
         """
@@ -84,6 +92,6 @@ class ContactsDatabase(Database):
 
     """
 
-    def __init__(self, db_name: str):
+    def __init__(self, db_path: str):
         self.contacts_table = "contacts"
-        super().__init__(db_name, {self.contacts_table: dict})
+        super().__init__(db_path, {self.contacts_table: dict})

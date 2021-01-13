@@ -298,10 +298,10 @@ class ConversationsDatabase(Database):
 
     """
 
-    def __init__(self, db_name: str):
+    def __init__(self, db_path: str):
         self.conversation_table = "conversations"
         self.keys_table = "keys"
-        super().__init__(db_name, {self.conversation_table: dict, self.keys_table: dict})
+        super().__init__(db_path, {self.conversation_table: dict, self.keys_table: dict})
 
     def store_new_aes(self, node_id: str, key_dict: str) -> None:
         """

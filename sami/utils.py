@@ -168,6 +168,8 @@ def get_local_ip_address(log_ip_addresses: bool = False) -> str:
     Recovers the local address.
 
     :return str: An IP address (v4 or v6).
+
+    TODO: Problem: Can gather an APIPA address
     """
     host_name = socket.gethostname()
     local_ip_address = socket.gethostbyname(host_name)

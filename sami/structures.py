@@ -77,6 +77,12 @@ class Structures:
         "timestamp": int
     }
 
+    bcp_request_structure = {
+        "status": str,
+        "data": simple_contact_structure,
+        "timestamp": int
+    }
+
     npp_request_structure = {
         "status": str,
         "data": node_structure,

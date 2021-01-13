@@ -20,9 +20,9 @@ class Requests:
         """
         Creates a new Key Exchange request.
 
-        :param bytes half_aes_key:
-        :param MasterNode master_node:
-        :param Node node:
+        :param bytes half_aes_key: Our half of the AES key.
+        :param MasterNode master_node: Our node.
+        :param Node node: The recipient.
         :return Request: A KEP Request.
         """
         en_half_aes_key: str = Encryption.encrypt_asymmetric(node.get_rsa_public_key(), half_aes_key)
@@ -46,12 +46,6 @@ class Requests:
 
     @staticmethod
     def is_valid_kep_request(request: Request) -> bool:
-        """
-        Checks whether the KEP request passed is valid.
-
-        :param Request request: A KEP request.
-        :return bool: True if the request is valid, False otherwise.
-        """
         if not validate_fields(request.to_dict(), Structures.kep_request_structure):
             return False
 
@@ -81,12 +75,6 @@ class Requests:
 
     @staticmethod
     def wup_ini(last_timestamp: int) -> Request:
-        """
-        Creates a new What's Up Init request, used to request all messages since passed timestamp.
-
-        :param int last_timestamp:
-        :return Request: A WUP_INI Request.
-        """
         own_contact = OwnContact()  # TODO: needs type import
         data = {
             "timestamp": last_timestamp,
@@ -96,23 +84,11 @@ class Requests:
 
     @staticmethod
     def wup_rep(request: Request) -> Request:
-        """
-        Creates a new What's Up Reply request, used to reply to a What's Up Init request.
-
-        :param Request request:
-        :return Request: A WUP_REP Request.
-        """
         data = request.to_dict()
         return Request(Requests.wup_rep.__name__.upper(), data)
 
     @staticmethod
     def is_valid_wup_ini_request(request: Request) -> bool:
-        """
-        Checks whether a WUP_INI request is valid.
-
-        :param Request request: A WUP_INI request.
-        :return bool: True if the request is valid, False otherwise.
-        """
         if not validate_fields(request.to_dict(), Structures.wup_ini_request_structure):
             return False
         if not is_valid_node(request.data["author"]):
@@ -121,12 +97,6 @@ class Requests:
 
     @staticmethod
     def is_valid_wup_rep_request(request: Request) -> bool:
-        """
-        Checks whether a WUP_REP request is valid.
-
-        :param Request request: A WUP_REP request.
-        :return bool: True if the request is valid, False otherwise.
-        """
         if not validate_fields(request.to_dict(), Structures.wup_rep_request_structure):
             return False
         return True
@@ -138,27 +108,32 @@ class Requests:
         data = message.to_dict()
         return Request(Requests.npp.__name__.upper(), data)
 
+    @staticmethod
+    def is_valid_mpp_request():
+        pass  # TODO
+
+    # BCP section
+
+    @staticmethod
+    def bcp(own_contact: OwnContact) -> Request:
+        data = own_contact.to_dict()
+        return Request(Requests.npp.__name__.upper(), data)
+
+    @staticmethod
+    def is_valid_bcp_request(request: Request) -> bool:
+        if not is_valid_contact(request.data):
+            return False
+        return True
+
     # NPP section
 
     @staticmethod
     def npp(node: Node) -> Request:
-        """
-        Creates a new Node Publication request.
-
-        :param Node node: The node to publish.
-        :return Request: A NPP Request.
-        """
         data = node.to_dict()
         return Request(Requests.npp.__name__.upper(), data)
 
     @staticmethod
     def is_valid_npp_request(request: Request) -> bool:
-        """
-        Checks whether a NPP request is valid
-
-        :param Request request: A NPP request.
-        :return bool: True if the request is valid, False otherwise.
-        """
         if not is_valid_node(request.data):
             return False
         return True
@@ -167,12 +142,6 @@ class Requests:
 
     @staticmethod
     def csp(contact: Contact) -> Request:
-        """
-        Creates a new Contact Sharing request.
-
-        :param Contact contact:
-        :return Request: A CSP Request.
-        """
         data = contact.to_dict()
         return Request(Requests.csp.__name__.upper(), data)
 
@@ -192,24 +161,12 @@ class Requests:
 
     @staticmethod
     def dnp(contact: Contact) -> Request:
-        """
-        Creates a new Discover Pub request.
-
-        :param Contact contact:
-        :return Request: A DPP Request.
-        """
-        data = {}
+        data = {}  # TODO
         return Request(Requests.dnp.__name__.upper(), data)
 
     @staticmethod
     def dcp(contact: Contact) -> Request:
-        """
-        Creates a new Discover Contact request.
-
-        :param Contact contact:
-        :return Request: A DCP Request.
-        """
-        data = {}
+        data = {}  # TODO
         return Request(Requests.dcp.__name__.upper(), data)
 
     @staticmethod

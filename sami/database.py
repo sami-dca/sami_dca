@@ -28,7 +28,7 @@ class Database:
 
     """
 
-    def __init__(self, db_name: str, columns: dict):
+    def __init__(self, db_path: str, columns: dict):
         """
         Structure of "columns":
 
@@ -38,12 +38,13 @@ class Database:
             "column3": tuple,
         }
 
-        :param str db_name: Name of the database.
+        :param str db_path: Name of the database.
         :param dict{str: type} columns: Uni-dimensional dictionary with each "key: value" pair representing
         "column_name": type_of_column. "type_of_column" must be a type object (dict, list, tuple, set, etc).
         """
-        self.db_name = db_name
-        self.db = self.__get_db(self.db_name)
+        self.db_path = db_path
+        self.db_name = self.db_path.split('/')[-1]
+        self.db = self.__get_db(self.db_path)
         self.db_columns = list(columns.keys())
         for column in columns:
             if not self.column_exists(column):
@@ -53,20 +54,20 @@ class Database:
     def __del__(self):
         self.db.close()
 
-    def __get_db(self, db_name: str) -> shelve.DbfilenameShelf:
+    def __get_db(self, db_path: str) -> shelve.DbfilenameShelf:
         """
         Returns a DB object.
         Creates the subdirectories for the file if it doesn't exist already.
 
-        :param str db_name: The relative database path (as the data will be stored in a file).
+        :param str db_path: The relative database path (as the data will be stored in a file).
         :return shelve.DbfilenameShelf: A database object.
         """
         try:
-            os.mkdir("/".join(db_name.split("/")[:-1]))
+            os.makedirs("/".join(db_path.split("/")[:-1]))
         except FileExistsError:
             pass
-        db = shelve.open(db_name)
-        logging.info(f'Opened database {db_name!r}')
+        db = shelve.open(db_path)
+        logging.info(f'Opened database {db_path!r}')
         return db
 
     def column_exists(self, column: str) -> bool:
@@ -125,7 +126,7 @@ class Database:
         cl.update(pair)
         self.db[column] = cl
         self.db.sync()
-        logging.debug(f'[Database {self.db_name}] Inserted {pair!r} in column {column!r} (which is a dict).')
+        logging.debug(f'[Database {self.db_name}] Inserted {pair!r} in column {column!r} (which is a dict)')
 
     def insert_list(self, column: str, value) -> None:
         """
@@ -141,7 +142,7 @@ class Database:
         cl.append(value)
         self.db[column] = cl
         self.db.sync()
-        logging.debug(f'[Database {self.db_name}] Inserted {value!r} in column {column!r} (which is a list).')
+        logging.debug(f'[Database {self.db_name}] Inserted {value!r} in column {column!r} (which is a list)')
 
     def update(self, column: str, key: str, value) -> None:
         """
@@ -157,7 +158,7 @@ class Database:
         cl[key] = value  # Alters the copy.
         self.db[column] = cl  # Replace the original by the copy.
         self.db.sync()  # Update the database.
-        logging.debug(f'[Database {self.db_name}] Updated field {key!r} with {value!r} in column {column!r}.')
+        logging.debug(f'[Database {self.db_name}] Updated field {key!r} with {value!r} in column {column!r}')
 
     def drop(self, column: str, key: str) -> None:
         """
@@ -169,7 +170,7 @@ class Database:
         # assert self.column_exists(column)
         # assert self.key_exists(column, key)
         self.db[column].pop(key)
-        logging.debug(f'[Database {self.db_name}] Dropped field {key!r} in column {column!r}.')
+        logging.debug(f'[Database {self.db_name}] Dropped field {key!r} in column {column!r}')
 
     def query_column(self, search_column: str) -> any:
         """
@@ -179,7 +180,7 @@ class Database:
         :return: The value of the column.
         """
         # assert self.column_exists(search_column)
-        logging.debug(f'[Database {self.db_name}] Requesting a query of the column {search_column!r}.')
+        logging.debug(f'[Database {self.db_name}] Requesting a query of the column {search_column!r}')
         return self.db[search_column]
 
     def query(self, search_column: str, search_key: str) -> any:
@@ -192,5 +193,5 @@ class Database:
         """
         # assert self.column_exists(search_column)
         # assert self.key_exists(search_column, search_key)
-        logging.debug(f'[Database {self.db_name}] Requesting key {search_key!r} in column {search_column!r}.')
+        logging.debug(f'[Database {self.db_name}] Requesting key {search_key!r} in column {search_column!r}')
         return self.db[search_column][search_key]

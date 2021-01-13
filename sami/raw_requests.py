@@ -108,9 +108,9 @@ class RawRequestsDatabase(Database):
 
     """
 
-    def __init__(self, db_name: str) -> None:
+    def __init__(self, db_path: str) -> None:
         self.requests_table = "requests"
-        super().__init__(db_name, {self.requests_table: dict})
+        super().__init__(db_path, {self.requests_table: dict})
 
     def add_new_raw_request(self, raw_request: dict) -> None:
         """

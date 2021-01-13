@@ -57,7 +57,11 @@ class Request:
         """
         Returns the Request as a dictionary.
         """
-        pass
+        return {
+            "status": self.status,
+            "data": self.data,
+            "timestamp": self.timestamp,
+        }
 
     @set_timestamp_on_call
     def to_json(self) -> str:

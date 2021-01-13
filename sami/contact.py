@@ -6,6 +6,7 @@ from .config import Config
 from .encryption import Encryption
 from .utils import get_timestamp, encode_json
 from .validation import validate_export_structure
+from .utils import get_local_ip_address, get_public_ip_address
 
 
 class Contact:
@@ -52,7 +53,7 @@ class Contact:
         """
         :return str: An ID, as a string. Its length is defined by Config.id_len
         """
-        h = Encryption.hash_iterable(Config.contact_delimiter.join([self.address, self.port]))
+        h = Encryption.hash_iterable(Config.contact_delimiter.join([self.address, str(self.port)]))
         return h.hexdigest()[:Config.id_len]
 
     def get_address(self) -> str or None:
@@ -101,7 +102,7 @@ class Contact:
     @validate_export_structure('simple_contact_structure')
     def to_dict(self) -> dict:
         return {
-            "address": Config.contact_delimiter.join([self.address, self.port])
+            "address": Config.contact_delimiter.join([self.get_address(), str(self.get_port())])
         }
 
     def to_json(self) -> str:
@@ -111,9 +112,9 @@ class Contact:
 class OwnContact:
     def __init__(self, n_type: str):
         if n_type == 'private':
-            self.address: str = Config.local_ip_address
+            self.address: str = get_local_ip_address()
         elif n_type == 'public':
-            self.address: str = Config.public_ip_address
+            self.address: str = get_public_ip_address()
         else:
             logging.error(f'Invalid IP type: {n_type!r}')
         self.port: int = Config.port_receive
@@ -124,10 +125,13 @@ class OwnContact:
     def get_port(self) -> int:
         return self.port
 
+    def get_id(self) -> str:
+        return Contact.get_id(self)  # Dirty hack
+
     @validate_export_structure('simple_contact_structure')
     def to_dict(self) -> dict:
         return {
-            "address": Config.contact_delimiter.join([self.address, str(self.port)])
+            "address": Config.contact_delimiter.join([self.get_address(), str(self.get_port())])
         }
 
     def to_json(self) -> str:

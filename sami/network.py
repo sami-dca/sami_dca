@@ -20,7 +20,7 @@ from .node import Node
 from .config import Config
 from .request import Request
 from .requests import Requests
-from .utils import decode_json
+from .utils import decode_json, get_local_ip_address
 from .encryption import Encryption
 from .message import Message, OwnMessage
 from .contact import Contact, OwnContact, Beacon
@@ -32,7 +32,7 @@ class Network:
     def __init__(self, master_node):
         self.master_node = master_node
 
-        self.host = Config.local_ip_address
+        self.host = get_local_ip_address()
 
     ####################
     # Requests section #
@@ -70,10 +70,16 @@ class Network:
             self.handle_what_is_up_reply(request)  # What's Up Protocol Reply
             return
 
-        elif request.status == "DPP":
-            if not Requests.is_valid_dp_request(request):  # Discover Pub Protocol
+        elif request.status == "BCP":
+            if not Requests.is_valid_bcp_request(request):
                 return
-            self.handle_discover_pub(request)
+            self.handle_broadcast(request)
+            return
+
+        elif request.status == "DNP":
+            if not Requests.is_valid_dp_request(request):  # Discover Nodes Protocol
+                return
+            self.handle_discover_nodes(request)
             return
 
         elif request.status == "DCP":  # Discover Contact Protocol
@@ -113,7 +119,7 @@ class Network:
 
         else:
             # The request has an invalid status.
-            logging.warning(f'Captured request calling unknown protocol: {request.status}.'
+            logging.warning(f'Captured request calling unknown protocol: {request.status!r}. '
                             f'Consider updating your client.')
             return
 
@@ -327,20 +333,20 @@ class Network:
 
         :param Request request: A WUP_REP request.
         """
-        if not Requests.is_valid_wup_rep_request(request):
-            return
-
         inner_request = Request.from_dict(request.data)
 
         # Route the request.
         self.route_request(inner_request, broadcast=False)
 
-    def handle_discover_pub(self, request: Request) -> None:
+    def handle_broadcast(self, request: Request) -> None:
+        pass # !!!
+
+    def handle_discover_nodes(self, request: Request) -> None:
         """
-        Handles the Discover Pub requests.
+        Handles the Discover Nodes requests.
         The request must be valid.
 
-        :param Request request: A valid DPP request.
+        :param Request request: A valid DNP request.
         """
         contact = Contact.from_raw_address(request.data["address"])
 
@@ -526,7 +532,19 @@ class Network:
                     dict_request = decode_json(json_request)
                 except JSONDecodeError:
                     continue
-                # TODO: Verify that the sender's address and the contact's information are the same IP.
+
+                req_add = dict_request['address'].split(Config.contact_delimiter)[0]
+                sender_add = address[0]
+                own_add = OwnContact('private').get_address()
+                print(f'{req_add=} ; {sender_add=} ; {own_add=}')
+
+                if req_add != sender_add:
+                    # If the addresses are not the same.
+                    continue
+                if req_add == own_add:
+                    # If the request's sender address is ours.
+                    continue
+
                 if is_valid_contact(dict_request):
                     contact = Contact.from_dict(dict_request)
                     contact.set_last_seen()
@@ -589,10 +607,6 @@ class Network:
                 if request:
                     # Route the request
                     self.route_request(request)
-                    # And store the remote contact if we don't know it.
-                    contact = Contact.from_raw_address(Config.contact_delimiter.join(address))
-                    contact.set_last_seen()
-                    self.master_node.databases.contacts.add_contact(contact)
                 connection.close()
 
     def broadcast_request(self, request: Request) -> None:
@@ -634,8 +648,9 @@ class Network:
             client_socket.settimeout(Config.contact_connect_timeout)
             try:
                 client_socket.connect((address, port))
-            except (socket.timeout, ConnectionRefusedError):
+            except (socket.timeout, ConnectionRefusedError, OSError):
                 # We could not connect to the contact.
+                logging.info(f'Could not send request {request.get_id()} to {address}:{port}')
                 pass
             else:
                 client_socket.send(Encryption.encode_string(request.to_json()))
