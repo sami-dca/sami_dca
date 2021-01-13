@@ -536,7 +536,6 @@ class Network:
                 req_add = dict_request['address'].split(Config.contact_delimiter)[0]
                 sender_add = address[0]
                 own_add = OwnContact('private').get_address()
-                print(f'{req_add=} ; {sender_add=} ; {own_add=}')
 
                 if req_add != sender_add:
                     # If the addresses are not the same.
