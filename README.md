@@ -44,6 +44,7 @@ and
 
 If you wish to contribute to the project, 
 please review our [guidelines](https://github.com/sami-dca/sami_dca/blob/master/CONTRIBUTING.md). 
+\
 Thank you !
 
 
