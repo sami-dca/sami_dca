@@ -6,9 +6,8 @@ from .node import MasterNode
 from .request import Request
 from .encryption import Encryption
 from .structures import Structures
-from .utils import validate_fields
 from .contact import Contact, OwnContact
-from .validation import is_valid_node, is_valid_contact
+from .validation import is_valid_node, is_valid_contact, validate_fields
 
 
 class Requests:
@@ -74,8 +73,8 @@ class Requests:
     # WUP section
 
     @staticmethod
-    def wup_ini(last_timestamp: int) -> Request:
-        own_contact = OwnContact()  # TODO: needs type import
+    def wup_ini(last_timestamp: int, contact: Contact) -> Request:
+        own_contact = OwnContact(contact.get_address())
         data = {
             "timestamp": last_timestamp,
             "author": own_contact.to_dict()
@@ -161,12 +160,12 @@ class Requests:
 
     @staticmethod
     def dnp(contact: Contact) -> Request:
-        data = {}  # TODO
+        data = {"author": contact.to_dict()}
         return Request(Requests.dnp.__name__.upper(), data)
 
     @staticmethod
     def dcp(contact: Contact) -> Request:
-        data = {}  # TODO
+        data = {"author": contact.to_dict()}
         return Request(Requests.dcp.__name__.upper(), data)
 
     @staticmethod

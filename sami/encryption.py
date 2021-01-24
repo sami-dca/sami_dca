@@ -10,8 +10,6 @@ from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 
 from .config import Config
-from .structures import Structures
-from .utils import validate_fields
 
 
 class Encryption:
@@ -346,26 +344,6 @@ class Encryption:
         h = Encryption.hash_iterable(key)
         # return h.digest()[:len(key) / 2]
         return h.digest()[:Config.aes_keys_length / 2]
-
-    @staticmethod
-    def verify_received_aes_key(key: dict, rsa_public_key: RSA.RsaKey) -> bool:
-        """
-        Verifies the AES key received as a dict and passed here is valid.
-
-        :param dict key: An AES key, as a dictionary.
-        :param RSA.RsaKey rsa_public_key: The RSA public key of the author.
-        :return bool: True if the information is a valid AES key, False otherwise.
-        """
-        validate_fields(key, Structures.aes_key_structure)
-        value = key["value"]
-        h_str = key["hash"]
-        sig = Encryption.deserialize_string(key["sig"])
-        h = Encryption.hash_iterable(value)
-        if h_str != h.hexdigest():
-            return False
-        if not Encryption.is_signature_valid(rsa_public_key, h, sig):
-            return False
-        return True
 
     @staticmethod
     def construct_aes_object(aes_key: bytes, nonce: bytes, mode: int = Config.aes_mode):

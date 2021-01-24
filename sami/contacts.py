@@ -7,7 +7,6 @@ from typing import List
 from .config import Config
 from .contact import Contact
 from .database import Database
-from .contact import OwnContact
 
 
 class Contacts:
@@ -30,19 +29,21 @@ class Contacts:
         if self.contact_exists(contact_id):
             self.db.drop(self.db.contacts_table, contact_id)
 
-    def get_all_contacts_ids(self) -> List[str]:
+    def get_all_contacts_ids(self, exclude: List[str] = None) -> List[str]:
         """
         Get all IDs of the database.
         Each entry represent a contact ID.
 
         :return List[str]: A list of contact IDs.
         """
-        cs = list(self.db.query_column(self.db.contacts_table).keys())
-        cs = set(cs)
-        own_id = OwnContact('private').get_id()
-        if own_id in cs:
-            cs.remove(own_id)
-        return list(cs)
+        if not exclude:
+            exclude = list()
+        all_contacts = list(self.db.query_column(self.db.contacts_table).keys())
+        all_contacts = set(all_contacts)
+        for identifier in exclude:
+            if identifier in all_contacts:
+                all_contacts.remove(identifier)
+        return list(all_contacts)
 
     def get_contact_info(self, contact_id: str) -> dict or None:
         """
@@ -54,8 +55,8 @@ class Contacts:
         if self.contact_exists(contact_id):
             return self.db.query(self.db.contacts_table, contact_id)
 
-    def get_all_contacts(self) -> List[Contact]:
-        contact_ids = self.get_all_contacts_ids()
+    def get_all_contacts(self, exclude: List[str] = None) -> List[Contact]:
+        contact_ids = self.get_all_contacts_ids(exclude)
         contacts = list()
         for contact_id in contact_ids:
             contacts.append(Contact.from_dict(self.get_contact_info(contact_id)))

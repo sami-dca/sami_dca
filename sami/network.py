@@ -20,11 +20,11 @@ from .node import Node
 from .config import Config
 from .request import Request
 from .requests import Requests
-from .utils import decode_json, get_local_ip_address
+from .utils import decode_json, get_primary_local_ip_address
 from .encryption import Encryption
 from .message import Message, OwnMessage
 from .contact import Contact, OwnContact, Beacon
-from .validation import is_valid_received_message, is_valid_request, is_valid_contact, is_valid_node
+from .validation import is_valid_received_message, is_valid_request, is_valid_contact, is_valid_node, verify_received_aes_key
 
 
 class Network:
@@ -32,7 +32,7 @@ class Network:
     def __init__(self, master_node):
         self.master_node = master_node
 
-        self.host = get_local_ip_address()
+        self.host = get_primary_local_ip_address()  # TODO: listen on all interfaces, making this attribute deprecated.
 
     ####################
     # Requests section #
@@ -88,7 +88,7 @@ class Network:
             self.handle_discover_contact(request)
             return
 
-        # All requests above are neither stored nor broadcasted back.
+        # All requests above are neither stored nor broadcast back.
         # Only those below are, and only if they are valid.
 
         if request.status == "MPP":  # Message Propagation Protocol
@@ -214,7 +214,7 @@ class Network:
             half_aes_key = Encryption.create_half_aes_key()
             rsa_public_key = Encryption.construct_rsa_object(request.data["author"]["rsa_n"],
                                                              request.data["author"]["rsa_e"])
-            Encryption.verify_received_aes_key(request.data["key"], rsa_public_key)
+            verify_received_aes_key(request.data["key"], rsa_public_key)
 
             # This AES key's length is 16 bytes.
             aes_key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), request.data["key"])
@@ -339,7 +339,7 @@ class Network:
         self.route_request(inner_request, broadcast=False)
 
     def handle_broadcast(self, request: Request) -> None:
-        pass # !!!
+        pass  # TODO
 
     def handle_discover_nodes(self, request: Request) -> None:
         """
@@ -390,28 +390,28 @@ class Network:
         TODO: Take care of the case where we know less than 10 contacts
         """
         last_received_request = self.master_node.databases.raw_requests.get_last_received()
-        req = Requests.wup_ini(last_received_request.timestamp)
 
         for contact in self.find_available_contact():
+            req = Requests.wup_ini(last_received_request.timestamp, contact)
             for _ in range(10):  # 10 tries
                 if self.send_request(req, contact):
                     return
                 else:
                     contact = self.find_available_contact()
 
-    def request_nodes(self):
+    def request_nodes(self) -> None:
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
                 logging.info(f'Requested nodes to {contact}')
-                break
+                return
 
-    def request_contacts(self):
+    def request_contacts(self) -> None:
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
                 logging.info(f'Requested contacts to {contact}')
-                break
+                return
 
     ###################
     # Message section #
@@ -457,7 +457,8 @@ class Network:
     ################################
 
     def find_available_contact(self):
-        for contact in self.get_all_contacts():
+        contacts = self.get_all_contacts()
+        for contact in contacts:
             # TODO: Add network verification
             yield contact
 
@@ -491,12 +492,12 @@ class Network:
                 yield contact_obj
 
         # Gets the beacons and contacts lists.
-        beacons = Config.beacons
-        contacts = self.master_node.databases.contacts.get_all_contacts()
+        all_beacons = Config.beacons
+        all_contacts = self.master_node.databases.contacts.get_all_contacts()
 
-        random.shuffle(beacons)
-        random.shuffle(contacts)
-        contacts = __get_contacts(beacons, contacts)
+        random.shuffle(all_beacons)
+        random.shuffle(all_contacts)
+        contacts = __get_contacts(all_beacons, all_contacts)
 
         for contact in contacts:
             yield contact
@@ -628,7 +629,7 @@ class Network:
         with mock.patch('sami.Request.to_json') as mock_req_to_json:
             mock_req_to_json.return_value = ''
             req = Request('', {}, 0, 0)
-            self.send_request(req, OwnContact('private'))
+            self.send_request(req, Contact.from_dict(OwnContact('private').to_dict()))
 
     def send_request(self, request: Request, contact: Contact) -> None:
         """

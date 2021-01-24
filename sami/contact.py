@@ -5,8 +5,8 @@ import logging
 from .config import Config
 from .encryption import Encryption
 from .utils import get_timestamp, encode_json
-from .validation import validate_export_structure
-from .utils import get_local_ip_address, get_public_ip_address
+from .validation import validate_export_structure, is_ip_address_valid, is_valid_contact
+from .utils import get_local_ip_address_from_address, get_public_ip_address, get_primary_local_ip_address
 
 
 class Contact:
@@ -21,12 +21,14 @@ class Contact:
     def from_dict(cls, contact_data: dict, last_seen: int = None):
         """
         Creates a new instance of this class from a contact information.
-        Data must be validated beforehand.
 
         :param dict contact_data: Contact data, as a dictionary.
         :param int last_seen: Optional.
         :return: A new object (instance) of this class.
         """
+        if not is_valid_contact(contact_data):
+            return
+
         address, port = contact_data["address"].split(Config.contact_delimiter)
         if not last_seen:
             try:
@@ -45,7 +47,7 @@ class Contact:
         """
         logging.debug(f'Trying to create a new contact object from raw address: {raw_address}')
         address, port = raw_address.split(Config.contact_delimiter)
-        return cls(address, int(port))
+        return cls.from_dict(address, int(port))
 
     # Information section
 
@@ -53,7 +55,7 @@ class Contact:
         """
         :return str: An ID, as a string. Its length is defined by Config.id_len
         """
-        h = Encryption.hash_iterable(Config.contact_delimiter.join([self.address, str(self.port)]))
+        h = Encryption.hash_iterable(Config.contact_delimiter.join([self.get_address(), str(self.get_port())]))
         return h.hexdigest()[:Config.id_len]
 
     def get_address(self) -> str or None:
@@ -110,14 +112,19 @@ class Contact:
 
 
 class OwnContact:
-    def __init__(self, n_type: str):
-        if n_type == 'private':
-            self.address: str = get_local_ip_address()
-        elif n_type == 'public':
-            self.address: str = get_public_ip_address()
-        else:
-            logging.error(f'Invalid IP type: {n_type!r}')
+
+    def __init__(self, target_address: str = None):
+        self.address: str
         self.port: int = Config.port_receive
+
+        if target_address == 'private':
+            self.address = get_primary_local_ip_address()
+        elif target_address == 'public':
+            self.address = get_public_ip_address()
+        elif is_ip_address_valid(target_address):
+            self.address = get_local_ip_address_from_address(target_address)
+        else:
+            raise ValueError(f'Invalid specified target: {target_address!r}')
 
     def get_address(self) -> str:
         return self.address
