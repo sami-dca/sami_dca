@@ -4,8 +4,6 @@ from typing import List
 
 from Crypto.Cipher import AES
 
-from .utils import get_local_ip_address, get_public_ip_address
-
 
 class Config:
 
@@ -46,12 +44,6 @@ class Config:
     # Note: it is not retroactive.
     log_ip_addresses: bool = True
 
-    # IP address on the local network
-    local_ip_address = get_local_ip_address(log_ip_addresses=log_ip_addresses)
-
-    # Public IP address, accessible from Internet.
-    public_ip_address = get_public_ip_address(log_ip_addresses=log_ip_addresses)
-
     # When connecting to a contact, timeout in seconds.
     contact_connect_timeout: int = 10
 
@@ -79,8 +71,8 @@ class Config:
 
     # How often should we ask for new nodes, in seconds.
     # If set too low, you might get classified as a spammer !
-    # Default is 15 minutes
-    nodes_discovery_schedule: int = 60 * 15
+    # Default is 30 minutes
+    nodes_discovery_schedule: int = 60 * 30
 
     # How often should we ask for new nodes, in seconds.
     # If set too low, you might get classified as a spammer !
