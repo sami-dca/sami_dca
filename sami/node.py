@@ -6,9 +6,9 @@ import random
 from Crypto.PublicKey import RSA
 
 from .config import Config
-from .lib import dictionary
 from .utils import encode_json
 from .encryption import Encryption
+from .lib.dictionary import dictionary
 from .validation import is_valid_node, validate_export_structure
 
 
