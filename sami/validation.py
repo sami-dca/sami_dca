@@ -24,15 +24,19 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
     :return bool: True if the fields are valid, False otherwise.
     """
     if not isinstance(dictionary, dict):
+        logging.debug(f"Argument 'dictionary' needs to be a dict, is {type(dictionary)}")
         return False
     if not isinstance(struct, dict):
+        logging.debug(f"Argument 'struct' needs to be a dict, is {type(struct)}")
         return False
 
     if len(dictionary) != len(struct):
+        logging.debug(f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}')
         return False
     for field_name, field_value in struct.items():
         if type(field_value) is not type:
             if type(dictionary[field_name]) is not type(field_value):
+                logging.debug(f'Looked for type {type(field_value)}, found {type(dictionary[field_name])}')
                 return False
             # Calls the function recursively when it stumbles upon a dictionary.
             if not validate_fields(struct[field_name], field_value):
@@ -41,10 +45,14 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
             try:
                 if type(field_value) == int:
                     if not is_int(dictionary[field_name]):
+                        logging.debug(f'Tried to cast an integer, did not work: {field_name!r}: '
+                                      f'{dictionary[field_name]}')
                         return False
                 elif type(dictionary[field_name]) is not field_value:
+                    logging.debug(f'Looked for type {field_value}, found {type(dictionary[field_name])}')
                     return False
             except KeyError:
+                logging.debug(f"Couldn't find field {field_name}")
                 return False
     return True
 
