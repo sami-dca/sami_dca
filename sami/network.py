@@ -59,31 +59,43 @@ class Network:
             self.master_node.databases.raw_requests.add_new_raw_request(req)
         # End of broadcast_and_store method.
 
+        def log_invalid_req(request):
+            log_msg = f'Request {request.get_id()} is invalid'
+            if Config.verbose:
+                log_msg += ''
+            logging.debug(log_msg)
+        # End of log_invalid_req method.
+
         if request.status == "WUP_INI":  # What's Up Protocol Initialization
             if not Requests.is_valid_wup_ini_request(request):
+                log_invalid_req(request)
                 return
             self.handle_what_is_up_init(request)
             return
         elif request.status == "WUP_REP":
             if not Requests.is_valid_wup_rep_request(request):
+                log_invalid_req(request)
                 return
             self.handle_what_is_up_reply(request)  # What's Up Protocol Reply
             return
 
         elif request.status == "BCP":
             if not Requests.is_valid_bcp_request(request):
+                log_invalid_req(request)
                 return
             self.handle_broadcast(request)
             return
 
         elif request.status == "DNP":
             if not Requests.is_valid_dp_request(request):  # Discover Nodes Protocol
+                log_invalid_req(request)
                 return
             self.handle_discover_nodes(request)
             return
 
         elif request.status == "DCP":  # Discover Contact Protocol
             if not Requests.is_valid_dp_request(request):
+                log_invalid_req(request)
                 return
             self.handle_discover_contact(request)
             return
@@ -93,29 +105,37 @@ class Network:
 
         if request.status == "MPP":  # Message Propagation Protocol
             if not is_valid_received_message(request.data):
+                log_invalid_req(request)
                 return
             broadcast_and_store(request)
             self.handle_message(request)
+            return
 
         elif request.status == "NPP":  # Node Publication Protocol
             if not Requests.is_valid_npp_request(request):
+                log_invalid_req(request)
                 return
             broadcast_and_store(request)
             node = Node.from_dict(request.data)
             self.master_node.databases.nodes.add_node(node)
+            return
 
         elif request.status == "CSP":  # Contact Sharing Protocol
             if not Requests.is_valid_csp_request(request):
+                log_invalid_req(request)
                 return
             broadcast_and_store(request)
             contact = Contact.from_dict(request.data)
             self.master_node.databases.contacts.add_contact(contact)
+            return
 
         elif request.status == "KEP":  # Keys Exchange Protocol
             if not Requests.is_valid_kep_request(request):
+                log_invalid_req(request)
                 return
             broadcast_and_store(request)
             self.negotiate_aes(request)
+            return
 
         else:
             # The request has an invalid status.
@@ -599,7 +619,7 @@ class Network:
             return data
 
         with socket.socket() as server_socket:
-            server_socket.bind((self.host, Config.port_receive))
+            server_socket.bind((self.host, Config.sami_port))
             server_socket.listen(Config.network_max_conn)
 
             while not stop_event.isSet():
@@ -609,10 +629,23 @@ class Network:
                 try:
                     dict_request = decode_json(json_request)
                 except JSONDecodeError:
+                    log_msg = 'Received an outsider'
+                    if Config.verbose:
+                        log_msg += f': {raw_bytes_request}'
+                    logging.debug(log_msg)
                     continue
                 request = Request.from_dict(dict_request)
                 if request:
+                    log_msg = f'Received request {request.get_id()} from {address}'
+                    if Config.verbose:
+                        log_msg += f': {dict_request}'
+                    logging.info(log_msg)
                     self.route_request(request)
+                else:
+                    log_msg = f'Received invalid request from {address}'
+                    if Config.verbose:
+                        log_msg += f': {dict_request}'
+                    logging.info(log_msg)
                 connection.close()
 
     def broadcast_request(self, request: Request) -> None:

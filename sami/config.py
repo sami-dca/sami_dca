@@ -34,9 +34,11 @@ class Config:
     # Note: seconds * minutes * hours * days * months
     max_request_lifespan: int = 60 * 60 * 24 * 31 * 2
 
-    # Network ports used by the system.
-    port_send: int = 62362
-    port_receive: int = port_send + 1  # Needs to be exactly one above the send port.
+    # Network port used by the app.
+    sami_port: int = 62362
+
+    # Port used by the autodiscover.
+    broadcast_port: int = 62365
 
     # Whether public and private IPs should appear in the logs.
     # If you have to share your logs with a third-party (e.g. to report a bug)
@@ -50,12 +52,15 @@ class Config:
     # Number of contacts we should know before stopping the autodiscover broadcast.
     broadcast_limit: int = 15
 
-    # Port used by the autodiscover.
-    broadcast_port: int = 62365
-
     # Local directory where the database files will be stored.
     # Can be relative or absolute.
     databases_directory: str = "db/"
+
+    # Verbose mode.
+    # Activating it will print a lot of additional information in the log.
+    # While it can be useful for debugging purposes, be careful as it will probably include some private information,
+    # such as IP addresses, ports, statuses, settings, etc.
+    verbose: bool = True
 
     # -------------------------------------
     # ----- BE CAREFUL WHEN MODIFYING -----

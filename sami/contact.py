@@ -115,7 +115,7 @@ class OwnContact:
 
     def __init__(self, target_address: str = None):
         self.address: str
-        self.port: int = Config.port_receive
+        self.port: int = Config.sami_port
 
         if target_address == 'private':
             self.address = get_primary_local_ip_address()

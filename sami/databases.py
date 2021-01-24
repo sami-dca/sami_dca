@@ -18,5 +18,5 @@ class Databases:
         self.conversations = None
 
     def open_node_databases(self, identifier):
-        logging.info(f'Requesting node-specific databases with id {identifier}')
+        logging.info(f'Requesting node-specific database(s) with ID {identifier!r}')
         self.conversations = Conversations(pre=identifier + "_")
