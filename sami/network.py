@@ -548,7 +548,7 @@ class Network:
                 if is_valid_contact(dict_request):
                     contact = Contact.from_dict(dict_request)
                     contact.set_last_seen()
-                    msg = f'We received a new contact by listening on the broadcast: {json_request!r}'
+                    msg = f'We received a new contact by listening on the broadcast: {json_request}'
                     # The following verification is already done in the add contact,
                     # but we do it anyway to be able to tell if it was already present or not.
                     if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
@@ -654,4 +654,4 @@ class Network:
                 pass
             else:
                 client_socket.send(Encryption.encode_string(request.to_json()))
-                logging.info(f'Sent request {request.get_id()} to {address}:{port}')
+                logging.info(f'Sent {request.status} request {request.get_id()} to {address}:{port}')

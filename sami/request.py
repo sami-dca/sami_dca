@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from .config import Config
 from .encryption import Encryption
 from .utils import get_timestamp, encode_json
 from .validation import is_valid_request, validate_export_structure
@@ -78,4 +79,4 @@ class Request:
         :return str: An hexadecimal identifier.
         """
         h = Encryption.hash_iterable(self.to_json())
-        return h.hexdigest()
+        return h.hexdigest()[:Config.id_len]
