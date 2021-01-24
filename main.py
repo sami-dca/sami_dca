@@ -46,7 +46,7 @@ def manage_jobs(network, stop_event):
 
 
 def manage_requests(network, stop_event):
-    network.listen_for_requests(stop_event)
+    network.listen_for_requests(stop_event)  # TODO: Listen on all interfaces (LMAO)
 
 
 def manage_broadcast(network, stop_event) -> None:
@@ -59,7 +59,7 @@ def main():
 
     def stop(nw: sami.Network):
         stop_event.set()
-        nw.connect_and_send_dummy_data_to_self()
+        nw.send_dummy_data_to_self()
 
     logging.info('Launching')
 
