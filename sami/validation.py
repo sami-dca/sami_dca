@@ -34,7 +34,7 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
         logging.debug(f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}')
         return False
     for field_name, field_value in struct.items():
-        if not isinstance(type(field_value), type):
+        if not isinstance(type(field_value), type):  # If the value is not a type object
             if not isinstance(dictionary[field_name], type(field_value)):
                 logging.debug(f'Looked for type {type(field_value)}, found {type(dictionary[field_name])}')
                 return False
@@ -43,7 +43,7 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
                 return False
         else:  # If the value is a type object.
             try:
-                if isinstance(field_value, int):
+                if field_value is int:
                     if not is_int(dictionary[field_name]):
                         logging.debug(f'Tried to cast an integer, did not work: {field_name!r}: '
                                       f'{dictionary[field_name]}')
