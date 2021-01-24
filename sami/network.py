@@ -524,7 +524,7 @@ class Network:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.bind(("", Config.broadcast_port))
-            while not stop_event.wait(1):
+            while not stop_event.isSet():
                 request_raw, address = receive_all(sock=s)
                 logging.debug(f'Received packet: {request_raw!r} from {address!r}')
                 # The request is not assured to be JSON, could be text, raw bytes or anything else.
@@ -560,19 +560,27 @@ class Network:
     def broadcast_autodiscover(self) -> None:
         # Resource: https://github.com/ninedraft/python-udp
         if len(self.master_node.databases.contacts.get_all_contacts_ids()) > Config.broadcast_limit:
+            # If we know enough contacts, we don't need to broadcast.
+            # TODO: find a way of stopping calls to this function
             return
         own_contact = OwnContact('private')
         own_contact_information = Encryption.encode_string(own_contact.to_json())
+        self.send_broadcast(own_contact_information)
+
+    def send_broadcast(self, info: bytes) -> None:
+        """
+        Takes a contact information as a bytes object (containing JSON), and broadcasts it.
+        """
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
             s.settimeout(2)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            s.sendto(own_contact_information, ('<broadcast>', Config.broadcast_port))
-            logging.debug(f'Broadcast own contact information: {own_contact_information!r}')
+            s.sendto(info, ('<broadcast>', Config.broadcast_port))
+            logging.debug(f'Broadcast own contact information: {info!r}')
 
     def listen_for_requests(self, stop_event) -> None:
         """
         Setup a server and listens on a port.
-        It requires TCP connection to transmit information.
+        It requires a TCP connection to transmit information.
         """
 
         def receive_all(sock: socket.socket) -> bytes:
@@ -587,7 +595,6 @@ class Network:
                 part = sock.recv(Config.network_buffer_size)
                 data += part
                 if len(part) < Config.network_buffer_size:
-                    # Either 0 or end of data
                     break
             return data
 
@@ -595,7 +602,7 @@ class Network:
             server_socket.bind((self.host, Config.port_receive))
             server_socket.listen(Config.network_max_conn)
 
-            while not stop_event.wait(1):
+            while not stop_event.isSet():
                 connection, address = server_socket.accept()
                 raw_bytes_request = receive_all(connection)
                 json_request = Encryption.decode_bytes(raw_bytes_request)
@@ -605,7 +612,6 @@ class Network:
                     continue
                 request = Request.from_dict(dict_request)
                 if request:
-                    # Route the request
                     self.route_request(request)
                 connection.close()
 
@@ -622,14 +628,17 @@ class Network:
 
         logging.info(f'Broadcast request {request.get_id()} to {len(contacts)} contacts.')
 
-    def connect_and_send_dummy_data_to_self(self) -> None:
-        # Mock the ``to_json()`` method.
-        # As we don't want to actually send a dirty request, we will make it return an empty string.
+    def send_dummy_data_to_self(self) -> None:
+        # Mocks the ``to_json()`` method.
+        # As we don't want to send a dirty request, we will make it return an empty string.
         # Sockets will send this
         with mock.patch('sami.Request.to_json') as mock_req_to_json:
             mock_req_to_json.return_value = ''
             req = Request('', {}, 0, 0)
-            self.send_request(req, Contact.from_dict(OwnContact('private').to_dict()))
+            own_contact = OwnContact('private')
+            own_contact_information = Encryption.encode_string(own_contact.to_json())
+            self.send_broadcast(own_contact_information)  # Used to end broadcast listening
+            self.send_request(req, Contact.from_dict(own_contact.to_dict()))  # Used to end general listening
 
     def send_request(self, request: Request, contact: Contact) -> None:
         """
@@ -654,4 +663,4 @@ class Network:
                 pass
             else:
                 client_socket.send(Encryption.encode_string(request.to_json()))
-                logging.info(f'Sent {request.status} request {request.get_id()} to {address}:{port}')
+                logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
