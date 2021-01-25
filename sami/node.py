@@ -250,11 +250,11 @@ class MasterNode(Node):
         self.set_id()
         self.set_name()
         self.databases.open_node_databases(self.get_id())
-        self.databases.nodes.add_node(self)
-        self._hash = self.compute_own_hash()
-        self._sig = self.compute_own_sig()
+        self._hash = self.compute_own_hash().hexdigest()
+        self._sig = Encryption.serialize_bytes(self.compute_own_sig())
         self.set_name()
         self.set_id()
+        self.databases.nodes.add_node(self)
 
     # RSA section
 
@@ -271,9 +271,13 @@ class MasterNode(Node):
         # Ths RSA private key should stick to the master node, and stay private to this object.
         pass
 
-    def compute_own_hash(self) -> str:
-        h = Encryption.get_public_key_hash(self.rsa_public_key)
-        return h.hexdigest()
+    def compute_own_hash(self):
+        """
+        Computes the hash from this node's information.
+
+        :return: A hash object.
+        """
+        return Encryption.get_public_key_hash(self.rsa_public_key)
 
     def compute_own_sig(self) -> bytes:
         return Encryption.get_rsa_signature(self._rsa_private_key, self.compute_own_hash())
