@@ -206,7 +206,7 @@ class Controller:
                 node_name = Node.derive_name(node_id)
                 last_message = self.master_node.databases.conversations.get_last_conversation_message(
                     node_id,
-                    self.master_node.rsa_private_key
+                    self.master_node.get_rsa_private_key()
                 )
                 last_message_date = get_date_from_timestamp(last_message.get_time_received())
 
@@ -336,7 +336,7 @@ class Controller:
             self.parent.Show()
 
         def display_conversation(self):
-            messages = self.master_node.databases.conversations.get_all_messages_of_conversation_raw(self.master_node.rsa_private_key,
+            messages = self.master_node.databases.conversations.get_all_messages_of_conversation_raw(self.master_node.get_rsa_private_key(),
                                                                                                      self.recipient_id)
             messages_wx_objects = {}
             for message in messages:

@@ -95,7 +95,7 @@ def get_all_local_ip_addresses() -> Set[str]:
     """
     host_name, aliases, local_ip_addresses = socket.gethostbyname_ex(socket.gethostname())
     local_ip_addresses = set(local_ip_addresses)
-    log_msg = 'Requested to get all local IPs'
+    log_msg = 'Requested all local IPs'
     if Config.log_ip_addresses:
         log_msg += f', got {local_ip_addresses}'
     logging.info(log_msg)
@@ -116,7 +116,7 @@ def get_primary_local_ip_address() -> str:
     finally:
         s.close()
 
-    log_msg = 'Requested to get primary local IP'
+    log_msg = 'Requested primary local IP'
     if Config.log_ip_addresses:
         log_msg += f', got {ip_address!r}'
     logging.info(log_msg)

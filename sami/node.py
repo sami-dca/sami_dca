@@ -18,10 +18,8 @@ class Node:
         # Initialize attributes.
         self.contacts = None  # Contacts database.
         self.rsa_public_key = None
-        self.hash = None
-        self.sig = None
-
-        self.aes = None
+        self._hash = None
+        self._sig = None
 
         self.name = None
         self.id = None
@@ -122,7 +120,7 @@ class Node:
     def set_name(self) -> None:
         """
         Sets Node's name.
-        It is can be accessed through the ``name`` attribute.
+        It is can be accessed through the name attribute.
         """
         self.name = Node.derive_name(self.get_id())
 
@@ -149,9 +147,9 @@ class Node:
         """
         Sets Node's signature.
 
-        :param str signature: A signature, created from the node's information hash.
+        :param str signature: A signature, created from the node's hash.
         """
-        self.sig = signature
+        self._sig = signature
 
     def get_signature(self) -> str:
         """
@@ -159,7 +157,7 @@ class Node:
 
         :return str: Node's signature.
         """
-        return self.sig
+        return self._sig
 
     @staticmethod
     def export_rsa_public_key_to_file(rsa_public_key: RSA.RsaKey, location: str, passphrase: str = None) -> None:
@@ -184,20 +182,10 @@ class Node:
 
         :param str hexdigest: A hexdigest as a string.
         """
-        self.hash = hexdigest
+        self._hash = hexdigest
 
-    def get_own_hash(self) -> str:
-        """
-        Returns a hash of the self.rsa_public_key's n and e.
-        Please refer to "Encryption.hash_iterable()" for more information.
-
-        :return str: The hash's hexdigest.
-        """
-        if self.hash is None:
-            h = Encryption.get_public_key_hash(self.rsa_public_key)
-            return h.hexdigest()
-        else:
-            return self.hash
+    def get_hash(self) -> str:
+        return self._hash
 
     # Export section
 
@@ -211,7 +199,7 @@ class Node:
         return {
             "rsa_n": self.rsa_public_key.n,
             "rsa_e": self.rsa_public_key.e,
-            "hash": self.get_own_hash(),
+            "hash": self.get_hash(),
             "sig": self.get_signature()
         }
 
@@ -228,8 +216,10 @@ class MasterNode(Node):
 
     def __init__(self):
         Node.__init__(self)
-        self.rsa_private_key = None
+        self._rsa_private_key = None
         self.databases = None
+        self._hash = None
+        self._sig = None
 
     def set_databases(self, databases) -> None:
         """
@@ -240,15 +230,6 @@ class MasterNode(Node):
         """
         self.databases = databases
 
-    def get_messages(self, conversation_id: str) -> list:
-        """
-        Gathers all messages of a conversation from the database.
-
-        :param str conversation_id:
-        :return list:
-        """
-        return self.databases.conversations.get_all_messages_of_conversation_raw(self.rsa_private_key, conversation_id)
-
     def initialize(self, rsa_private_key: RSA.RsaKey) -> None:
         """
         Sets:
@@ -257,6 +238,10 @@ class MasterNode(Node):
         - Instance's ID
         - Instance's name
         - Databases instances
+        - Hash
+        - Signature
+        - Name
+        - ID
 
         :param RSA.RsaKey rsa_private_key: A RSA private key.
         """
@@ -266,30 +251,32 @@ class MasterNode(Node):
         self.set_name()
         self.databases.open_node_databases(self.get_id())
         self.databases.nodes.add_node(self)
+        self._hash = self.compute_own_hash()
+        self._sig = self.compute_own_sig()
+        self.set_name()
+        self.set_id()
 
     # RSA section
 
     def set_rsa_private_key(self, rsa_private_key: RSA.RsaKey) -> None:
         """
-        Sets attribute "self.rsa_private_key".
+        Sets attribute "self._rsa_private_key".
 
         :param RSA.RsaKey rsa_private_key: A RSA private key object.
         """
-        self.rsa_private_key = rsa_private_key
+        self._rsa_private_key = rsa_private_key
 
     def get_rsa_private_key(self):
-        """
-        Returns Node's private key.
-        """
+        # We shouldn't use this.
+        # Ths RSA private key should stick to the master node, and stay private to this object.
         pass
 
-    def sign_self(self) -> bytes:
-        """
-        Signs this node's information.
+    def compute_own_hash(self) -> str:
+        h = Encryption.get_public_key_hash(self.rsa_public_key)
+        return h.hexdigest()
 
-        :return bytes: A signature, as bytes.
-        """
-        return Encryption.get_rsa_signature(self.rsa_private_key, self.get_own_hash())
+    def compute_own_sig(self) -> bytes:
+        return Encryption.get_rsa_signature(self._rsa_private_key, self.compute_own_hash())
 
     @staticmethod
     def export_rsa_private_key_to_file(rsa_private_key: RSA.RsaKey, location: str, passphrase: str = None):
@@ -304,5 +291,5 @@ class MasterNode(Node):
         identifier = Node.get_id_from_rsa_key(rsa_private_key)
         file_name = f"rsa_private_key-{identifier}.pem"
         path = os.path.join(location, file_name)
-        with open(path, "wb") as fl:  # Might raise OSError, PermissionError, UnicodeError
+        with open(path, "wb") as fl:  # Might raise OSError, PermissionError, UnicodeError ; TODO: handle
             fl.write(rsa_private_key.export_key(passphrase=passphrase))

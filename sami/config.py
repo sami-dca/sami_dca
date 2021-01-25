@@ -16,7 +16,7 @@ class Config:
 
     # Minimum number of contacts/nodes we should know before sending our identity (along with theirs).
     # The higher the better, but it must be set in accordance with the network's size.
-    min_peers: int = 1
+    min_peers: int = 0
 
     # List of Beacons. Please refer to the documentation for more information on this concept.
     # An entry is made of an address (IP or DNS) and a port, separated by a colon (:).
@@ -26,7 +26,7 @@ class Config:
     # If the AES key exchange is not established within this delay, abort it.
     # In seconds ; default is one week.
     # Note: seconds * minutes * hours * days
-    kep_timeout: int = 60 * 60 * 24 * 7
+    kep_decay: int = 60 * 60 * 24 * 7
 
     # Lifespan of a request in seconds.
     # How long we should keep a request in the raw_requests database.

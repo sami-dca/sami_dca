@@ -271,7 +271,7 @@ class Conversations:
         """
         key = self.get_aes(key_id)
         timestamp = key["timestamp"]
-        return Config.kep_timeout > (get_timestamp() - timestamp)
+        return Config.kep_decay > (get_timestamp() - timestamp)
 
 
 class ConversationsDatabase(Database):
