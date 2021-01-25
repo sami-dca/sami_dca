@@ -363,12 +363,12 @@ class Network:
 
     def handle_discover_nodes(self, request: Request) -> None:
         """
-        Handles the Discover Nodes requests.
+        Handles Discover Nodes requests.
         The request must be valid.
 
         :param Request request: A valid DNP request.
         """
-        contact = Contact.from_raw_address(request.data["address"])
+        contact = Contact.from_raw_address(request.data["author"]["address"])
 
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
@@ -380,12 +380,12 @@ class Network:
 
     def handle_discover_contact(self, request: Request) -> None:
         """
-        Handles the Discover Contacts requests.
+        Handles Discover Contacts requests.
         The request must be valid.
 
         :param Request request: A valid CSP request.
         """
-        contact = Contact.from_raw_address(request.data["address"])
+        contact = Contact.from_raw_address(request.data["author"]["address"])
 
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
