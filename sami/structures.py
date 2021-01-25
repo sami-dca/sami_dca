@@ -97,7 +97,7 @@ class Structures:
 
     dp_request_structure = {
         "status": str,
-        "data": simple_contact_structure,
+        "data": {"author": simple_contact_structure},
         "timestamp": int
     }
 
