@@ -173,7 +173,7 @@ class Requests:
         if not validate_fields(request.to_dict(), Structures.dp_request_structure):
             return False
 
-        if not is_valid_contact(request.data):
+        if not is_valid_contact(request.data["author"]):
             return False
 
         return True
