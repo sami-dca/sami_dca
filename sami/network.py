@@ -368,7 +368,7 @@ class Network:
 
         :param Request request: A valid DNP request.
         """
-        contact = Contact.from_raw_address(request.data["author"]["address"])
+        contact = Contact.from_dict(request.data["author"])
 
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
@@ -385,7 +385,7 @@ class Network:
 
         :param Request request: A valid CSP request.
         """
-        contact = Contact.from_raw_address(request.data["author"]["address"])
+        contact = Contact.from_dict(request.data["author"])
 
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
@@ -440,7 +440,7 @@ class Network:
     @staticmethod
     def read_message(msg: str, node: str) -> Message or None:
         """
-        Tries to read a message received by a peer, to only check if it is correct (not decrypting it here).
+        Tries to read a message received by a peer ; only checks whether it is correct (without decrypting it here).
 
         :param str msg: A message, as a JSON string.
         :param str node: A node, as a JSON string.
@@ -686,7 +686,6 @@ class Network:
         port = contact.get_port()
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-            # client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
             client_socket.settimeout(Config.contact_connect_timeout)
             try:
                 client_socket.connect((address, port))
