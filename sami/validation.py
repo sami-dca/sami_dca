@@ -40,7 +40,7 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
         except KeyError:
             logging.debug(f"Couldn't find field {key!r} in passed dictionary")
             return False
-        if isinstance(type(struct_value), type):
+        if isinstance(struct_value, type):
             # If value is a type object, we want to check that the value from the dict is of this type.
             if not isinstance(dict_value, struct_value):
                 logging.debug(f'Expected {struct_value} for {key!r}, got {type(dict_value)}')
