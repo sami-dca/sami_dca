@@ -265,6 +265,7 @@ class MasterNode(Node):
         self.set_id()
         self.set_name()
         self.databases.open_node_databases(self.get_id())
+        self.databases.nodes.add_node(self)
 
     # RSA section
 
