@@ -118,4 +118,4 @@ class RawRequestsDatabase(Database):
 
         :param dict raw_request: A raw request to store, as a dictionary.
         """
-        self.db.insert_dict(self.requests_table, raw_request)
+        self.insert_dict(self.requests_table, raw_request)
