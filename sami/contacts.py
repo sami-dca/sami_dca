@@ -56,6 +56,10 @@ class Contacts:
             return self.db.query(self.db.contacts_table, contact_id)
 
     def get_all_contacts(self, exclude: List[str] = None) -> List[Contact]:
+        """
+        Get all contacts we know, except listed in `exclude`
+        :param List[str] exclude: A list of IDs, which we will exclude from the contacts list.
+        """
         contact_ids = self.get_all_contacts_ids(exclude)
         contacts = list()
         for contact_id in contact_ids:

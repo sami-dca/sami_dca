@@ -45,13 +45,15 @@ class Network:
         :param Request request: The request, as a Request object.
         :param bool broadcast: Whether we want to broadcast the message.
         The only case it should be set to False is if we are replying to a specific request.
-
-        TODO: Verify the request is not already in the raw_request database.
         """
 
         """
         For each request, we first verify it is valid, and then process it.
         """
+
+        # If the request is already in the raw_requests database, we skip it.
+        if self.master_node.databases.raw_requests.is_request_known(request.get_id()):
+            return
 
         def broadcast_and_store(req):
             if broadcast:
@@ -501,7 +503,7 @@ class Network:
 
         # Gets the beacons and contacts lists.
         all_beacons = Config.beacons
-        all_contacts = self.master_node.databases.contacts.get_all_contacts()
+        all_contacts = self.master_node.databases.contacts.get_all_contacts(exclude=[self.master_node.get_id()])
 
         random.shuffle(all_beacons)
         random.shuffle(all_contacts)
@@ -679,8 +681,6 @@ class Network:
                 client_socket.connect((address, port))
                 client_socket.send(Encryption.encode_string(request.to_json()))
             except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
-                # We could not connect to the contact.
                 logging.info(f'Could not send request {request.get_id()} to {address}:{port}')
-                pass
             else:
                 logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
