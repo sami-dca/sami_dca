@@ -196,42 +196,42 @@ class ReceivedMessages ( wx.Frame ):
 
 		self.SetSizeHints( wx.Size( 300,300 ), wx.DefaultSize )
 
-		received_messages_bSizer = wx.BoxSizer( wx.VERTICAL )
+		self.received_messages_bSizer = wx.BoxSizer( wx.VERTICAL )
 
 		self.filter_nodes_search_ctrl = wx.SearchCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.filter_nodes_search_ctrl.ShowSearchButton( True )
 		self.filter_nodes_search_ctrl.ShowCancelButton( True )
 		self.filter_nodes_search_ctrl.SetToolTip( u"Search for a node" )
 
-		received_messages_bSizer.Add( self.filter_nodes_search_ctrl, 0, wx.ALL|wx.EXPAND, 5 )
+		self.received_messages_bSizer.Add( self.filter_nodes_search_ctrl, 0, wx.ALL|wx.EXPAND, 5 )
 
-		chat_container_main_bSizer = wx.BoxSizer( wx.HORIZONTAL )
+		self.chat_container_main_bSizer = wx.BoxSizer( wx.HORIZONTAL )
 
 		chat_container_bSizer = wx.BoxSizer( wx.VERTICAL )
 
 
-		chat_container_main_bSizer.Add( chat_container_bSizer, 1, wx.EXPAND, 5 )
+		self.chat_container_main_bSizer.Add( chat_container_bSizer, 1, wx.EXPAND, 5 )
 
 
-		received_messages_bSizer.Add( chat_container_main_bSizer, 1, wx.EXPAND, 5 )
+		self.received_messages_bSizer.Add( self.chat_container_main_bSizer, 1, wx.EXPAND, 5 )
 
-		new_chat_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"New conversation" ), wx.VERTICAL )
+		self.new_chat_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"New conversation" ), wx.VERTICAL )
 
 		recipient_bSizer = wx.BoxSizer( wx.HORIZONTAL )
 
-		self.recipient_staticText = wx.StaticText( new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send to:", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.recipient_staticText = wx.StaticText( self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send to:", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.recipient_staticText.Wrap( -1 )
 
 		recipient_bSizer.Add( self.recipient_staticText, 0, wx.ALIGN_CENTER_VERTICAL, 5 )
 
 
-		new_chat_sbSizer.Add( recipient_bSizer, 0, wx.EXPAND, 5 )
+		self.new_chat_sbSizer.Add( recipient_bSizer, 0, wx.EXPAND, 5 )
 
 
-		received_messages_bSizer.Add( new_chat_sbSizer, 0, wx.EXPAND, 5 )
+		self.received_messages_bSizer.Add( self.new_chat_sbSizer, 0, wx.EXPAND, 5 )
 
 
-		self.SetSizer( received_messages_bSizer )
+		self.SetSizer( self.received_messages_bSizer )
 		self.Layout()
 
 		self.Centre( wx.BOTH )

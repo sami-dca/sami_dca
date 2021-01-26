@@ -24,7 +24,7 @@ from .utils import decode_json, get_primary_local_ip_address
 from .encryption import Encryption
 from .message import Message, OwnMessage
 from .contact import Contact, OwnContact, Beacon
-from .validation import is_valid_received_message, is_valid_request, is_valid_contact, is_valid_node, verify_received_aes_key
+from .validation import is_valid_received_message, is_valid_request, is_valid_contact, verify_received_aes_key
 
 
 class Network:
@@ -59,8 +59,8 @@ class Network:
             self.master_node.databases.raw_requests.add_new_raw_request(req)
         # End of broadcast_and_store method.
 
-        def log_invalid_req(request):
-            log_msg = f'Request {request.get_id()} is invalid'
+        def log_invalid_req(req):
+            log_msg = f'Request {req.get_id()} is invalid'
             if Config.verbose:
                 log_msg += ''
             logging.debug(log_msg)
@@ -203,22 +203,22 @@ class Network:
             req = Requests.kep(half_aes_key, self.master_node, node)
             self.broadcast_request(req)
 
-        def store(key_id: str, key: bytes, nonce: bytes or None) -> None:
+        def store(key_identifier: str, key: bytes, nonce: bytes or None) -> None:
             """
             Store the AES key in the conversations database.
 
-            :param str key_id: A key ID ; the Node's ID.
+            :param str key_identifier: A key ID ; the Node's ID.
             :param bytes key: The AES key.
             :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
-            self.master_node.conversations.store_aes(self.master_node.get_rsa_public_key(), key_id, key, nonce)
+            self.master_node.conversations.store_aes(key_identifier, key, nonce)
 
         def finish_negotiation() -> None:
             """
             Used when a negotiation is already initialized and we want to conclude it.
             At the end of this function, we have a valid AES key for communicating with this node.
             """
-            key = self.master_node.conversations.get_decrypted_aes(self.master_node.get_rsa_private_key(), key_id)
+            key = self.master_node.conversations.get_decrypted_aes(key_id)
             aes_key, nonce = key
             half_aes_key = Encryption.create_half_aes_key()
             key, nonce = concatenate_keys(aes_key, half_aes_key)
@@ -313,9 +313,9 @@ class Network:
             if not self.negotiate_aes(request):
                 return
 
-        # The AES negotiation has been established, so we can proceed.
+        # The AES keys have been negotiated, so we can proceed.
 
-        aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes()
+        aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(node.get_id())
         message_dec = Message.from_dict_encrypted(aes_key, nonce, request.data)
 
         if not message_dec:
@@ -433,48 +433,30 @@ class Network:
                 logging.info(f'Requested contacts to {contact}')
                 return
 
-    ###################
-    # Message section #
-    ###################
-
-    @staticmethod
-    def read_message(msg: str, node: str) -> Message or None:
-        """
-        Tries to read a message received by a peer ; only checks whether it is correct (without decrypting it here).
-
-        :param str msg: A message, as a JSON string.
-        :param str node: A node, as a JSON string.
-        :return Message|None: None if the message is invalid, otherwise returns the message object.
-        """
-        if not is_valid_node(decode_json(node)):
-            return
-
-        # Converts the JSON string to a dictionary.
-        unpacked_msg = decode_json(msg)
-
-        message_object = Message.from_dict(unpacked_msg)
-
-        if not message_object:
-            # The message is invalid
-            return
-
-        message_object.set_time_received()
-        message_object.set_id()
-        # At this point, the message is valid and we can relay it to other nodes without danger.
-        return message_object
-
-    def prepare_message_for_recipient(self, node: Node, message: OwnMessage):
-        """
-        Prepare a message by encrypting its values.
-        This message is addressed to a specific node.
-        """
-        aes_key, nonce = self.master_node.conversations.get_decrypted_aes(node.get_id())
-        aes = Encryption.construct_aes_object(aes_key, nonce)
-        message.prepare(aes)
-
     ################################
     # Network interactions section #
     ################################
+
+    def send_message(self, recipient: Node, own_message: OwnMessage) -> None:
+
+        def prepare_message_for_recipient(node: Node, message: OwnMessage) -> None:
+            """
+            Prepares a message by encrypting its values.
+            This message is addressed to a specific node.
+            """
+            aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(node.get_id())
+            aes = Encryption.construct_aes_object(aes_key, nonce)
+            message.prepare(aes)
+        # End of prepare_message_for_recipient method.
+
+        prepare_message_for_recipient(recipient, own_message)
+
+        if not own_message.is_prepared():
+            logging.error(f'Something went wrong during the preparation of the message.')
+            return
+
+        req = Requests.mpp(own_message)
+        self.broadcast_request(req)
 
     def find_available_contact(self):
         contacts = self.get_all_contacts()
@@ -635,11 +617,12 @@ class Network:
                     logging.debug(log_msg)
                     continue
                 request = Request.from_dict(dict_request)
-                if request:
+                if request:  # If we managed to get a valid request.
                     log_msg = f'Received request {request.get_id()} from {address}'
                     if Config.verbose:
                         log_msg += f': {dict_request}'
                     logging.info(log_msg)
+                    # We'll route it.
                     self.route_request(request)
                 else:
                     log_msg = f'Received invalid request from {address}'
@@ -656,8 +639,7 @@ class Network:
         """
         contacts = list(self.get_all_contacts())
         for contact in contacts:
-            if self.send_request(request, contact):
-                break
+            self.send_request(request, contact)
 
         logging.info(f'Broadcast request {request.get_id()} to {len(contacts)} contacts.')
 
@@ -671,7 +653,7 @@ class Network:
             own_contact = OwnContact('private')
             own_contact_information = Encryption.encode_string(own_contact.to_json())
             self.send_broadcast(own_contact_information)  # Used to end broadcast listening
-            self.send_request(req, Contact.from_dict(own_contact.to_dict()))  # Used to end general listening
+            self.send_request(req, Contact.from_dict(own_contact.to_dict()))  # Used to end requests listening
 
     def send_request(self, request: Request, contact: Contact) -> None:
         """

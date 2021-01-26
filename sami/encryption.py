@@ -406,7 +406,7 @@ class Encryption:
     @staticmethod
     def decrypt_symmetric(aes_key, se_en_data: str, se_tag: str) -> bytes:
         """
-        Deserialized and decrypts data.
+        Deserializes and decrypts data.
         Must be reversible with Encryption.encrypt_symmetric().
 
         :param aes_key: An AES key.

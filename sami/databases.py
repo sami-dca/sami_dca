@@ -15,8 +15,11 @@ class Databases:
         self.contacts = Contacts()
         self.nodes = Nodes()
 
+        self.master_node = None
         self.conversations = None
 
-    def open_node_databases(self, identifier):
+    def open_node_databases(self, master_node):
+        self.master_node = master_node
+        identifier = self.master_node.get_id()
         logging.info(f'Requesting node-specific database(s) with ID {identifier!r}')
-        self.conversations = Conversations(pre=identifier + "_")
+        self.conversations = Conversations(self.master_node, pre=identifier + "_")

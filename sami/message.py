@@ -42,10 +42,9 @@ class Message:
         aes = Encryption.construct_aes_object(aes_key, nonce)
         try:
             content = Encryption.decrypt_symmetric(aes, message_data["content"], message_data["meta"]["digest"])
-            # Content is now a bytes object.
         except (ValueError, KeyError):
             return
-        # Convert content to a string.
+
         content = Encryption.decode_bytes(content)
         message_data["content"] = content
         return cls.from_dict(message_data)
@@ -205,10 +204,9 @@ class OwnMessage(Message):
         Prepare message: encrypts and sets values.
         Use the "to_json" method to get a JSON-encoded string for network communication and storage.
 
-        :param aes: AES key used for symmetric encryption.
+        :param aes: AES key object used for symmetric encryption.
         """
-        # Next, encode and encrypt the content.
-        encoded_content: bytes = Encryption.encode_string(self.content)
+        encoded_content = Encryption.encode_string(self.content)
         se_en_content, digest = Encryption.encrypt_symmetric(aes, encoded_content)
         self.set_message(se_en_content)
         self.set_digest(digest)
@@ -216,7 +214,7 @@ class OwnMessage(Message):
 
         self._is_prepared = True
 
-    def is_preparation_done(self) -> bool:
+    def is_prepared(self) -> bool:
         """
         :return bool: True if the node is properly prepared, False otherwise.
         """

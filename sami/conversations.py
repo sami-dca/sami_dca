@@ -13,16 +13,19 @@ from .encryption import Encryption
 
 class Conversations:
 
-    def __init__(self, directory: str = Config.databases_directory, pre: str = "", db_name: str = "conversations.db"):
+    def __init__(self, master_node, directory: str = Config.databases_directory, pre: str = "",
+                 db_name: str = "conversations.db"):
         """
         Initiate the Conversation object, as well as its database.
 
+        :param master_node: The master node object. Will be used to encrypt and decrypt the database.
         :param str directory: Directory under which we will store the database. eg: "db/" (relative) | "/db/" (absolute)
         :param str pre: Prefix for the conversation database name. Usually, the node ID.
         :param str db_name: The database name. Gets appended to "pre".
         """
         db_path = os.path.join(directory, pre + db_name)
         self.db = ConversationsDatabase(db_path)
+        self.master_node = master_node
 
     # Conversations section
 
@@ -53,30 +56,28 @@ class Conversations:
         # Messages are stored from the oldest to the latest, and we gather them in this order.
         return {k: v for k, v in self.db.query(self.db.conversation_table, conversation_id).items()}
 
-    def get_all_messages_of_conversation(self, conversation_id: str, rsa_private_key) -> List[Message]:
+    def get_all_messages_of_conversation(self, conversation_id: str) -> List[Message]:
         """
         Returns all messages of a conversation, decrypted.
 
         :param str conversation_id: A node ID.
-        :param rsa_private_key: A RSA private key object, used to decrypt the messages.
         :return list: A list of all the messages in the conversation, decrypted.
         """
-        aes_key, nonce = self.get_decrypted_aes(rsa_private_key, conversation_id)
+        aes_key, nonce = self.get_decrypted_aes(conversation_id)
         messages = self.get_all_messages_of_conversation_raw(conversation_id)
         messages_list = []
         for k, v in messages.items():
             messages_list.append(Message.from_dict_encrypted(aes_key, nonce, v))
         return messages_list
 
-    def get_last_conversation_message(self, conversation_id: str, rsa_private_key) -> Message:
+    def get_last_conversation_message(self, conversation_id: str) -> Message:
         """
         Gets the last message (decrypted) of a conversation.
 
         :param str conversation_id: A node ID.
-        :param rsa_private_key: A RSA private key, used to decrypt the message.
         :return dict: A decrypted message.
         """
-        aes_key, nonce = self.get_decrypted_aes(rsa_private_key, conversation_id)
+        aes_key, nonce = self.get_decrypted_aes(conversation_id)
         messages = self.get_all_messages_of_conversation_raw(conversation_id)
         last_index = list(messages.keys())[-1]
         return Message.from_dict_encrypted(aes_key, nonce, messages[last_index])
@@ -86,19 +87,18 @@ class Conversations:
         Stores a new message in the database.
         IMPORTANT: This message must be encrypted.
 
-        :param str conversation_id: A conversation ID.
+        :param str conversation_id: The ID of the conversation the message belongs to.
         :param Message message: An encrypted message object.
         """
         # Get conversation AES key
         message_id = message.get_id()
         message_data = message.to_dict()
-        self.db.insert_dict(self.db.conversation_table, {message_id: message_data})
+        self.db.insert_dict(self.db.conversation_table, {conversation_id: {message_id: message_data}})
 
-    def get_message_from_id(self, rsa_private_key, conversation_id: str, message_id: str) -> Message or None:
+    def get_message_from_id(self, conversation_id: str, message_id: str) -> Message or None:
         """
         Returns the decrypted message with passed ID.
 
-        :param rsa_private_key: A RSA private key object.
         :param str conversation_id: The ID of the conversation to search in.
         :param str message_id: A message ID.
         :return Message|None: The decrypted message if it exists, None otherwise.
@@ -110,18 +110,17 @@ class Conversations:
             message: dict = messages_raw[message_id]
         except IndexError:
             return
-        aes_key, nonce = self.get_decrypted_aes(rsa_private_key, conversation_id)
+        aes_key, nonce = self.get_decrypted_aes(conversation_id)
         de_message = Message.from_dict_encrypted(aes_key, nonce, message)
         return de_message
 
     # Keys section
 
-    def store_aes(self, rsa_public_key, key_id: str, key: bytes, timestamp: int) -> None:
+    def store_aes(self, key_id: str, key: bytes, timestamp: int) -> None:
         """
         This function is called at every step of the KEP negotiation to store the AES in the database.
 
-        :param rsa_public_key: A RSA public key object.
-        :param str key_id: A node ID
+        :param str key_id: The ID under which the AES key will be referenced.
         :param bytes key: A key, as bytes, containing both the key and the nonce. It is either 16 or 48 bytes.
         :param int timestamp: The timestamp of the negotiation.
         """
@@ -133,7 +132,7 @@ class Conversations:
         }
 
         status = values[len(key)]  # Tries to get the status from the above dictionary ; raises KeyError if invalid.
-        key = Encryption.encrypt_asymmetric(rsa_public_key, key)
+        key = Encryption.encrypt_asymmetric(self.master_node.rsa_public_key, key)
 
         key_dict = {
             "key": key,
@@ -179,18 +178,17 @@ class Conversations:
         key: dict = self.db.get_aes(key_id)
         return key
 
-    def get_decrypted_aes(self, rsa_private_key, key_id: str) -> tuple or None:
+    def get_decrypted_aes(self, key_id: str) -> tuple or None:
         """
         This function returns an AES cipher (aes_key and nonce) decrypted.
 
-        :param rsa_private_key: RSA private key object.
         :param str key_id: A node ID.
         :return tuple|None: 2-tuple: (bytes: the AES key, bytes|None: the nonce) or None if the key doesn't exist.
         """
         key = self.get_aes(key_id)
         status = key["status"]
         # Decrypts and deserializes the key
-        key = Encryption.decrypt_asymmetric(rsa_private_key, key["key"])
+        key = Encryption.decrypt_asymmetric(self.master_node.rsa_private_key, key["key"])
 
         # Unpacks the values.
         if status is Config.status_1:
@@ -259,7 +257,7 @@ class Conversations:
         elif status == Config.status_2:
             return True
         else:
-            raise ValueError(f"The status is incorrect for key \"{key_id}\": \"{status}\".")
+            raise ValueError(f"The status is incorrect for key {key_id!r}: {status!r}.")
 
     def is_aes_negotiation_expired(self, key_id: str) -> bool:
         """
@@ -303,26 +301,26 @@ class ConversationsDatabase(Database):
         self.keys_table = "keys"
         super().__init__(db_path, {self.conversation_table: dict, self.keys_table: dict})
 
-    def store_new_aes(self, node_id: str, key_dict: str) -> None:
+    def store_new_aes(self, node_id: str, key_dict: dict) -> None:
         """
         Stores a new aes key.
         Does not care if it already exists ; this verification must be done beforehand.
 
         :param bytes node_id: A node ID.
-        :param str key_dict: A value containing the AES key and the nonce, encrypted and serialised for storage.
+        :param dict key_dict: A value containing the AES key and the nonce, encrypted and serialised for storage.
         """
-        self.insert_dict("keys", {node_id: key_dict})
+        self.insert_dict(self.keys_table, {node_id: key_dict})
 
-    def modify_aes(self, node_id: str, key: str):
+    def modify_aes(self, node_id: str, key_dict: dict):
         """
         Modifies an existing AES key.
         Does not care if it exists or not. This verification must be done beforehand.
 
         :param str node_id: A node ID.
-        :param str key: A value containing the AES key and the nonce, encrypted and serialised for storage.
+        :param str key_dict: A value containing the AES key and the nonce, encrypted and serialised for storage.
         :return:
         """
-        self.update("keys", node_id, key)
+        self.update(self.keys_table, node_id, key_dict)
 
     def get_aes(self, key_id: str) -> dict:
         """

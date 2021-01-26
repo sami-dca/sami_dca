@@ -56,9 +56,9 @@ class Controller:
 
     And
     
-    messages_bSizer
+    received_messages_bSizer
     by
-    self.messages_bSizer
+    self.received_messages_bSizer
 
     """
 
@@ -166,12 +166,12 @@ class Controller:
             self.network = network
 
             # Get the known peers' IDs.
-            self.recipient_choices_indexes = self.network.nodes.get_all_node_ids()
+            self.recipient_choices_indexes = self.master_node.databases.nodes.get_all_node_ids()
 
             self.scroll_index = 0
             self.user_filter = ""
             # Selected node of the "new message" box.
-            self.new_message_selected_node = None
+            self.new_message_recipient_id = None
 
             self.display_conversations(self.scroll_index, self.user_filter)
 
@@ -204,10 +204,7 @@ class Controller:
                     continue
 
                 node_name = Node.derive_name(node_id)
-                last_message = self.master_node.databases.conversations.get_last_conversation_message(
-                    node_id,
-                    self.master_node.get_rsa_private_key()
-                )
+                last_message: Message = self.master_node.databases.conversations.get_last_conversation_message(node_id)
                 last_message_date = get_date_from_timestamp(last_message.get_time_received())
 
                 # Creates a new sizer to contain a conversation.
@@ -215,8 +212,8 @@ class Controller:
 
                 # Displays the last message of the conversation.
                 self.conv_snippet_staticText = wx.StaticText(node_sb_sizer.GetStaticBox(), wx.ID_ANY,
-                                                             last_message, wx.DefaultPosition, wx.DefaultSize,
-                                                             wx.ST_ELLIPSIZE_END)
+                                                             last_message.get_message(), wx.DefaultPosition,
+                                                             wx.DefaultSize, wx.ST_ELLIPSIZE_END)
                 self.conv_snippet_staticText.Wrap(-1)
                 node_sb_sizer.Add(self.conv_snippet_staticText, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
@@ -231,7 +228,7 @@ class Controller:
                 self.conv_open_button = wx.Button(node_sb_sizer.GetStaticBox(), wx.ID_ANY, u"Open", wx.DefaultPosition,
                                                   wx.DefaultSize, wx.BU_EXACTFIT)
                 node_sb_sizer.Add(self.conv_open_button, 0, wx.ALL, 5)
-                self.messages_bSizer.Add(node_sb_sizer, 0, wx.ALL | wx.EXPAND, 5)
+                self.received_messages_bSizer.Add(node_sb_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
                 # We're passing custom data using a lambda function
                 self.conv_open_button.Bind(wx.EVT_BUTTON, lambda event: self.open_chat_id(event, node_id))
@@ -244,42 +241,44 @@ class Controller:
                 self.conversations_scrollBar = wx.ScrollBar(self, wx.ID_ANY, pos=wx.Point(displayed_conversations,
                                                                                           displayed_conversations),
                                                             size=wx.DefaultSize, style=wx.SB_VERTICAL)
-                self.messages_main_bSizer.Add(self.conversations_scrollBar, 0, wx.ALL | wx.EXPAND, 5)
+                self.chat_container_main_bSizer.Add(self.conversations_scrollBar, 0, wx.ALL | wx.EXPAND, 5)
                 self.conversations_scrollBar.Bind(wx.EVT_SCROLL, self.scroll)
 
         def show_new_message_box(self):
+            recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_indexes]
+
             # Adds the choice box.
-            self.recipient_choice = wx.Choice(self.new_message_sbSizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
-                                              wx.DefaultSize, self.recipient_choices_names, 0)
+            self.recipient_choice = wx.Choice(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
+                                              wx.DefaultSize, recipient_choices_names, 0)
             # Initialize the selection to 0.
             self.recipient_choice.SetSelection(0)
             # Add to the sizer (display).
-            self.recipient_bSizer.Add(self.recipient_choice, 1, wx.ALL, 5)
+            self.new_chat_sbSizer.Add(self.recipient_choice, 1, wx.ALL, 5)
 
             # Adds some text.
-            message_staticText = wx.StaticText(self.new_message_sbSizer.GetStaticBox(), wx.ID_ANY, u"Message",
+            message_staticText = wx.StaticText(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Message",
                                                wx.DefaultPosition, wx.DefaultSize, 0)
             # Add style
             message_staticText.Wrap(-1)
             # Add to the sizer (display).
-            self.new_message_sbSizer.Add(message_staticText, 0, 0, 5)
+            self.new_chat_sbSizer.Add(message_staticText, 0, 0, 5)
 
             # Adds the textControl box, for the user to compose a message
 
             # Create a new message object.
             self.new_message = OwnMessage(self.master_node)
-            self.new_chat_message_textCtrl = wx.TextCtrl(self.new_message_sbSizer.GetStaticBox(), wx.ID_ANY,
+            self.new_chat_message_textCtrl = wx.TextCtrl(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
                                                          wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
                                                          wx.TE_AUTO_URL | wx.TE_BESTWRAP | wx.TE_CHARWRAP |
                                                          wx.TE_MULTILINE | wx.TE_NOHIDESEL | wx.TE_RICH |
                                                          wx.TE_RICH2 | wx.TE_WORDWRAP)
             self.new_chat_message_textCtrl.SetMinSize(wx.Size(-1, 50))
-            self.new_message_sbSizer.Add(self.new_chat_message_textCtrl, 1, wx.ALL | wx.EXPAND, 5)
+            self.new_chat_sbSizer.Add(self.new_chat_message_textCtrl, 1, wx.ALL | wx.EXPAND, 5)
 
             # Add the "Send" button.
-            self.send_new_chat_button = wx.Button(self.new_message_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send",
+            self.send_new_chat_button = wx.Button(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send",
                                                   wx.DefaultPosition, wx.DefaultSize, 0)
-            self.new_message_sbSizer.Add(self.send_new_chat_button, 0, wx.ALL, 5)
+            self.new_chat_sbSizer.Add(self.send_new_chat_button, 0, wx.ALL, 5)
 
         def scroll(self, event) -> None:
             print("scroll event type: ", type(event))
@@ -300,9 +299,8 @@ class Controller:
         def update_new_message_recipient(self, event):
             self.new_message_recipient_id = self.recipient_choices_indexes[event.GetSelection()]
 
-        def send_message_to_new_node(self, event):
-            print("send_message_to_new_node event type: ", type(event))
-            node_info: dict = self.network.nodes.get_contact_info(self.new_message_recipient_id)
+        def send_message_to_new_node(self, event: wx.CommandEvent):
+            node_info: dict = self.master_node.databases.nodes.get_node_info(self.new_message_recipient_id)
 
             if not node_info:
                 raise KeyError("Tried to send a message to a node we don't know ?!")
@@ -312,10 +310,10 @@ class Controller:
 
             node = Node.from_dict(node_info)
 
-            self.network.prepare_message_for_recipient(node, )
-            self.network.send_message()
-            self.master_node.databases.conversations.get_decrypted_aes(node.get_id_from_rsa_key(node.get_rsa_public_key()))
-            # C'est ici qu'on va créer une clef AES pour la conversation. Note: pas de forward secrecy (pour l'instant).
+            if not node:
+                raise ValueError('Could not create node object.')
+
+            self.network.send_message(node, self.new_message)
 
         def update_message(self, event: wx.CommandEvent) -> None:
             """

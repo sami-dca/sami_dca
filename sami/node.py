@@ -249,7 +249,7 @@ class MasterNode(Node):
         self.set_rsa_public_key(Encryption.get_public_key_from_private_key(rsa_private_key))
         self.set_id()
         self.set_name()
-        self.databases.open_node_databases(self.get_id())
+        self.databases.open_node_databases(self)
         self._hash = self.compute_own_hash().hexdigest()
         self._sig = Encryption.serialize_bytes(self.compute_own_sig())
         self.set_name()
