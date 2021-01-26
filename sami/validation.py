@@ -24,10 +24,10 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
     :return bool: True if the fields are valid, False otherwise.
     """
     if not isinstance(dictionary, dict):
-        logging.debug(f"Argument 'dictionary' needs to be a dict, is {type(dictionary)}")
+        logging.debug(f"Argument 'dictionary' needs to be a dict, is {type(dictionary)}: {dictionary}")
         return False
     if not isinstance(struct, dict):
-        logging.debug(f"Argument 'struct' needs to be a dict, is {type(struct)}")
+        logging.debug(f"Argument 'struct' needs to be a dict, is {type(struct)}: {struct}")
         return False
 
     if len(dictionary) != len(struct):
