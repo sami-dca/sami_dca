@@ -373,8 +373,9 @@ class Network:
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
 
-        for node in self.master_node.databases.nodes.get_all_node_ids():
-            node_object = Node.from_dict(node)
+        for node_id in self.master_node.databases.nodes.get_all_node_ids():
+            node_info = self.master_node.databases.nodes.get_node_info(node_id)
+            node_object = Node.from_dict(node_info)
             req = Requests.npp(node_object)
             self.send_request(req, contact)
 
