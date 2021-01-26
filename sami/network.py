@@ -677,10 +677,10 @@ class Network:
             client_socket.settimeout(Config.contact_connect_timeout)
             try:
                 client_socket.connect((address, port))
-            except (socket.timeout, ConnectionRefusedError, OSError):
+                client_socket.send(Encryption.encode_string(request.to_json()))
+            except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
                 # We could not connect to the contact.
                 logging.info(f'Could not send request {request.get_id()} to {address}:{port}')
                 pass
             else:
-                client_socket.send(Encryption.encode_string(request.to_json()))
                 logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
