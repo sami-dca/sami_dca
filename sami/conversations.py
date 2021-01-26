@@ -2,7 +2,7 @@
 
 import os
 
-from typing import List
+from typing import List, Set
 
 from .config import Config
 from .message import Message
@@ -38,13 +38,18 @@ class Conversations:
         """
         return self.db.key_exists(self.db.keys_table, node_id)
 
-    def get_all_conversations_ids(self) -> List[str]:
+    def get_all_available_conversations_ids(self) -> Set[str]:
         """
-        Gets a list of all the Nodes IDs with whom a conversation has been established.
+        Returns a list of all the Nodes IDs with whom we can start a conversation.
+        Includes the ones we already have started a conversation.
+        """
+        return set(self.db.query_column(self.db.keys_table).keys())
 
-        :return List[str]: List of conversation identifiers.
+    def get_all_conversations_ids(self) -> Set[str]:
         """
-        return list(self.db.query_column(self.db.conversation_table).keys())
+        Gets a list of all the Nodes IDs with whom we have started a conversation.
+        """
+        return set(self.db.query_column(self.db.conversation_table).keys())
 
     def get_all_messages_of_conversation_raw(self, conversation_id: str) -> dict:
         """
@@ -72,7 +77,7 @@ class Conversations:
 
     def get_last_conversation_message(self, conversation_id: str) -> Message:
         """
-        Gets the last message (decrypted) of a conversation.
+        Gets the last message of a conversation, decrypted.
 
         :param str conversation_id: A node ID.
         :return dict: A decrypted message.
@@ -169,22 +174,23 @@ class Conversations:
         """
         Gets an AES key from the database.
         The AES key values are still encrypted, however, we can access its other values.
+        Does not check if the key exists ; this verification must be done beforehand.
 
         :param str key_id: A key ID.
         :return dict: The key information as a dictionary.
         """
-        # Get the key ; the AES is still encrypted.
-        # However, this dict will allow us to access its other values.
         key: dict = self.db.get_aes(key_id)
         return key
 
-    def get_decrypted_aes(self, key_id: str) -> tuple or None:
+    def get_decrypted_aes(self, key_id: str) -> tuple:
         """
         This function returns an AES cipher (aes_key and nonce) decrypted.
 
         :param str key_id: A node ID.
         :return tuple|None: 2-tuple: (bytes: the AES key, bytes|None: the nonce) or None if the key doesn't exist.
         """
+        if not self.is_aes_negotiation_launched(key_id):
+            return None, None
         key = self.get_aes(key_id)
         status = key["status"]
         # Decrypts and deserializes the key
@@ -226,7 +232,7 @@ class Conversations:
         if self.is_aes_negotiated(key_id):
             return
 
-        if self.is_aes_negotiation_expired(key_id):
+        if self.is_aes_negotiation_launched(key_id) and self.is_aes_negotiation_expired(key_id):
             self.remove_aes_key(key_id)
 
     def is_aes_negotiation_launched(self, node_id: str) -> bool:
@@ -330,4 +336,4 @@ class ConversationsDatabase(Database):
         :param str key_id: A key ID.
         :return dict: The key, as a dictionary.
         """
-        return self.query(self.db.keys_table, key_id)
+        return self.query(self.keys_table, key_id)

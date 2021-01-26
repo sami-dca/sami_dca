@@ -449,6 +449,11 @@ class Network:
             message.prepare(aes)
         # End of prepare_message_for_recipient method.
 
+        if not self.master_node.databases.conversations.is_aes_negotiated(recipient.get_id()):
+            logging.error(f'Tried to send a message to node {recipient.get_id()}, '
+                          f'but AES negotiation is not done.')
+            return
+
         prepare_message_for_recipient(recipient, own_message)
 
         if not own_message.is_prepared():

@@ -4,6 +4,8 @@ import os
 import time
 import logging
 
+from typing import Set
+
 import wx  # pip install wxPython
 import wx.xrc
 
@@ -122,10 +124,10 @@ class Controller:
             self.Hide()
 
         def show_conversations(self, event: wx.CommandEvent) -> None:
-            known_nodes = self.master_node.databases.nodes.get_all_node_ids()
+            possible_conversations = self.master_node.databases.conversations.get_all_available_conversations_ids()
 
             # If we do not know any node.
-            if len(known_nodes) > 0:
+            if len(possible_conversations) > 0:
                 # Display the conversations window.
                 received_messages_window = Controller.ReceivedMessagesWrapper(self, self.master_node, self.network)
                 received_messages_window.Show()
@@ -166,7 +168,7 @@ class Controller:
             self.network = network
 
             # Get the known peers' IDs.
-            self.recipient_choices_indexes = self.master_node.databases.nodes.get_all_node_ids()
+            self.recipient_choices_ids = self.get_available_nodes()
 
             self.scroll_index = 0
             self.user_filter = ""
@@ -184,6 +186,15 @@ class Controller:
 
         def __del__(self):
             self.parent.Show()
+
+        def get_available_nodes(self) -> Set[str]:
+            """
+            Returns all the nodes IDs with which we have not started a conversation, but we can.
+            """
+            all_ids = self.master_node.databases.conversations.get_all_available_conversations_ids()
+            existing_conversations = self.master_node.databases.conversations.get_all_conversations_ids()
+            available_nodes = all_ids.difference(existing_conversations)
+            return available_nodes
 
         def display_conversations(self, scroll_index: int, user_filter: str) -> None:
             """
@@ -245,7 +256,7 @@ class Controller:
                 self.conversations_scrollBar.Bind(wx.EVT_SCROLL, self.scroll)
 
         def show_new_message_box(self):
-            recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_indexes]
+            recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_ids]
 
             # Adds the choice box.
             self.recipient_choice = wx.Choice(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
@@ -297,7 +308,7 @@ class Controller:
             self.Hide()
 
         def update_new_message_recipient(self, event):
-            self.new_message_recipient_id = self.recipient_choices_indexes[event.GetSelection()]
+            self.new_message_recipient_id = self.recipient_choices_ids[event.GetSelection()]
 
         def send_message_to_new_node(self, event: wx.CommandEvent):
             node_info: dict = self.master_node.databases.nodes.get_node_info(self.new_message_recipient_id)
