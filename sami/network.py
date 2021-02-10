@@ -141,8 +141,7 @@ class Network:
 
         else:
             # The request has an invalid status.
-            logging.warning(f'Captured request calling unknown protocol: {request.status!r}. '
-                            f'Consider updating your client.')
+            logging.warning(f'Captured request calling unknown protocol: {request.status!r}.')
             return
 
     def handle_raw_request(self, json_request: str) -> None:
@@ -345,17 +344,19 @@ class Network:
 
         all_requests = self.master_node.databases.raw_requests.get_all_raw_requests_since(request_timestamp)
         for request in all_requests.values():
-            req = Request.from_dict(request)
-            req = Requests.wup_rep(req)
+            req = Requests.wup_rep(request)
             self.send_request(req, contact)
 
     def handle_what_is_up_reply(self, request: Request) -> None:
         """
-        Called when receiving a What's Up replies request.
+        Called when receiving a What's Up reply request.
 
         :param Request request: A WUP_REP request.
         """
         inner_request = Request.from_dict(request.data)
+
+        if not inner_request:
+            return
 
         # Route the request.
         self.route_request(inner_request, broadcast=False)
@@ -390,14 +391,11 @@ class Network:
         """
         contact = Contact.from_dict(request.data["author"])
 
+        # Add the contact if we don't know it already.
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
 
-        for contact_id in self.master_node.databases.contacts.get_all_contacts_ids():
-            contact_info = self.master_node.databases.contacts.get_contact_info(contact_id)
-            if not is_valid_contact(contact_info):
-                return
-            contact_object = Contact.from_dict(contact_info)
+        for contact_object in self.master_node.databases.contacts.get_all_contacts():
             req = Requests.csp(contact_object)
             self.send_request(req, contact)
 
@@ -502,8 +500,9 @@ class Network:
                 yield contact_obj
 
         # Gets the beacons and contacts lists.
+        own_contact = OwnContact('private')
         all_beacons = Config.beacons
-        all_contacts = self.master_node.databases.contacts.get_all_contacts(exclude=[self.master_node.get_id()])
+        all_contacts = self.master_node.databases.contacts.get_all_contacts(exclude=[own_contact.get_id()])
 
         random.shuffle(all_beacons)
         random.shuffle(all_contacts)
@@ -681,6 +680,6 @@ class Network:
                 client_socket.connect((address, port))
                 client_socket.send(Encryption.encode_string(request.to_json()))
             except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
-                logging.info(f'Could not send request {request.get_id()} to {address}:{port}')
+                logging.info(f'Could not send request {request.get_id()!r} to {address}:{port}')
             else:
                 logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
