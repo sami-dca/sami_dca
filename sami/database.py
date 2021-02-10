@@ -56,11 +56,10 @@ class Database:
 
     def __get_db(self, db_path: str) -> None:
         """
-        Returns a DB object.
-        Creates the subdirectories for the file if it doesn't exist already.
+        Gets the database specified.
+        Creates it with the tree structure if not already there.
 
         :param str db_path: The relative database path (as the data will be stored in a file).
-        :return shelve.DbfilenameShelf: A database object.
         """
         try:
             os.makedirs("/".join(db_path.split("/")[:-1]))
@@ -76,7 +75,7 @@ class Database:
         :param str column: A column name.
         :return bool: True if it does, False otherwise.
         """
-        logging.info(f'[Database {self.db_name}] Query: does column {column!r} exist')
+        logging.debug(f'[Database {self.db_name}] Query: does column {column!r} exist')
         return column in self.db
 
     def key_exists(self, column: str, key: str) -> bool:
@@ -87,7 +86,7 @@ class Database:
         :param str key: The key to search for.
         :return bool: True if it exists, False otherwise.
         """
-        logging.info(f'[Database {self.db_name}] Query: does key {key!r} exist in column {column!r}')
+        logging.debug(f'[Database {self.db_name}] Query: does key {key!r} exist in column {column!r}')
         # assert self.column_exists(column)
         # assert type(key) == str
         return key in self.db[column]
@@ -122,7 +121,7 @@ class Database:
         :param str column: A column name.
         :param dict pair: A dictionary.
         """
-        logging.info(f'[Database {self.db_name}] Instruction: insert {pair!r} in {column!r} (which is a dict)')
+        logging.debug(f'[Database {self.db_name}] Instruction: insert {pair!r} in {column!r} (which is a dict)')
         cl = self.db[column]
         # assert type(cl) == dict
         cl.update(pair)
@@ -138,7 +137,7 @@ class Database:
         :param str column: A column name.
         :param value: A value to add. Can be of any type.
         """
-        logging.info(f'[Database {self.db_name}] Instruction: insert {value!r} in {column!r} (which is a list)')
+        logging.debug(f'[Database {self.db_name}] Instruction: insert {value!r} in {column!r} (which is a list)')
         cl = self.db[column]
         # assert type(cl) == list
         cl.append(value)
@@ -153,7 +152,7 @@ class Database:
         :param str key: A key.
         :param value: The new value.
         """
-        logging.info(f'[Database {self.db_name}] Instruction: update {key!r} with {value!r} in {column!r}')
+        logging.debug(f'[Database {self.db_name}] Instruction: update {key!r} with {value!r} in {column!r}')
         # assert self.column_exists(column)
         # assert self.key_exists(column, key)
         cl = self.db[column]  # Get a copy of the column.
@@ -168,7 +167,7 @@ class Database:
         :param str column: A column name.
         :param str key: A key in the column.
         """
-        logging.info(f'[Database {self.db_name}] Instruction: drop field {key!r} from {column!r}')
+        logging.debug(f'[Database {self.db_name}] Instruction: drop field {key!r} from {column!r}')
         # assert self.column_exists(column)
         # assert self.key_exists(column, key)
         self.db[column].pop(key)
@@ -180,7 +179,7 @@ class Database:
         :param str search_column: A column name.
         :return: The value of the column.
         """
-        logging.info(f'[Database {self.db_name}] Query: full content of {search_column!r}')
+        logging.debug(f'[Database {self.db_name}] Query: full content of {search_column!r}')
         # assert self.column_exists(search_column)
         return self.db[search_column]
 
@@ -192,7 +191,7 @@ class Database:
         :param str search_column: A column name.
         :param str search_key: A key.
         """
-        logging.info(f'[Database {self.db_name}] Query: request key {search_key!r} in {search_column!r}')
+        logging.debug(f'[Database {self.db_name}] Query: request key {search_key!r} in {search_column!r}')
         # assert self.column_exists(search_column)
         # assert self.key_exists(search_column, search_key)
         return self.db[search_column][search_key]
