@@ -2,7 +2,6 @@
     <img src="https://gravatar.com/avatar/3c7bb98e5004a55cd6d0c990bfb6d0c9?s=512" />
 </p>
 
-[![PyPi](https://img.shields.io/pypi/v/sami-dca.svg?label=PyPi)](https://pypi.org/project/sami-dca/)
 [![Travis](https://img.shields.io/travis/com/sami-dca/sami_dca/?label=Travis%20build)](https://travis-ci.org/github/sami-dca/sami_dca)
 [![Discord](https://img.shields.io/discord/777126677795831828.svg?label=Discord)](https://discord.gg/Hcc6YTkpYV)
 
@@ -26,7 +25,7 @@ The source code for Sami is available in the GitHub repo's ``dev`` branch.
 
 To start working locally on the code, using git, run:
 
-    git clone --specific-branch --branch dev https://github.com/sami-dca/sami_dca
+    git clone https://github.com/sami-dca/sami_dca --branch dev
 
 **For this next part, using a Python virtual environment is strongly recommended.**
 
