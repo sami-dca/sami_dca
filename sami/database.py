@@ -89,7 +89,7 @@ class Database:
         logging.debug(f'[Database {self.db_name}] Query: does key {key!r} exist in column {column!r}')
         # assert self.column_exists(column)
         # assert type(key) == str
-        return key in self.db[column]
+        return key in set(self.db[column].keys())
 
     def insert_new_column(self, column_name: str, column_type: type) -> None:
         """
