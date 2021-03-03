@@ -323,7 +323,7 @@ class Encryption:
         return aes_key, nonce
 
     @staticmethod
-    def create_half_aes_key(length: int = Config.aes_keys_length / 2) -> bytes:
+    def create_half_aes_key(length: int = Config.aes_keys_length // 2) -> bytes:
         """
         Creates one half of AES key.
         This is a fancy way of saying that we are generating random bytes.
