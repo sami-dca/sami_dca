@@ -141,7 +141,7 @@ class Node:
 
         :return RSA.RsaKey: A RSA public key object.
         """
-        return Encryption.get_public_key_from_private_key(self.rsa_public_key)
+        return self.rsa_public_key
 
     def set_signature(self, signature: str) -> None:
         """
