@@ -62,9 +62,9 @@ class Network:
         # End of broadcast_and_store method.
 
         def log_invalid_req(req):
-            log_msg = f'Request {req.get_id()} is invalid'
+            log_msg = f'{req.status!r} request {req.get_id()} is invalid'
             if Config.verbose:
-                log_msg += ''
+                log_msg += req.to_json()
             logging.debug(log_msg)
         # End of log_invalid_req method.
 
@@ -74,22 +74,22 @@ class Network:
                 return
             self.handle_what_is_up_init(request)
             return
-        elif request.status == "WUP_REP":
+        elif request.status == "WUP_REP":  # What's Up Protocol Reply
             if not Requests.is_valid_wup_rep_request(request):
                 log_invalid_req(request)
                 return
-            self.handle_what_is_up_reply(request)  # What's Up Protocol Reply
+            self.handle_what_is_up_reply(request)
             return
 
-        elif request.status == "BCP":
+        elif request.status == "BCP":  # BroadCast Protocol
             if not Requests.is_valid_bcp_request(request):
                 log_invalid_req(request)
                 return
             self.handle_broadcast(request)
             return
 
-        elif request.status == "DNP":
-            if not Requests.is_valid_dp_request(request):  # Discover Nodes Protocol
+        elif request.status == "DNP":  # Discover Nodes Protocol
+            if not Requests.is_valid_dp_request(request):
                 log_invalid_req(request)
                 return
             self.handle_discover_nodes(request)
@@ -643,7 +643,7 @@ class Network:
                     continue
                 request = Request.from_dict(dict_request)
                 if request:  # If we managed to get a valid request.
-                    log_msg = f'Received request {request.get_id()} from {address}'
+                    log_msg = f'Received {request.status!r} request {request.get_id()!r} from {address}'
                     if Config.verbose:
                         log_msg += f': {dict_request}'
                     logging.info(log_msg)
