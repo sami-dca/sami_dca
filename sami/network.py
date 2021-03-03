@@ -20,10 +20,10 @@ from .node import Node
 from .config import Config
 from .request import Request
 from .requests import Requests
-from .utils import decode_json, get_primary_local_ip_address
 from .encryption import Encryption
 from .message import Message, OwnMessage
 from .contact import Contact, OwnContact, Beacon
+from .utils import decode_json, get_primary_local_ip_address, get_timestamp
 from .validation import is_valid_received_message, is_valid_request, is_valid_contact, verify_received_aes_key
 
 
@@ -211,7 +211,12 @@ class Network:
             :param bytes key: The AES key.
             :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
-            self.master_node.databases.conversations.store_aes(key_identifier, key, nonce)
+            if nonce is not None:
+                # Concatenate both if nonce is passed.
+                f_key = key + nonce
+            else:
+                f_key = key
+            self.master_node.databases.conversations.store_aes(key_identifier, f_key, get_timestamp())
 
         def finish_negotiation() -> None:
             """
