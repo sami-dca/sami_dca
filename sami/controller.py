@@ -4,7 +4,7 @@ import os
 import time
 import logging
 
-from typing import Set
+from typing import Tuple
 
 import wx  # pip install wxPython
 import wx.xrc
@@ -187,14 +187,14 @@ class Controller:
         def __del__(self):
             self.parent.Show()
 
-        def get_available_nodes(self) -> Set[str]:
+        def get_available_nodes(self) -> Tuple[str]:
             """
             Returns all the nodes IDs with which we have not started a conversation, but we can.
             """
             all_ids = self.master_node.databases.conversations.get_all_available_conversations_ids()
             existing_conversations = self.master_node.databases.conversations.get_all_conversations_ids()
             available_nodes = all_ids.difference(existing_conversations)
-            return available_nodes
+            return tuple(available_nodes)
 
         def display_conversations(self, scroll_index: int, user_filter: str) -> None:
             """
