@@ -118,6 +118,9 @@ class Config:
     # Proof-of-Work difficulty
     pow_difficulty: int = 2
 
+    # A list of protocols for which we want to ignore new requests if only the timestamp changes.
+    avoid_duplicates: List[str] = ['NPP', "CSP"]
+
     # Status of the AES key in the database when it has not been fully negotiated.
     status_1: str = "IN-PROGRESS"
 

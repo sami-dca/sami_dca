@@ -75,8 +75,19 @@ class Request:
     def get_id(self) -> str:
         """
         This method derives an ID from this request.
+        To avoid filling the database with duplicate requests,
+        we will consider some special cases: for instance, a node information
+        already received, but with a different timestamp, is considered useless.
+        On a technical standpoint, it means that we will not consider the
+        timestamp of the request for the ID generation.
+        Note however that the timestamp will be stored in the database anyway.
+
+        TODO: Update the already existing request with the new timestamp.
 
         :return str: An hexadecimal identifier.
         """
-        h = Encryption.hash_iterable(self.to_json())
+        s = self.to_dict()
+        if self.status in Config.avoid_duplicates:  # Somewhat hackish
+            s.pop('timestamp')
+        h = Encryption.hash_iterable(encode_json(s))
         return h.hexdigest()[:Config.id_len]
