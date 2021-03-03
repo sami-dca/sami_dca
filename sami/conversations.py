@@ -41,7 +41,8 @@ class Conversations:
     def get_all_available_conversations_ids(self) -> Set[str]:
         """
         Returns a list of all the Nodes IDs with whom we can start a conversation.
-        Includes the ones we already have started a conversation.
+        This means that for a node to be listed here, we must have negotiated an AES key.
+        Includes the ones we already have started a conversation with.
         """
         return set(self.db.query_column(self.db.keys_table).keys())
 
