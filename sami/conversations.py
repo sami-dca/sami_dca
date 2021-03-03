@@ -270,13 +270,19 @@ class Conversations:
         """
         Checks if a launched negotiation is expired.
         Does not check if the key exists ; this verification must be done beforehand.
+        Also returns False if the negotiation is done.
 
         :param str key_id: A key ID.
         :return bool: True if it is expired, False otherwise.
         """
         key = self.get_aes(key_id)
-        timestamp = key["timestamp"]
-        return Config.kep_decay > (get_timestamp() - timestamp)
+        timestamp = int(key["timestamp"])
+        status = key["status"]
+        # If the negotiation is still in progress.
+        if status == Config.status_1:
+            return Config.kep_decay > (get_timestamp() - timestamp)
+        else:
+            return False
 
 
 class ConversationsDatabase(Database):
@@ -297,7 +303,11 @@ class ConversationsDatabase(Database):
             }
         },
         keys: dict{
-            node_identifier: key  # Value containing the AES key and the nonce, encrypted and serialized]
+            node_identifier: {
+                "key",  # Value containing the AES key and the nonce, encrypted and serialized]
+                "status",
+                "timestamp"
+            }
         }
     }
 
