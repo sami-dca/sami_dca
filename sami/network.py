@@ -211,14 +211,14 @@ class Network:
             :param bytes key: The AES key.
             :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
-            self.master_node.conversations.store_aes(key_identifier, key, nonce)
+            self.master_node.databases.conversations.store_aes(key_identifier, key, nonce)
 
         def finish_negotiation() -> None:
             """
             Used when a negotiation is already initialized and we want to conclude it.
             At the end of this function, we have a valid AES key for communicating with this node.
             """
-            key = self.master_node.conversations.get_decrypted_aes(key_id)
+            key = self.master_node.databases.conversations.get_decrypted_aes(key_id)
             aes_key, nonce = key
             half_aes_key = Encryption.create_half_aes_key()
             key, nonce = concatenate_keys(aes_key, half_aes_key)
@@ -266,7 +266,7 @@ class Network:
         key_id = node.get_id()
 
         # If the key is already negotiated, end.
-        if self.master_node.conversations.is_aes_negotiated(key_id):
+        if self.master_node.databases.conversations.is_aes_negotiated(key_id):
             # You might want to add a renegotiation system here.
             return True
         # If the negotiation has been launched, check if it is expired.
@@ -274,9 +274,9 @@ class Network:
         # Otherwise, this means we are receiving the second part of the AES key,
         # and therefore we can conclude the negotiation.
         # If the negotiation has not been launched, we will be initiating it.
-        if self.master_node.conversation.is_aes_negotiation_launched(key_id):
-            if self.master_node.conversations.is_aes_negotiation_expired(key_id):
-                self.master_node.conversations.remove_aes_key(key_id)
+        if self.master_node.databases.conversations.is_aes_negotiation_launched(key_id):
+            if self.master_node.databases.conversations.is_aes_negotiation_expired(key_id):
+                self.master_node.databases.conversations.remove_aes_key(key_id)
                 new_negotiation()
                 return False
             # If the negotiation has not yet expired, we conclude it.
@@ -325,7 +325,7 @@ class Network:
         message_enc = Message.from_dict(request.data)
 
         # At this point, the message has been read and we can store it (encrypted) in our conversations database.
-        self.master_node.conversations.store_new_message(
+        self.master_node.databases.conversations.store_new_message(
             node.get_id(),
             message_enc
         )
