@@ -269,7 +269,7 @@ class MasterNode(Node):
     def get_rsa_private_key(self):
         # We shouldn't use this.
         # Ths RSA private key should stick to the master node, and stay private to this object.
-        pass
+        return self._rsa_private_key
 
     def compute_own_hash(self):
         """
