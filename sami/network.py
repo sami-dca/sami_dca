@@ -118,8 +118,7 @@ class Network:
                 log_invalid_req(request)
                 return
             broadcast_and_store(request)
-            node = Node.from_dict(request.data)
-            self.master_node.databases.nodes.add_node(node)
+            self.handle_new_node(request)
             return
 
         elif request.status == "CSP":  # Contact Sharing Protocol
@@ -330,6 +329,20 @@ class Network:
             node.get_id(),
             message_enc
         )
+
+    def handle_new_node(self, request: Request) -> None:
+        """
+        Called when we receive a NPP request.
+
+        :param Request request: A NPP request.
+        """
+        node = Node.from_dict(request.data)
+        # Even if the node information was validated beforehand,
+        # we'll check if it worked anyway.
+        if not node:
+            return
+        self.negotiate_aes(request)
+        self.master_node.databases.nodes.add_node(node)
 
     def handle_what_is_up_init(self, request: Request) -> None:
         """
