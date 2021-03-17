@@ -245,23 +245,24 @@ class Network:
             We then proceed to send the other half of the key.
             At the end of this function, we have a valid AES key for communicating with this node.
             """
-            half_aes_key = Encryption.create_half_aes_key()
+            new_half_key = Encryption.create_half_aes_key()
             node = Node.from_dict(request.data['author'])
             if not verify_received_aes_key(request.data["key"], node.get_rsa_public_key()):
                 # The AES key sent is invalid.
                 return
 
             # This AES key's length is 16 bytes.
-            aes_key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), request.data["key"])
+            se_en_half_key = request.data["key"]["value"]
+            half_key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), se_en_half_key)
 
-            assert len(aes_key) == Config.aes_keys_length // 2
+            assert len(half_key) == Config.aes_keys_length // 2
 
-            key, nonce = concatenate_keys(aes_key, half_aes_key)
+            key, nonce = concatenate_keys(half_key, new_half_key)
 
             assert len(key) == Config.aes_keys_length
             assert len(nonce) == Config.aes_keys_length // 2
 
-            propagate(half_aes_key)
+            propagate(new_half_key)
             store(key_id, key, nonce)
             logging.info(f'Continued negotiation with {key_id!r}')
 
@@ -271,9 +272,10 @@ class Network:
             We send our half, store it and wait.
             When receiving the second part, we will call "finish_negotiation()".
             """
-            half_aes_key = key = Encryption.create_half_aes_key()
+            half_aes_key = Encryption.create_half_aes_key()
+            # We don't encrypt it here, we will take care of that when creating the KEP request.
             propagate(half_aes_key)
-            store(key_id, key, None)
+            store(key_id, half_aes_key, None)
             logging.info(f'Initiated negotiation with {key_id!r}')
 
         status = request.status
