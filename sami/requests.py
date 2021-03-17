@@ -76,7 +76,7 @@ class Requests:
         if not Encryption.are_hash_and_sig_valid(data, author.get_rsa_public_key(), original_hash, original_sig):
             msg = f'Request {request.status!r} {request.get_id()}: hash and sig are invalid'
             if Config.verbose:
-                msg += f": passed hash/sig: {original_hash}/{original_sig}"
+                msg += f": passed hash / sig: {original_hash!r} / {original_sig!r}"
             logging.debug(msg)
             return False
 
