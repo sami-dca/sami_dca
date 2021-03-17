@@ -29,6 +29,12 @@ class Contacts:
         if self.contact_exists(contact_id):
             self.db.drop(self.db.contacts_table, contact_id)
 
+    def get_all_contacts_info(self) -> dict:
+        """
+        :return dict: A dictionary containing as keys contact IDs and as values their information
+        """
+        return self.db.query_column(self.db.contacts_table)
+
     def get_all_contacts_ids(self, exclude: List[str] = None) -> List[str]:
         """
         Get all IDs of the database.
@@ -50,20 +56,35 @@ class Contacts:
         Tries to get the information of a contact.
 
         :param str contact_id: A contact ID.
-        :return: A dictionary containing the node's information.
+        :return dict|None: A dictionary containing the contact's information if it exists, None otherwise.
         """
         if self.contact_exists(contact_id):
             return self.db.query(self.db.contacts_table, contact_id)
 
+    def _get_contact_info(self, contact_id: str) -> dict:
+        """
+        Returns the information of a contact.
+        Only used locally ; does not check for contact existence.
+
+        :param str contact_id: A contact ID.
+        :return dict: A dictionary containing the contact's information.
+        """
+        return self.db.query(self.db.contacts_table, contact_id)
+
     def get_all_contacts(self, exclude: List[str] = None) -> List[Contact]:
         """
         Get all contacts we know, except listed in `exclude`
+
         :param List[str] exclude: A list of IDs, which we will exclude from the contacts list.
         """
+        contacts = []
+        for contact_id, contact_info in self.get_all_contacts_info():
+            contacts.append(Contact.from_dict(contact_info))
+
         contact_ids = self.get_all_contacts_ids(exclude)
         contacts = list()
         for contact_id in contact_ids:
-            contacts.append(Contact.from_dict(self.get_contact_info(contact_id)))
+            contacts.append(Contact.from_dict(self._get_contact_info(contact_id)))
         return contacts
 
     def contact_exists(self, contact_id: str) -> bool:
