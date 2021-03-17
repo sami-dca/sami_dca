@@ -27,16 +27,16 @@ class Requests:
         :param Node node: The recipient.
         :return Request: A KEP Request.
         """
-        en_half_aes_key: str = Encryption.encrypt_asymmetric(node.get_rsa_public_key(), half_aes_key)
+        se_en_half_aes_key: str = Encryption.encrypt_asymmetric(node.get_rsa_public_key(), half_aes_key)
         master_node_info: dict = master_node.to_dict()
         node_info: dict = node.to_dict()
-        h_object = Encryption.hash_iterable(en_half_aes_key)
+        h_object = Encryption.hash_iterable(se_en_half_aes_key)
         h: str = h_object.hexdigest()
         sig: str = Encryption.serialize_bytes(Encryption.get_rsa_signature(master_node.get_rsa_private_key(), h_object))
 
         data = {
             "key": {
-                "value": en_half_aes_key,
+                "value": se_en_half_aes_key,
                 "hash": h,
                 "sig": sig
             },
