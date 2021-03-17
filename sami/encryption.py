@@ -175,30 +175,29 @@ class Encryption:
     @staticmethod
     def is_signature_valid(rsa_public_key: RSA.RsaKey, hash_object: SHA256.SHA256Hash, sig: bytes) -> bool:
         """
-        Verifies a signature is valid using a RSA public key.
-        The signature must originate from the RSA private key linked to this RSA public key.
+        Takes a signature and checks whether it is valid.
 
-        :param RSA.RsaKey rsa_public_key: A RSA public key object.
+        :param RSA.RsaKey rsa_public_key: An RSA public key object.
         :param SHA256.SHA256Hash hash_object: The hash object.
         :param bytes sig: A signature of the above hash.
-        :return: True if it originates from the owner of the RSA public key.
+        :return: True if it is, False otherwise.
         """
         try:
             pkcs1_15.new(rsa_public_key).verify(hash_object, sig)
         except (ValueError, TypeError):
+            logging.debug('Invalid signature detected.')
             return False
-        else:
-            return True
+        return True
 
     @staticmethod
     def are_hash_and_sig_valid(data, rsa_public_key: RSA.RsaKey, original_hash: str, sig: str) -> bool:
         """
-        Verifies if a hash and a signature are valid by regenerating the hash.
+        Takes a hash and a signature as strings and return whether the information is valid.
 
         :param data: Data, as any type, as long as it is iterable.
-        :param RSA.RsaKey rsa_public_key: A RSA public key object.
+        :param RSA.RsaKey rsa_public_key: An RSA public key object.
         :param str original_hash: An hexadecimal digest.
-        :param str sig: A signature, base64-encoded.
+        :param str sig: A serialized signature.
         :return bool: True if they are, False otherwise.
         """
         data_hash = Encryption.hash_iterable(data)
