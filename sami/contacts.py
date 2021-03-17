@@ -33,7 +33,7 @@ class Contacts:
         """
         :return dict: A dictionary containing as keys contact IDs and as values their information
         """
-        return self.db.query_column(self.db.contacts_table)
+        return self.db.query_column(self.db.contacts_table).items()
 
     def get_all_contacts_ids(self, exclude: List[str] = None) -> List[str]:
         """
