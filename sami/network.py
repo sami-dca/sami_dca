@@ -223,12 +223,21 @@ class Network:
             Used when a negotiation is already initialized and we want to conclude it.
             At the end of this function, we have a valid AES key for communicating with this node.
             """
-            key = self.master_node.databases.conversations.get_decrypted_aes(key_id)
-            aes_key, nonce = key
+            aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(key_id)
+
+            # nonce should be empty and aes_key should be exactly half the expected key length
+            assert nonce is None
+            assert len(aes_key) == Config.aes_keys_length // 2
+
             half_aes_key = Encryption.create_half_aes_key()
             key, nonce = concatenate_keys(aes_key, half_aes_key)
+
+            assert len(key) == Config.aes_keys_length
+            assert len(nonce) == Config.aes_keys_length // 2
+
             propagate(half_aes_key)
             store(key_id, key, nonce)
+            logging.info(f'Finished negotiation with {key_id!r}')
 
         def continue_negotiation() -> None:
             """
@@ -237,16 +246,24 @@ class Network:
             At the end of this function, we have a valid AES key for communicating with this node.
             """
             half_aes_key = Encryption.create_half_aes_key()
-            rsa_public_key = Encryption.construct_rsa_object(request.data["author"]["rsa_n"],
-                                                             request.data["author"]["rsa_e"])
-            verify_received_aes_key(request.data["key"], rsa_public_key)
+            node = Node.from_dict(request.data['author'])
+            if not verify_received_aes_key(request.data["key"], node.get_rsa_public_key()):
+                # The AES key sent is invalid.
+                return
 
             # This AES key's length is 16 bytes.
             aes_key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), request.data["key"])
 
+            assert len(aes_key) == Config.aes_keys_length // 2
+
             key, nonce = concatenate_keys(aes_key, half_aes_key)
+
+            assert len(key) == Config.aes_keys_length
+            assert len(nonce) == Config.aes_keys_length // 2
+
             propagate(half_aes_key)
             store(key_id, key, nonce)
+            logging.info(f'Continued negotiation with {key_id!r}')
 
         def new_negotiation() -> None:
             """
@@ -257,6 +274,7 @@ class Network:
             half_aes_key = key = Encryption.create_half_aes_key()
             propagate(half_aes_key)
             store(key_id, key, None)
+            logging.info(f'Initiated negotiation with {key_id!r}')
 
         status = request.status
 
@@ -266,8 +284,9 @@ class Network:
         elif status == "NPP":
             node = Node.from_dict(request.data)
         else:
-            raise ValueError(f"Invalid protocol {request.status} called function \"negotiate_aes()\".\n"
-                             f"Check your client is up to date.")
+            msg = f'Invalid protocol {request.status} called function "{Network.negotiate_aes.__name__}"'
+            logging.critical(msg)
+            raise ValueError(msg)
         key_id = node.get_id()
 
         # If the key is already negotiated, end.
@@ -289,8 +308,6 @@ class Network:
                 if status == "KEP":
                     finish_negotiation()
                     return True
-                else:
-                    raise ValueError(f"Invalid request status \"{status}\"")
         else:
             if status == "KEP":
                 continue_negotiation()
@@ -302,7 +319,7 @@ class Network:
     def handle_message(self, request: Request) -> None:
         """
         This method is used when receiving a new message.
-        It is called after the request has been broadcasted back and stored in the raw_requests database,
+        It is called after the request has been broadcast back and stored in the raw_requests database,
         and will take care of storing the message if we can decrypt its content.
 
         :param Request request: A MPP request.
@@ -439,17 +456,23 @@ class Network:
                     contact = self.find_available_contact()
 
     def request_nodes(self) -> None:
+        """
+        Creates a DNP request and sends it to one contact.
+        """
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
-                logging.info(f'Requested nodes to {contact}')
+                logging.info(f'Requested new nodes to {contact}')
                 return
 
     def request_contacts(self) -> None:
+        """
+        Creates a DCP request and sends it to one contact.
+        """
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
-                logging.info(f'Requested contacts to {contact}')
+                logging.info(f'Requested new contacts to {contact}')
                 return
 
     ################################
@@ -470,7 +493,7 @@ class Network:
 
         if not self.master_node.databases.conversations.is_aes_negotiated(recipient.get_id()):
             logging.error(f'Tried to send a message to node {recipient.get_id()}, '
-                          f'but AES negotiation is not done.')
+                          f'but AES negotiation is not complete.')
             return
 
         prepare_message_for_recipient(recipient, own_message)
