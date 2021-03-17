@@ -54,14 +54,14 @@ class Requests:
         # Verify nodes values are valid.
         if not is_valid_node(request.data["author"]):
             msg = (f'Request {request.status!r} {request.get_id()!r}: '
-                   f'"author" field is invalid.')
+                   f'"author" field is invalid')
             if Config.verbose:
                 msg = f"{msg} Got {request.data['author']}"
             logging.warning(msg)
             return False
         if not is_valid_node(request.data['recipient']):
             msg = (f'Request {request.status!r} {request.get_id()!r}: '
-                   f'"recipient" field is invalid.')
+                   f'"recipient" field is invalid')
             if Config.verbose:
                 msg += f"{msg} Got {(request.data['recipient'])}"
             logging.warning(msg)
@@ -74,6 +74,10 @@ class Requests:
         original_sig = request.data["key"]["sig"]
 
         if not Encryption.are_hash_and_sig_valid(data, author.get_rsa_public_key(), original_hash, original_sig):
+            msg = f'Request {request.status!r} {request.get_id()}: hash and sig are invalid'
+            if Config.verbose:
+                msg += f": passed hash/sig: {original_hash}/{original_sig}"
+            logging.debug(msg)
             return False
 
         return True
