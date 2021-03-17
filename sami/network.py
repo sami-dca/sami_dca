@@ -171,6 +171,7 @@ class Network:
         This function is called by two events:
         - When we receive a Keys Exchange (KEP) request,
         - When we discover a new node (Node Publication Protocol).
+        Note that we are not guaranteed that this request is for us.
 
         :param Request request: A valid request.
         :return bool: True if the negotiation is over, False otherwise.
@@ -200,7 +201,7 @@ class Network:
 
             :param bytes half_aes_key: Half an AES key.
             """
-            req = Requests.kep(half_aes_key, self.master_node, node)
+            req = Requests.kep(half_aes_key, self.master_node, author_node)
             self.broadcast_request(req)
 
         def store(key_identifier: str, key: bytes, nonce: bytes or None) -> None:
@@ -246,8 +247,7 @@ class Network:
             At the end of this function, we have a valid AES key for communicating with this node.
             """
             new_half_key = Encryption.create_half_aes_key()
-            node = Node.from_dict(request.data['author'])
-            if not verify_received_aes_key(request.data["key"], node.get_rsa_public_key()):
+            if not verify_received_aes_key(request.data["key"], author_node.get_rsa_public_key()):
                 # The AES key sent is invalid.
                 return
 
@@ -282,14 +282,19 @@ class Network:
 
         # We will take the author's RSA public key to encrypt our part of the AES key.
         if status == "KEP":
-            node = Node.from_dict(request.data["author"])
+            author_node = Node.from_dict(request.data['author'])
+            recipient_node = Node.from_dict(request.data['recipient'])
+
+            # If we are not the recipient, end.
+            if recipient_node.get_id() != self.master_node.get_id():
+                return False
         elif status == "NPP":
-            node = Node.from_dict(request.data)
+            author_node = Node.from_dict(request.data)
         else:
-            msg = f'Invalid protocol {request.status} called function "{Network.negotiate_aes.__name__}"'
+            msg = f'Invalid protocol {request.status!r} called function {Network.negotiate_aes.__name__!r}'
             logging.critical(msg)
             raise ValueError(msg)
-        key_id = node.get_id()
+        key_id = author_node.get_id()
 
         # If the key is already negotiated, end.
         if self.master_node.databases.conversations.is_aes_negotiated(key_id):
