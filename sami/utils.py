@@ -82,10 +82,8 @@ def get_public_ip_address() -> str:
     request = urlopen(url).read().decode("utf-8")
     # Get IPv4
     global_ip = re.findall(r"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}", request)[0]
-    log_msg = f'Requested public IP address to {url!r}'
-    if Config.log_ip_addresses:
-        log_msg += f', got {global_ip!r}'
-    logging.info(log_msg)
+    if Config.log_ip_addresses and Config.verbose:
+        logging.debug(f'Requested public IP address to {url!r}, got {global_ip!r}')
     return global_ip
 
 
@@ -116,10 +114,8 @@ def get_primary_local_ip_address() -> str:
     finally:
         s.close()
 
-    log_msg = 'Requested primary local IP'
-    if Config.log_ip_addresses:
-        log_msg += f', got {ip_address!r}'
-    logging.info(log_msg)
+    if Config.log_ip_addresses and Config.verbose:
+        logging.debug(f'Requested primary local IP, got {ip_address!r}')
     return ip_address
 
 
@@ -148,10 +144,8 @@ def get_local_ip_address_from_address(neighbor_address: str) -> str:
             except IndexError:
                 cutoff -= 0.1
                 continue
-        log_msg = 'Request local IP address depending on another IP'
-        if Config.log_ip_addresses:
-            log_msg += f', got {ip} ({cutoff=})'
-        logging.info(log_msg)
+        if Config.log_ip_addresses and Config.verbose:
+            logging.debug(f'Request local IP address depending on another IP, got {ip} ({cutoff=})')
         return ip
 
 
