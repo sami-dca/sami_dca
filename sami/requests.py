@@ -1,6 +1,9 @@
 # -*- coding: UTF8 -*-
 
+import logging
+
 from .node import Node
+from .config import Config
 from .message import Message
 from .node import MasterNode
 from .request import Request
@@ -50,22 +53,27 @@ class Requests:
 
         # Verify nodes values are valid.
         if not is_valid_node(request.data["author"]):
+            msg = (f'Request {request.status!r} {request.get_id()!r}: '
+                   f'"author" field is invalid.')
+            if Config.verbose:
+                msg = f"{msg} Got {request.data['author']}"
+            logging.warning(msg)
             return False
-        if not is_valid_node(request.data["recipient"]):
+        if not is_valid_node(request.data['recipient']):
+            msg = (f'Request {request.status!r} {request.get_id()!r}: '
+                   f'"recipient" field is invalid.')
+            if Config.verbose:
+                msg += f"{msg} Got {(request.data['recipient'])}"
+            logging.warning(msg)
             return False
 
-        author_values = request.data["author"]
-        # The cast cannot raise errors as we validated the fields beforehand.
-        rsa_n = int(author_values["rsa_n"])
-        rsa_e = int(author_values["rsa_e"])
-
-        rsa_public_key = Encryption.construct_rsa_object(rsa_n, rsa_e)
+        author = Node.from_dict(request.data['author'])
 
         data = request.data["key"]["value"]
         original_hash = request.data["key"]["hash"]
         original_sig = request.data["key"]["sig"]
 
-        if not Encryption.are_hash_and_sig_valid(data, rsa_public_key, original_hash, original_sig):
+        if not Encryption.are_hash_and_sig_valid(data, author.get_rsa_public_key(), original_hash, original_sig):
             return False
 
         return True
@@ -108,7 +116,7 @@ class Requests:
         return Request(Requests.npp.__name__.upper(), data)
 
     @staticmethod
-    def is_valid_mpp_request():
+    def is_valid_mpp_request() -> bool:
         pass  # TODO
 
     # BCP section
