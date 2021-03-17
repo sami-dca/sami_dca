@@ -286,7 +286,12 @@ class Network:
             recipient_node = Node.from_dict(request.data['recipient'])
 
             # If we are not the recipient, end.
-            if recipient_node.get_id() != self.master_node.get_id():
+            recipient_id = recipient_node.get_id()
+            own_id = self.master_node.get_id()
+            if recipient_id != own_id:
+                msg = f"{status} request {request.get_id()!r} is not addressed to us"
+                if Config.verbose:
+                    msg += f": got {recipient_id!r}, ours is {own_id!r}"
                 return False
         elif status == "NPP":
             author_node = Node.from_dict(request.data)
