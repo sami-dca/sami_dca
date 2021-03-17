@@ -280,7 +280,7 @@ class Conversations:
         status = key["status"]
         # If the negotiation is still in progress.
         if status == Config.status_1:
-            return Config.kep_decay > (get_timestamp() - timestamp)
+            return Config.kep_decay < (get_timestamp() - timestamp)
         else:
             return False
 
