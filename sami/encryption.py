@@ -341,8 +341,8 @@ class Encryption:
         :return bytes: A nonce, as bytes.
         """
         h = Encryption.hash_iterable(key)
-        # return h.digest()[:len(key) / 2]
-        return h.digest()[:Config.aes_keys_length / 2]
+        # return h.digest()[:len(key) // 2]
+        return h.digest()[:Config.aes_keys_length // 2]
 
     @staticmethod
     def construct_aes_object(aes_key: bytes, nonce: bytes, mode: int = Config.aes_mode):
