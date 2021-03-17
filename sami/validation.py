@@ -24,10 +24,10 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
     :return bool: True if the fields are valid, False otherwise.
     """
     if not isinstance(dictionary, dict):
-        logging.debug(f"Argument 'dictionary' needs to be a dict, is {type(dictionary)}: {dictionary}")
+        logging.debug(f"Expected dict as argument 'dictionary', got {type(dictionary)}: {dictionary!r}")
         return False
     if not isinstance(struct, dict):
-        logging.debug(f"Argument 'struct' needs to be a dict, is {type(struct)}: {struct}")
+        logging.debug(f"Excepted dict as argument 'struct', got {type(struct)}: {struct}")
         return False
 
     if len(dictionary) != len(struct):
@@ -70,7 +70,10 @@ def verify_received_aes_key(key: dict, rsa_public_key) -> bool:
     h_str = key["hash"]
     sig = Encryption.deserialize_string(key["sig"])
     h = Encryption.hash_iterable(value)
-    if h_str != h.hexdigest():
+    expected_digest = h.hexdigest()
+    if h_str != expected_digest:
+        logging.debug(f'Failed to validate key: indicated digest ({h_str!r}) '
+                      f'is different from the one computed ({expected_digest})')
         return False
     if not Encryption.is_signature_valid(rsa_public_key, h, sig):
         return False
@@ -79,7 +82,7 @@ def verify_received_aes_key(key: dict, rsa_public_key) -> bool:
 
 def is_valid_request(request: dict) -> bool:
     """
-    Takes a request as a JSON-encoded request and checks it is valid.
+    Takes a request as a JSON-encoded string and checks it is valid.
     Valid does not mean trustworthy.
 
     :param str request: A JSON-encoded dictionary.
@@ -103,7 +106,7 @@ def is_valid_contact(contact_data: dict) -> bool:
     address: list = contact_data["address"].split(Config.contact_delimiter)
 
     if len(address) != 2:
-        logging.debug(f'Splitting returned {len(address)} values instead of expected 2: {address!r}')
+        logging.debug(f'Splitting expected 2 values, got {len(address)}: {address!r}')
         return False
 
     ip_address, port = address
@@ -173,13 +176,17 @@ def is_valid_received_message(message_data: dict) -> bool:
 
 def validate_export_structure(*struct_name):
     if len(list(struct_name)) != 1:
-        raise Exception('Invalid arguments passed to the decorator.')
+        msg = "Invalid arguments passed to the decorator."
+        logging.critical(msg)
+        raise Exception(msg)
 
     m = struct_name[0]
 
     struct = Structures.mapping(m)
     if not struct:
-        raise Exception(f'Invalid struct name: {m!r}.')
+        msg = f"Invalid struct name: {m!r}."
+        logging.critical(msg)
+        raise Exception(msg)
 
     def decorator(func):
         @wraps(func)
@@ -188,7 +195,9 @@ def validate_export_structure(*struct_name):
             if validate_fields(dic, struct):
                 return dic
             else:
-                raise ValueError("Invalid export structure.")
+                msg = "Invalid export structure."
+                logging.critical(msg)
+                raise ValueError(msg)
         return wrapper
 
     return decorator
@@ -258,11 +267,13 @@ def is_network_port_valid(port: str) -> bool:
     try:
         port = int(port)
     except ValueError:
-        logging.debug(f'Could not cast {port!r} to integer.')
+        if Config.verbose:
+            logging.debug(f'Could not cast port {port!r} to integer.')
         return False
 
     if not 0 < port < 65536:
-        logging.debug(f'Port out of range: {port}')
+        if Config.verbose:
+            logging.debug(f'Port out of range: {port}')
         return False
 
     return True
