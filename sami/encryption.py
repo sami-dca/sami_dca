@@ -201,7 +201,7 @@ class Encryption:
         :return bool: True if they are, False otherwise.
         """
         data_hash = Encryption.hash_iterable(data)
-        if original_hash is not data_hash:
+        if original_hash != data_hash.hexdigest():
             return False
 
         sig = Encryption.deserialize_string(sig)
