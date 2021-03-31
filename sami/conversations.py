@@ -205,7 +205,7 @@ class Conversations:
             aes_key = key[:Config.aes_keys_length]
             nonce = key[Config.aes_keys_length:]
         else:
-            raise ValueError
+            raise ValueError(f'Invalid status: {status!r}')
 
         return aes_key, nonce
 
