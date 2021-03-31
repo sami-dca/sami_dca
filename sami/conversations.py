@@ -195,7 +195,7 @@ class Conversations:
         key = self.get_aes(key_id)
         status = key["status"]
         # Decrypts and deserializes the key
-        key = Encryption.decrypt_asymmetric(self.master_node.rsa_private_key, key["key"])
+        key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), key["key"])
 
         # Unpacks the values.
         if status is Config.status_1:
