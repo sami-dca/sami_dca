@@ -4,7 +4,7 @@ import os
 import time
 import logging
 
-from typing import Tuple
+from typing import List
 
 import wx  # pip install wxPython
 import wx.xrc
@@ -168,7 +168,10 @@ class Controller:
             self.network = network
 
             # Get the known peers' IDs.
-            self.recipient_choices_ids = self.get_available_nodes()
+            available_nodes = self.get_available_nodes()
+            # Exclude self
+            available_nodes.pop(available_nodes.index(self.master_node.get_id()))
+            self.recipient_choices_ids = available_nodes
 
             self.scroll_index = 0
             self.user_filter = ""
@@ -187,14 +190,14 @@ class Controller:
         def __del__(self):
             self.parent.Show()
 
-        def get_available_nodes(self) -> Tuple[str]:
+        def get_available_nodes(self) -> List[str]:
             """
             Returns all the nodes IDs with which we have not started a conversation, but we can.
             """
             all_ids = self.master_node.databases.conversations.get_all_available_conversations_ids()
             existing_conversations = self.master_node.databases.conversations.get_all_conversations_ids()
             available_nodes = all_ids.difference(existing_conversations)
-            return tuple(available_nodes)
+            return list(available_nodes)
 
         def display_conversations(self, scroll_index: int, user_filter: str) -> None:
             """
