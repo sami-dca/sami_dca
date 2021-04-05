@@ -147,11 +147,11 @@ class Message:
         """
         return self.meta.digest
 
-    def get_id(self) -> str or None:
+    def get_id(self) -> str:
         """
         Returns the message's id.
 
-        :return str|None: The message's ID if set, otherwise None.
+        :return str: The message's unique ID.
         """
         return Message.get_id_from_message(self.to_dict())
 
@@ -164,9 +164,9 @@ class Message:
         :param dict message: A message information, as a dictionary.
         :return str: An identifier for this message.
         """
-        # Assert the values are set and are strings.
-        assert isinstance(message["meta"]["time_sent"], str)
-        assert isinstance(message["meta"]["digest"], str)
+        # Assert the values are set.
+        assert message["meta"]["time_sent"]
+        assert message["meta"]["digest"]
         # Create an identifier from the time sent and the digest.
         # We use these two because the time sent is a constant set by the author,
         # and the digest is a hash of the content.
