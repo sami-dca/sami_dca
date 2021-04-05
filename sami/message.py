@@ -231,6 +231,9 @@ class OwnMessage(Message):
         self.set_message(se_en_content)
         self.set_digest(digest)
         self.set_time_sent()
+        # We pretend we just received the message, as it is ours, that makes sense.
+        # Notably, doing this avoids having to hack our way around when we want to store our messages.
+        self.set_time_received()
         self.set_id()
 
         self._is_prepared = True
