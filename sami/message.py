@@ -230,6 +230,7 @@ class OwnMessage(Message):
         se_en_content, digest = Encryption.encrypt_symmetric(aes, encoded_content)
         self.set_message(se_en_content)
         self.set_digest(digest)
+        self.set_time_sent()
         self.set_id()
 
         self._is_prepared = True
