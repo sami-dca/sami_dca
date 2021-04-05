@@ -176,7 +176,8 @@ class Controller:
             self.scroll_index = 0
             self.user_filter = ""
             # Selected node of the "new message" box.
-            self.new_message_recipient_id = None
+            # By default the first one, with index 0.
+            self.new_message_recipient_id = self.recipient_choices_ids[0]
 
             self.display_conversations(self.scroll_index, self.user_filter)
 
