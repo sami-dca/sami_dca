@@ -198,10 +198,10 @@ class Conversations:
         key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), key["key"])
 
         # Unpacks the values.
-        if status is Config.status_1:
+        if status == Config.status_1:
             aes_key = key
             nonce = None
-        elif status is Config.status_2:
+        elif status == Config.status_2:
             aes_key = key[:Config.aes_keys_length]
             nonce = key[Config.aes_keys_length:]
         else:
