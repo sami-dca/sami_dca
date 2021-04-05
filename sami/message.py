@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from .node import Node
 from .encryption import Encryption
-from .utils import get_timestamp, encode_json
+from .utils import get_timestamp, encode_json, is_int
 from .validation import is_valid_received_message, validate_export_structure
 
 
@@ -29,10 +29,10 @@ class Message:
     def from_dict_encrypted(cls, aes_key: bytes, nonce: bytes, message_data: dict) -> object or None:
         """
         Creates and returns a new object instance created from the dictionary "message_data".
-        The message, originally encrypted, is returned with its content in clear-text, exclusively suited for display.
+        The message, originally encrypted, is returned with its content in clear-text.
 
-        :param bytes aes_key: An AES key.
-        :param bytes nonce: The AES nonce.
+        :param bytes aes_key: The AES key used for decryption.
+        :param bytes nonce: The AES nonce linked to the key.
         :param dict message_data: A message information, as a dictionary.
         :return object|None: A message object or None.
         """
@@ -69,6 +69,10 @@ class Message:
             return
 
         msg = cls(author, message_data["content"])
+        time_sent = message_data['time_sent']
+        # We check the time sent is passed as expected.
+        if not isinstance(time_sent, str) and time_sent and is_int(time_sent):
+            return
         msg.set_time_sent(message_data["time_sent"])
         return msg
 
@@ -154,15 +158,19 @@ class Message:
     @staticmethod
     def get_id_from_message(message: dict) -> str:
         """
-        Gets an ID from a message's information, namely the time_sent and the digest.
+        Gets an ID from a message's information.
+        It is unique, and can be computed by anyone at anytime.
 
         :param dict message: A message information, as a dictionary.
         :return str: An identifier for this message.
         """
-        assert message["meta"]["time_sent"]
-        assert message["meta"]["digest"]
-        identifier = Encryption.hash_iterable([message["meta"]["time_sent"], message["meta"]["digest"]]).hexdigest()
-        return identifier
+        # Assert the values are set and are strings.
+        assert isinstance(message["meta"]["time_sent"], str)
+        assert isinstance(message["meta"]["digest"], str)
+        # Create an identifier from the time sent and the digest.
+        # We use these two because the time sent is a constant set by the author,
+        # and the digest is a hash of the content.
+        return Encryption.hash_iterable([message["meta"]["time_sent"], message["meta"]["digest"]]).hexdigest()
 
     # Export section
 
@@ -173,15 +181,27 @@ class Message:
 
         :return dict: The message, as a dictionary.
         """
+        content = self.get_message()
+        time_sent = self.get_time_sent()
+        time_received = self.get_time_received()
+        digest = self.get_digest()
+        author = self.author.to_dict()
+
+        assert content
+        assert time_sent
+        assert time_received
+        assert digest
+        assert author
+
         return {
-            "content": self.get_message(),
+            "content": content,
             "meta": {
-                "time_sent": self.get_time_sent(),
-                "time_received": self.get_time_received(),
-                "digest": self.get_digest()
+                "time_sent": time_sent,
+                "time_received": time_received,
+                "digest": digest
                 # !!! No signature ?!
             },
-            "author": self.author.to_dict()
+            "author": author
         }
 
     def to_json(self) -> str:
