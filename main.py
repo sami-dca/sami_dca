@@ -42,6 +42,7 @@ def manage_jobs(network, stop_event):
     ]
     # Takes care of loading the above data into Job objects.
     j = sami.Jobs([sami.Job(*args) for args in new_jobs], stop_event)
+    j.run_all()
     j.run()
 
 

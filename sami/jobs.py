@@ -36,6 +36,14 @@ class Jobs:
         self.jobs = jobs
         self.stop_event = stop_event
 
+    def run_all(self) -> None:
+        """
+        Runs all the jobs at once.
+        """
+        for job in self.jobs:
+            job.run_action()
+            job.reset()
+
     def run(self) -> None:
         stop_delay = Config.mp_timeout
         while not self.stop_event.wait(stop_delay):
