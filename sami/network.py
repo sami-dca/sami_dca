@@ -745,6 +745,8 @@ class Network:
         address = contact.get_address()
         port = contact.get_port()
 
+        self.master_node.databases.raw_requests.add_new_raw_request(request)
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.settimeout(Config.contact_connect_timeout)
             try:
@@ -753,7 +755,7 @@ class Network:
             except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
                 logging.info(f'Could not send request {request.get_id()!r} to {address}:{port}')
             except Exception as e:
-                logging.warning(f'Unhandled exception {type(e)} caught: {e!r}')
+                logging.warning(f'Unhandled {type(e)} exception caught: {e!r}')
             else:
                 logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
                 return True
