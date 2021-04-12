@@ -483,8 +483,6 @@ class Network:
             for _ in range(10):  # 10 tries
                 if self.send_request(req, contact):
                     return
-                else:
-                    contact = self.find_available_contact()
 
     def request_nodes(self) -> None:
         """
