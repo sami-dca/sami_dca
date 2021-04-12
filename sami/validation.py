@@ -31,7 +31,10 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
         return False
 
     if len(dictionary) != len(struct):
-        logging.debug(f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}')
+        log_msg = f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}'
+        if Config.verbose:
+            log_msg += f' (passed {dictionary}, expected {struct})'
+        logging.debug(log_msg)
         return False
 
     for key, struct_value in struct.items():
