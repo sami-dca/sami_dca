@@ -35,6 +35,7 @@ def set_logging(func):
 
 
 def manage_jobs(network, stop_event):
+    network.what_is_up()
     new_jobs = [
         (network.broadcast_autodiscover, sami.Config.broadcast_schedule),
         (network.request_nodes, sami.Config.nodes_discovery_schedule),

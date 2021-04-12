@@ -15,6 +15,7 @@ class Databases:
         self.contacts = Contacts()
         self.nodes = Nodes()
 
+        self.are_node_specific_databases_open: bool = False
         self.master_node = None
         self.conversations = None
 
@@ -23,3 +24,4 @@ class Databases:
         identifier = self.master_node.get_id()
         logging.info(f'Requesting node-specific database(s) with ID {identifier!r}')
         self.conversations = Conversations(self.master_node, pre=identifier + "_")
+        self.are_node_specific_databases_open = True

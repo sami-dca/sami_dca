@@ -212,8 +212,8 @@ class Network:
             :param bytes key: The AES key.
             :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
+            # Concatenate both if nonce is passed.
             if nonce is not None:
-                # Concatenate both if nonce is passed.
                 f_key = key + nonce
             else:
                 f_key = key
@@ -278,7 +278,11 @@ class Network:
             store(key_id, half_aes_key, None)
             logging.info(f'Initiated negotiation with {key_id!r}')
 
+        if not self.master_node.databases.are_node_specific_databases_open:
+            return False
+
         status = request.status
+        own_id = self.master_node.get_id()
 
         # We will take the author's RSA public key to encrypt our part of the AES key.
         if status == "KEP":
@@ -287,14 +291,20 @@ class Network:
 
             # If we are not the recipient, end.
             recipient_id = recipient_node.get_id()
-            own_id = self.master_node.get_id()
+
             if recipient_id != own_id:
                 msg = f"{status} request {request.get_id()!r} is not addressed to us"
                 if Config.verbose:
                     msg += f": got {recipient_id!r}, ours is {own_id!r}"
                 return False
         elif status == "NPP":
+            # If we are the node of the request, we'll create a new AES key for ourself.
             author_node = Node.from_dict(request.data)
+            key_id = author_node.get_id()
+            if author_node.get_id() == own_id:
+                aes_key, nonce = Encryption.create_aes()
+                store(key_id, aes_key, nonce)
+                return True
         else:
             msg = f'Invalid protocol {request.status!r} called function {Network.negotiate_aes.__name__!r}'
             logging.critical(msg)
@@ -327,6 +337,7 @@ class Network:
             elif status == "NPP":
                 new_negotiation()
                 return False
+        return False
 
     def handle_message(self, request: Request) -> None:
         """
@@ -388,6 +399,10 @@ class Network:
 
         contact_info = request.data["author"]
         contact = Contact.from_dict(contact_info)
+
+        if not contact:
+            # Double check
+            return
 
         all_requests = self.master_node.databases.raw_requests.get_all_raw_requests_since(request_timestamp)
         for request in all_requests.values():
