@@ -91,11 +91,15 @@ class RawRequests:
         if self.is_request_known(request_id):
             return self.db.query(self.db.requests_table, request_id)
 
-    def get_last_received(self) -> Request:
+    def get_last_received(self) -> Request or None:
         """
-        :return Request: The last request we received, as a Request object).
+        :return Request: The last request we received, or None if we didn't receive any yet.
         """
         requests = self.get_all_raw_requests_info()
+
+        if len(requests) == 0:
+            return
+
         last_index = list(requests.keys())[-1]
         return Request.from_dict(requests[last_index])
 

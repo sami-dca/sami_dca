@@ -474,6 +474,10 @@ class Network:
         """
         last_received_request = self.master_node.databases.raw_requests.get_last_received()
 
+        if not last_received_request:
+            # We didn't receive any request yet.
+            return
+
         for contact in self.find_available_contact():
             req = Requests.wup_ini(last_received_request.timestamp, contact)
             for _ in range(10):  # 10 tries
