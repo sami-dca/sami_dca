@@ -58,7 +58,7 @@ class Network:
         def broadcast_and_store(req):
             if broadcast:
                 self.broadcast_request(req)
-            self.master_node.databases.raw_requests.add_new_raw_request(req)
+            self.store_raw_request_depending_on_type(req)
         # End of broadcast_and_store method.
 
         def log_invalid_req(req):
@@ -461,6 +461,16 @@ class Network:
             req = Requests.csp(contact_object)
             self.send_request(req, contact)
 
+    def store_raw_request_depending_on_type(self, request: Request) -> None:
+        """
+        Takes a raw request and stores it if it is appropriate to do so.
+
+        :param Request request: The request to store.
+        """
+        if request.status not in {'KEP', 'MPP', 'NPP', 'CSP'}:
+            return
+        self.master_node.databases.raw_requests.add_new_raw_request(request)
+
     #####################
     # Protocols section #
     #####################
@@ -745,7 +755,7 @@ class Network:
         address = contact.get_address()
         port = contact.get_port()
 
-        self.master_node.databases.raw_requests.add_new_raw_request(request)
+        self.store_raw_request_depending_on_type(request)
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             client_socket.settimeout(Config.contact_connect_timeout)
