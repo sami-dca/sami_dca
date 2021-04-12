@@ -62,9 +62,9 @@ class Network:
         # End of broadcast_and_store method.
 
         def log_invalid_req(req):
-            log_msg = f'{req.status!r} request {req.get_id()} is invalid'
+            log_msg = f'Invalid {req.status!r} request ({req.get_id()!r})'
             if Config.verbose:
-                log_msg += req.to_json()
+                log_msg = f'{log_msg}: {req.to_json()}'
             logging.debug(log_msg)
         # End of log_invalid_req method.
 
