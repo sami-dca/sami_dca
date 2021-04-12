@@ -501,7 +501,7 @@ class Network:
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
-                logging.info(f'Requested new contacts to {contact}')
+                logging.info(f"Requested new contacts to '{contact.get_address()}:{contact.get_port()}'")
                 return
 
     ################################
