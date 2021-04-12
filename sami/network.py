@@ -732,12 +732,13 @@ class Network:
             self.send_broadcast(own_contact_information)  # Used to end broadcast listening
             self.send_request(req, Contact.from_dict(own_contact.to_dict()))  # Used to end requests listening
 
-    def send_request(self, request: Request, contact: Contact) -> None:
+    def send_request(self, request: Request, contact: Contact) -> bool:
         """
         Send a request to a specific contact.
 
         :param Request request: The request to send.
         :param Contact contact: The contact to send the request to.
+        :return bool: True if it managed to send the request, False otherwise.
 
         TODO : error handling
         """
@@ -751,5 +752,9 @@ class Network:
                 client_socket.send(Encryption.encode_string(request.to_json()))
             except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
                 logging.info(f'Could not send request {request.get_id()!r} to {address}:{port}')
+            except Exception as e:
+                logging.warning(f'Unhandled exception {type(e)} caught: {e!r}')
             else:
                 logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
+                return True
+        return False
