@@ -117,7 +117,7 @@ class Requests:
     @staticmethod
     def mpp(message: Message) -> Request:
         data = message.to_dict()
-        return Request(Requests.npp.__name__.upper(), data)
+        return Request(Requests.mpp.__name__.upper(), data)
 
     @staticmethod
     def is_valid_mpp_request() -> bool:
