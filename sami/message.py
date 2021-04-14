@@ -244,7 +244,29 @@ class OwnMessage(Message):
         """
         return self._is_prepared
 
+    @validate_export_structure('received_message_structure')
     def to_dict(self) -> dict:
-        d = Message.to_dict(self)
-        d.pop('time_received')
-        return d
+        """
+        Returns the message instance's attributes as a dictionary.
+
+        :return dict: The message, as a dictionary.
+        """
+        content = self.get_message()
+        time_sent = self.get_time_sent()
+        digest = self.get_digest()
+        author = self.author.to_dict()
+
+        assert content
+        assert time_sent
+        assert digest
+        assert author
+
+        return {
+            "content": content,
+            "meta": {
+                "time_sent": time_sent,
+                "digest": digest
+                # !!! No signature ?!
+            },
+            "author": author
+        }
