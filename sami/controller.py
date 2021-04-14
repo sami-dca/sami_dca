@@ -170,7 +170,9 @@ class Controller:
             # Get the known peers' IDs.
             available_nodes = self.get_available_nodes()
             # Exclude self
-            available_nodes.pop(available_nodes.index(self.master_node.get_id()))
+            own_node_id = self.master_node.get_id()
+            if own_node_id in available_nodes:
+                available_nodes.pop(available_nodes.index(own_node_id))
             self.recipient_choices_ids = available_nodes
 
             self.scroll_index = 0
@@ -320,14 +322,15 @@ class Controller:
             if not node_info:
                 raise KeyError("Tried to send a message to a node we don't know ?!")
             if not is_valid_node(node_info):
-                # We should delete the entry from the database.
+                # TODO: We should delete the entry from the database.
                 raise ValueError("Invalid node information from the database.")
 
             node = Node.from_dict(node_info)
 
             if not node:
-                raise ValueError('Could not create node object.')
+                raise InterruptedError('Could not create node object.')
 
+            # TODO: Should be sent to a MP queue ; as of now, the window freezes when clicking "Send".
             self.network.send_message(node, self.new_message)
 
         def update_message(self, event: wx.CommandEvent) -> None:
