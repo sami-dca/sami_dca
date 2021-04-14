@@ -243,3 +243,8 @@ class OwnMessage(Message):
         :return bool: True if the node is properly prepared, False otherwise.
         """
         return self._is_prepared
+
+    def to_dict(self) -> dict:
+        d = Message.to_dict(self)
+        d.pop('time_received')
+        return d
