@@ -501,7 +501,7 @@ class Network:
         """
         Creates a DNP request and sends it to one contact.
         """
-        own_contact = OwnContact()
+        own_contact = OwnContact('private')
         req = Requests.dnp(own_contact)
         for contact in self.find_available_contact():
             if self.send_request(req, contact):
@@ -512,7 +512,7 @@ class Network:
         """
         Creates a DCP request and sends it to one contact.
         """
-        own_contact = OwnContact()
+        own_contact = OwnContact('private')
         req = Requests.dnp(own_contact)
         for contact in self.find_available_contact():
             if self.send_request(req, contact):
