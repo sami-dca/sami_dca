@@ -2,8 +2,11 @@
 
 import os
 
+from .node import Node
 from .config import Config
 from .database import Database
+
+from typing import List
 
 
 class Nodes:
@@ -30,16 +33,37 @@ class Nodes:
         """
         return list(self.db.query_column(self.db.nodes_table).keys())
 
+    def get_all_nodes(self) -> List[Node]:
+        """
+        Lists all known nodes.
+
+        :return List[Node]: A list of nodes.
+        """
+        nodes = []
+        for node_id in self.get_all_node_ids():
+            node_info = self._get_node_info(node_id)
+            nodes.append(Node.from_dict(node_info))
+        return nodes
+
     def get_node_info(self, node_id: str) -> dict or None:
         """
-        Gets a node ID and query the database to retrieve the node's information.
-        If the key doesn't exist in the database, returns None.
+        Takes a node ID and queries the database to retrieve its information.
 
         :param str node_id: A node ID.
-        :return dict|None: A dictionary containing the information of the node.
+        :return dict|None: A dictionary containing the node's information if it exists, None otherwise.
         """
         if self.node_exists(node_id):
             return self.db.query(self.db.nodes_table, node_id)
+
+    def _get_node_info(self, node_id: str) -> dict:
+        """
+        Takes a node ID and queries the database to retrieve its information.
+        Bypasses the verification, as it assumes the node exists in the database.
+
+        :param str node_id: A node ID.
+        :return dict: A dictionary containing the node's information.
+        """
+        return self.db.query(self.db.nodes_table, node_id)
 
     def node_exists(self, node_id: str) -> bool:
         """

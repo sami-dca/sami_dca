@@ -125,16 +125,21 @@ class Conversations:
     def store_aes(self, key_id: str, key: bytes, timestamp: int) -> None:
         """
         This function is called at every step of the KEP negotiation to store the AES in the database.
+        Will do nothing if the negotiation is already over.
 
         :param str key_id: The ID under which the AES key will be referenced.
-        :param bytes key: A key, as bytes, containing both the key and the nonce. It is either 16 or 48 bytes.
+        :param bytes key: A key, as bytes, containing both the key and the nonce.
         :param int timestamp: The timestamp of the negotiation.
         """
+
+        if self.is_aes_negotiated(key_id):
+            return
+
         values = {
-            # 16 bytes because we only have a half-key.
-            Config.aes_keys_length / 2: Config.status_1,
-            # 48 bytes because we are concatenating the key and the nonce.
-            Config.aes_keys_length + Config.aes_keys_length / 2: Config.status_2
+            # Half-key.
+            Config.aes_keys_length // 2: Config.status_1,
+            # Full key and nonce.
+            Config.aes_keys_length + Config.aes_keys_length // 2: Config.status_2
         }
 
         status = values[len(key)]  # Tries to get the status from the above dictionary ; raises KeyError if invalid.
@@ -205,7 +210,7 @@ class Conversations:
             aes_key = key[:Config.aes_keys_length]
             nonce = key[Config.aes_keys_length:]
         else:
-            raise ValueError(f'Invalid status: {status!r}')
+            raise ValueError(f'Invalid status: {status!r}, must be one of: { {Config.status_1, Config.status_2} }')
 
         return aes_key, nonce
 

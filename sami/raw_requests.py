@@ -56,9 +56,6 @@ class RawRequests:
         requests = []
         for req_id, req_info in self.get_all_raw_requests_info().items():
             req = Request.from_dict(req_info)
-            actual_id = req.get_id()
-            if actual_id != req_id:  # Verify the ID is the same
-                raise ValueError(f'Inconsistency in the raw_requests database: got ID {req_id}, computed {actual_id}')
             requests.append(req)
         return requests
 

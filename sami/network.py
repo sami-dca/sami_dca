@@ -55,49 +55,52 @@ class Network:
         if self.master_node.databases.raw_requests.is_request_known(request.get_id()):
             return
 
-        def broadcast_and_store(req):
+        self.store_raw_request_depending_on_type(request)
+
+        status = request.status
+
+        def _broadcast(req):
             if broadcast:
                 self.broadcast_request(req)
-            self.store_raw_request_depending_on_type(req)
-        # End of broadcast_and_store method.
+        # End of _broadcast method.
 
-        def log_invalid_req(req):
+        def _log_invalid_req(req):
             log_msg = f'Invalid {req.status!r} request ({req.get_id()!r})'
             if Config.verbose:
                 log_msg = f'{log_msg}: {req.to_json()}'
             logging.debug(log_msg)
-        # End of log_invalid_req method.
+        # End of _log_invalid_req method.
 
-        if request.status == "WUP_INI":  # What's Up Protocol Initialization
+        if status == "WUP_INI":  # What's Up Protocol Initialization
             if not Requests.is_valid_wup_ini_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
             self.handle_what_is_up_init(request)
             return
-        elif request.status == "WUP_REP":  # What's Up Protocol Reply
+        elif status == "WUP_REP":  # What's Up Protocol Reply
             if not Requests.is_valid_wup_rep_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
             self.handle_what_is_up_reply(request)
             return
 
-        elif request.status == "BCP":  # BroadCast Protocol
+        elif status == "BCP":  # BroadCast Protocol
             if not Requests.is_valid_bcp_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
             self.handle_broadcast(request)
             return
 
-        elif request.status == "DNP":  # Discover Nodes Protocol
+        elif status == "DNP":  # Discover Nodes Protocol
             if not Requests.is_valid_dp_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
             self.handle_discover_nodes(request)
             return
 
-        elif request.status == "DCP":  # Discover Contact Protocol
+        elif status == "DCP":  # Discover Contact Protocol
             if not Requests.is_valid_dp_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
             self.handle_discover_contact(request)
             return
@@ -105,42 +108,42 @@ class Network:
         # All requests above are neither stored nor broadcast back.
         # Only those below are, and only if they are valid.
 
-        if request.status == "MPP":  # Message Propagation Protocol
+        if status == "MPP":  # Message Propagation Protocol
             if not is_valid_received_message(request.data):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
-            broadcast_and_store(request)
+            _broadcast(request)
             self.handle_message(request)
             return
 
-        elif request.status == "NPP":  # Node Publication Protocol
+        elif status == "NPP":  # Node Publication Protocol
             if not Requests.is_valid_npp_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
-            broadcast_and_store(request)
+            _broadcast(request)
             self.handle_new_node(request)
             return
 
-        elif request.status == "CSP":  # Contact Sharing Protocol
+        elif status == "CSP":  # Contact Sharing Protocol
             if not Requests.is_valid_csp_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
-            broadcast_and_store(request)
+            _broadcast(request)
             contact = Contact.from_dict(request.data)
             self.master_node.databases.contacts.add_contact(contact)
             return
 
-        elif request.status == "KEP":  # Keys Exchange Protocol
+        elif status == "KEP":  # Keys Exchange Protocol
             if not Requests.is_valid_kep_request(request):
-                log_invalid_req(request)
+                _log_invalid_req(request)
                 return
-            broadcast_and_store(request)
+            _broadcast(request)
             self.negotiate_aes(request)
             return
 
         else:
             # The request has an invalid status.
-            logging.warning(f'Captured request calling unknown protocol: {request.status!r}.')
+            logging.warning(f'Captured request calling unknown protocol: {status!r}.')
             return
 
     def handle_raw_request(self, json_request: str) -> None:
@@ -301,7 +304,8 @@ class Network:
             # If we are the node of the request, we'll create a new AES key for ourself.
             author_node = Node.from_dict(request.data)
             key_id = author_node.get_id()
-            if author_node.get_id() == own_id:
+            print(key_id, own_id)
+            if key_id == own_id:
                 aes_key, nonce = Encryption.create_aes()
                 store(key_id, aes_key, nonce)
                 return True
@@ -435,13 +439,12 @@ class Network:
         """
         contact = Contact.from_dict(request.data["author"])
 
+        # Add the contact requesting the nodes if we don't know it already.
         if not self.master_node.databases.contacts.contact_exists(contact.get_id()):
             self.master_node.databases.contacts.add_contact(contact)
 
-        for node_id in self.master_node.databases.nodes.get_all_node_ids():
-            node_info = self.master_node.databases.nodes.get_node_info(node_id)
-            node_object = Node.from_dict(node_info)
-            req = Requests.npp(node_object)
+        for node in self.master_node.databases.nodes.get_all_nodes():
+            req = Requests.npp(node)
             self.send_request(req, contact)
 
     def handle_discover_contact(self, request: Request) -> None:
@@ -501,7 +504,7 @@ class Network:
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
-                logging.info(f"Requested new contacts to '{contact.get_address()}:{contact.get_port()}'")
+                logging.info(f'Requested new contacts to {contact.get_address()}:{contact.get_port()}')
                 return
 
     def request_contacts(self) -> None:
@@ -511,7 +514,7 @@ class Network:
         for contact in self.find_available_contact():
             req = Requests.dnp(contact)
             if self.send_request(req, contact):
-                logging.info(f"Requested new contacts to '{contact.get_address()}:{contact.get_port()}'")
+                logging.info(f'Requested new contacts to {contact.get_address()}:{contact.get_port()}')
                 return
 
     ################################
@@ -698,7 +701,7 @@ class Network:
                 try:
                     dict_request = decode_json(json_request)
                 except JSONDecodeError:
-                    log_msg = 'Received an outsider'
+                    log_msg = 'Received an unknown packet'
                     if Config.verbose:
                         log_msg += f': {raw_bytes_request}'
                     logging.debug(log_msg)
