@@ -24,33 +24,39 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
     :return bool: True if the fields are valid, False otherwise.
     """
     if not isinstance(dictionary, dict):
-        logging.debug(f"Expected dict as argument 'dictionary', got {type(dictionary)}: {dictionary!r}")
+        if Config.log_validation:
+            logging.debug(f"Expected dict as argument 'dictionary', got {type(dictionary)}: {dictionary!r}")
         return False
     if not isinstance(struct, dict):
-        logging.debug(f"Excepted dict as argument 'struct', got {type(struct)}: {struct}")
+        if Config.log_validation:
+            logging.debug(f"Excepted dict as argument 'struct', got {type(struct)}: {struct}")
         return False
 
     if len(dictionary) != len(struct):
-        log_msg = f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}'
-        if Config.verbose:
-            log_msg += f' (passed {dictionary}, expected {struct})'
-        logging.debug(log_msg)
+        if Config.log_validation:
+            log_msg = f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}'
+            if Config.verbose:
+                log_msg += f' (passed {dictionary}, expected {struct})'
+            logging.debug(log_msg)
         return False
 
     for key, struct_value in struct.items():
         try:
             dict_value = dictionary[key]
         except KeyError:
-            logging.debug(f"Couldn't find field {key!r} in passed dictionary")
+            if Config.log_validation:
+                logging.debug(f"Couldn't find field {key!r} in passed dictionary")
             return False
         if isinstance(struct_value, type):
             # If value is a type object, we want to check that the value from the dict is of this type.
             if not isinstance(dict_value, struct_value):
-                logging.debug(f'Expected {struct_value} for {key!r}, got {type(dict_value)}')
+                if Config.log_validation:
+                    logging.debug(f'Expected {struct_value} for {key!r}, got {type(dict_value)}')
                 return False
             if struct_value is int:
                 if not is_int(dict_value):
-                    logging.debug(f"Couldn't cast to int: {key!r}: {dict_value!r}")
+                    if Config.log_validation:
+                        logging.debug(f"Couldn't cast to int: {key!r}: {dict_value!r}")
                     return False
         elif isinstance(struct_value, dict):
             # If value is a dict, we want to call this function recursively.
@@ -75,8 +81,9 @@ def verify_received_aes_key(key: dict, rsa_public_key) -> bool:
     h = Encryption.hash_iterable(value)
     expected_digest = h.hexdigest()
     if h_str != expected_digest:
-        logging.debug(f'Failed to validate key: indicated digest ({h_str!r}) '
-                      f'is different from the one computed ({expected_digest})')
+        if Config.log_validation:
+            logging.debug(f'Failed to validate key: indicated digest ({h_str!r}) '
+                          f'is different from the one computed ({expected_digest})')
         return False
     if not Encryption.is_signature_valid(rsa_public_key, h, sig):
         return False
@@ -109,16 +116,19 @@ def is_valid_contact(contact_data: dict) -> bool:
     address: list = contact_data["address"].split(Config.contact_delimiter)
 
     if len(address) != 2:
-        logging.debug(f'Splitting expected 2 values, got {len(address)}: {address!r}')
+        if Config.log_validation:
+            logging.debug(f'Splitting expected 2 values, got {len(address)}: {address!r}')
         return False
 
     ip_address, port = address
 
     if not is_address_valid(ip_address):
-        logging.debug(f'Invalid address: {ip_address!r}')
+        if Config.log_validation:
+            logging.debug(f'Invalid address: {ip_address!r}')
         return False
     if not is_network_port_valid(port):
-        logging.debug(f'Invalid port: {port!r}')
+        if Config.log_validation:
+            logging.debug(f'Invalid port: {port!r}')
         return False
 
     return True
@@ -270,12 +280,12 @@ def is_network_port_valid(port: str) -> bool:
     try:
         port = int(port)
     except ValueError:
-        if Config.verbose:
+        if Config.log_validation:
             logging.debug(f'Could not cast port {port!r} to integer.')
         return False
 
     if not 0 < port < 65536:
-        if Config.verbose:
+        if Config.log_validation:
             logging.debug(f'Port out of range: {port}')
         return False
 

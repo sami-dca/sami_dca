@@ -40,12 +40,6 @@ class Config:
     # Port used by the autodiscover.
     broadcast_port: int = 62365
 
-    # Whether public and private IPs should appear in the logs.
-    # If you have to share your logs with a third-party (e.g. to report a bug)
-    # you should turn this to False.
-    # Note: it is not retroactive.
-    log_ip_addresses: bool = True
-
     # When connecting to a contact, timeout in seconds.
     contact_connect_timeout: int = 10
 
@@ -61,6 +55,25 @@ class Config:
     # While it can be useful for debugging purposes, be careful as it will probably include some private information,
     # such as IP addresses, ports, statuses, settings, etc.
     verbose: bool = True
+
+    # Note: below log parameters are not retroactive (they do not modify previous logs).
+
+    # Whether public and private IPs should appear in the logs.
+    # If you have to share your logs with a third-party (e.g. to report a bug)
+    # you should turn this to False.
+    log_ip_addresses: bool = True
+
+    # Whether validation errors should be logged.
+    log_validation: bool = True
+
+    # Whether database operations should be logged.
+    log_database_operations: bool = False
+
+    # Whether all network operations should be logged.
+    log_full_network: bool = True
+
+    # Whether utilities should log their result
+    log_utils: bool = False
 
     # -------------------------------------
     # ----- BE CAREFUL WHEN MODIFYING -----
@@ -119,12 +132,18 @@ class Config:
     pow_difficulty: int = 2
 
     # A list of protocols for which we want to ignore new requests if only the timestamp changes.
-    avoid_duplicates: List[str] = ['NPP', "CSP"]
+    avoid_duplicates: List[str] = ['NPP', 'CSP']
+
+    # A list of protocols for which we want to store raw requests.
+    # Mainly used to avoid sending trash when somebody addresses us a `WUP_INI`.
+    store_requests: set = {'KEP', 'MPP', 'NPP', 'CSP'}
 
     # Status of the AES key in the database when it has not been fully negotiated.
+    # To change this value safely, you will need to reset the conversation database.
     status_1: str = "IN-PROGRESS"
 
     # Status of the AES key in the database once it has been fully negotiated.
+    # To change this value safely, you will need to reset the conversation database.
     status_2: str = "DONE"
 
     # Delimiter between a contact's IP and port.

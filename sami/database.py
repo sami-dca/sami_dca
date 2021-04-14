@@ -4,6 +4,8 @@ import os
 import shelve
 import logging
 
+from .config import Config
+
 
 class Database:
 
@@ -75,7 +77,8 @@ class Database:
         :param str column: A column name.
         :return bool: True if it does, False otherwise.
         """
-        logging.debug(f'[Database {self.db_name}] Query: does column {column!r} exist')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Query: does column {column!r} exist')
         return column in self.db
 
     def key_exists(self, column: str, key: str) -> bool:
@@ -86,7 +89,8 @@ class Database:
         :param str key: The key to search for.
         :return bool: True if it exists, False otherwise.
         """
-        logging.debug(f'[Database {self.db_name}] Query: does key {key!r} exist in column {column!r}')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Query: does key {key!r} exist in column {column!r}')
         # assert self.column_exists(column)
         # assert type(key) == str
         return key in set(self.db[column].keys())
@@ -121,7 +125,8 @@ class Database:
         :param str column: A column name.
         :param dict pair: A dictionary.
         """
-        logging.debug(f'[Database {self.db_name}] Instruction: insert {pair!r} in {column!r} (which is a dict)')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Instruction: insert {pair!r} in {column!r} (which is a dict)')
         cl = self.db[column]
         # assert type(cl) == dict
         cl.update(pair)
@@ -137,7 +142,8 @@ class Database:
         :param str column: A column name.
         :param value: A value to add. Can be of any type.
         """
-        logging.debug(f'[Database {self.db_name}] Instruction: insert {value!r} in {column!r} (which is a list)')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Instruction: insert {value!r} in {column!r} (which is a list)')
         cl = self.db[column]
         # assert type(cl) == list
         cl.append(value)
@@ -167,7 +173,8 @@ class Database:
         :param str column: A column name.
         :param str key: A key in the column.
         """
-        logging.debug(f'[Database {self.db_name}] Instruction: drop field {key!r} from {column!r}')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Instruction: drop field {key!r} from {column!r}')
         # assert self.column_exists(column)
         # assert self.key_exists(column, key)
         self.db[column].pop(key)
@@ -179,7 +186,8 @@ class Database:
         :param str search_column: A column name.
         :return: The value of the column.
         """
-        logging.debug(f'[Database {self.db_name}] Query: full content of {search_column!r}')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Query: full content of {search_column!r}')
         # assert self.column_exists(search_column)
         return self.db[search_column]
 
@@ -191,7 +199,8 @@ class Database:
         :param str search_column: A column name.
         :param str search_key: A key.
         """
-        logging.debug(f'[Database {self.db_name}] Query: request key {search_key!r} in {search_column!r}')
+        if Config.log_database_operations:
+            logging.debug(f'[Database {self.db_name}] Query: request key {search_key!r} in {search_column!r}')
         # assert self.column_exists(search_column)
         # assert self.key_exists(search_column, search_key)
         return self.db[search_column][search_key]

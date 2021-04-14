@@ -271,7 +271,7 @@ class Network:
 
         def new_negotiation() -> None:
             """
-            Used when initializing a new negotiation, mainly when acknowledging a new node.
+            Used when initializing a new negotiation, usually when acknowledging a new node.
             We send our half, store it and wait.
             When receiving the second part, we will call "finish_negotiation()".
             """
@@ -294,17 +294,16 @@ class Network:
 
             # If we are not the recipient, end.
             recipient_id = recipient_node.get_id()
-
             if recipient_id != own_id:
-                msg = f"{status} request {request.get_id()!r} is not addressed to us"
-                if Config.verbose:
-                    msg += f": got {recipient_id!r}, ours is {own_id!r}"
+                if Config.log_full_network:
+                    msg = f"{status} request {request.get_id()!r} is not addressed to us"
+                    if Config.verbose:
+                        msg += f": got {recipient_id!r}, ours is {own_id!r}"
                 return False
         elif status == "NPP":
             # If we are the node of the request, we'll create a new AES key for ourself.
             author_node = Node.from_dict(request.data)
             key_id = author_node.get_id()
-            print(key_id, own_id)
             if key_id == own_id:
                 aes_key, nonce = Encryption.create_aes()
                 store(key_id, aes_key, nonce)
@@ -470,7 +469,7 @@ class Network:
 
         :param Request request: The request to store.
         """
-        if request.status not in {'KEP', 'MPP', 'NPP', 'CSP'}:
+        if request.status not in Config.store_requests:
             return
         self.master_node.databases.raw_requests.add_new_raw_request(request)
 
@@ -620,7 +619,8 @@ class Network:
             s.bind(("", Config.broadcast_port))
             while not stop_event.isSet():
                 request_raw, address = receive_all(sock=s)
-                logging.debug(f'Received packet: {request_raw!r} from {address!r}')
+                if Config.log_full_network:
+                    logging.debug(f'Received packet: {request_raw!r} from {address!r}')
                 # The request is not assured to be JSON, could be text, raw bytes or anything else.
                 json_request = Encryption.decode_bytes(request_raw)
                 try:
@@ -649,7 +649,8 @@ class Network:
                         self.master_node.databases.contacts.add_contact(contact)
                     else:
                         msg += ' (already registered)'
-                    logging.debug(msg)
+                    if Config.log_full_network:
+                        logging.debug(msg)
 
     def broadcast_autodiscover(self) -> None:
         # Resource: https://github.com/ninedraft/python-udp
@@ -669,7 +670,8 @@ class Network:
             s.settimeout(2)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.sendto(info, ('<broadcast>', Config.broadcast_port))
-            logging.debug(f'Broadcast own contact information: {info!r}')
+            if Config.log_full_network:
+                logging.debug(f'Broadcast own contact information: {info!r}')
 
     def listen_for_requests(self, stop_event) -> None:
         """
@@ -703,24 +705,27 @@ class Network:
                 try:
                     dict_request = decode_json(json_request)
                 except JSONDecodeError:
-                    log_msg = 'Received an unknown packet'
-                    if Config.verbose:
-                        log_msg += f': {raw_bytes_request}'
-                    logging.debug(log_msg)
+                    if Config.log_full_network:
+                        log_msg = 'Received an unknown packet'
+                        if Config.verbose:
+                            log_msg += f': {raw_bytes_request}'
+                        logging.debug(log_msg)
                     continue
                 request = Request.from_dict(dict_request)
                 if request:  # If we managed to get a valid request.
-                    log_msg = f'Received {request.status!r} request {request.get_id()!r} from {address}'
-                    if Config.verbose:
-                        log_msg += f': {dict_request}'
-                    logging.info(log_msg)
+                    if Config.log_full_network:
+                        log_msg = f'Received {request.status!r} request {request.get_id()!r} from {address}'
+                        if Config.verbose:
+                            log_msg += f': {dict_request}'
+                        logging.info(log_msg)
                     # We'll route it.
                     self.route_request(request)
                 else:
-                    log_msg = f'Received invalid request from {address}'
-                    if Config.verbose:
-                        log_msg += f': {dict_request}'
-                    logging.info(log_msg)
+                    if Config.log_full_network:
+                        log_msg = f'Received invalid request from {address}'
+                        if Config.verbose:
+                            log_msg += f': {dict_request}'
+                        logging.info(log_msg)
                 connection.close()
 
     def broadcast_request(self, request: Request) -> None:
@@ -768,10 +773,12 @@ class Network:
                 client_socket.connect((address, port))
                 client_socket.send(Encryption.encode_string(request.to_json()))
             except (socket.timeout, ConnectionRefusedError, ConnectionResetError, OSError):
-                logging.info(f'Could not send request {request.get_id()!r} to {address}:{port}')
+                if Config.log_full_network:
+                    logging.info(f'Could not send request {request.get_id()!r} to {address}:{port}')
             except Exception as e:
                 logging.warning(f'Unhandled {type(e)} exception caught: {e!r}')
             else:
-                logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
+                if Config.log_full_network:
+                    logging.info(f'Sent {request.status!r} request {request.get_id()!r} to {address}:{port}')
                 return True
         return False
