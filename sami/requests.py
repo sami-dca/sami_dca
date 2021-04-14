@@ -171,13 +171,13 @@ class Requests:
     # Discover section
 
     @staticmethod
-    def dnp(contact: Contact) -> Request:
-        data = {"author": contact.to_dict()}
+    def dnp(own_contact: OwnContact) -> Request:
+        data = {"author": own_contact.to_dict()}
         return Request(Requests.dnp.__name__.upper(), data)
 
     @staticmethod
-    def dcp(contact: Contact) -> Request:
-        data = {"author": contact.to_dict()}
+    def dcp(own_contact: OwnContact) -> Request:
+        data = {"author": own_contact.to_dict()}
         return Request(Requests.dcp.__name__.upper(), data)
 
     @staticmethod
