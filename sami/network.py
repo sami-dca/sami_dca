@@ -379,7 +379,7 @@ class Network:
         message_dec = Message.from_dict_encrypted(aes_key, nonce, request.data)
 
         if not message_dec:
-            logging.debug(f'We could not decrypt the message.')
+            # We won't log anything else: any error should have been logged by the message constructor above.
             return
 
         message_enc = Message.from_dict(request.data)

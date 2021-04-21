@@ -1,8 +1,11 @@
 # -*- coding: UTF8 -*-
 
+import logging
+
 from dataclasses import dataclass
 
 from .node import Node
+from .config import Config
 from .encryption import Encryption
 from .utils import get_timestamp, encode_json, is_int
 from .validation import is_valid_received_message, validate_export_structure
@@ -43,6 +46,7 @@ class Message:
         try:
             content = Encryption.decrypt_symmetric(aes, message_data["content"], message_data["meta"]["digest"])
         except (ValueError, KeyError):
+            logging.debug('We could not decrypt the message')
             return
 
         content = Encryption.decode_bytes(content)
@@ -64,16 +68,18 @@ class Message:
 
         author = Node.from_dict(message_data["author"])
         if not isinstance(author, Node):
-            # This block should never be entered as the author is already validated in the message validation process.
-            # Just in case :)
+            logging.warning('Author is invalid, which makes no sense because '
+                            'we are supposed to have validated its values beforehand !')
             return
 
         msg = cls(author, message_data["content"])
         time_sent = message_data['meta']['time_sent']
         # We check the time sent is passed as expected.
         if not isinstance(time_sent, str) and time_sent and is_int(time_sent):
+            if Config.log_validation:
+                logging.debug(f"Message's 'time_sent' is invalid: {time_sent!r}")
             return
-        msg.set_time_sent(message_data['meta']["time_sent"])
+        msg.set_time_sent(int(time_sent))
         return msg
 
     # Attributes setters section
