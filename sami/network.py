@@ -12,9 +12,9 @@ import socket
 import random
 import logging
 
-from typing import Tuple
-from json.decoder import JSONDecodeError
 from unittest import mock
+from typing import Tuple, Optional
+from json.decoder import JSONDecodeError
 
 from .node import Node
 from .config import Config
@@ -59,12 +59,12 @@ class Network:
 
         status = request.status
 
-        def _broadcast(req):
+        def _broadcast(req) -> None:
             if broadcast:
                 self.broadcast_request(req)
         # End of _broadcast method.
 
-        def _log_invalid_req(req):
+        def _log_invalid_req(req) -> None:
             log_msg = f'Invalid {req.status!r} request ({req.get_id()!r})'
             if Config.verbose:
                 log_msg = f'{log_msg}: {req.to_json()}'
@@ -209,13 +209,13 @@ class Network:
             req = Requests.kep(half_aes_key, self.master_node, author_node)
             self.broadcast_request(req)
 
-        def store(key_identifier: str, key: bytes, nonce: bytes or None) -> None:
+        def store(key_identifier: str, key: bytes, nonce: Optional[bytes]) -> None:
             """
             Store the AES key in the conversations database.
 
             :param str key_identifier: A key ID ; the Node's ID.
             :param bytes key: The AES key.
-            :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
+            :param Optional[bytes] nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
             # Concatenate key and nonce if the later is passed.
             if nonce is not None:
@@ -224,7 +224,12 @@ class Network:
                 f_key = key
             self.master_node.databases.conversations.store_aes(key_identifier, f_key, get_timestamp())
 
-        def get_peer_half_key() -> bytes or None:
+        def get_peer_half_key() -> Optional[bytes]:
+            """
+            Reads the request for the half key sent by this conversation's peer.
+
+            :return Optional[bytes]: The half key of the distant peer.
+            """
             if not verify_received_aes_key(request.data["key"], author_node.get_rsa_public_key()):
                 # The AES key sent is invalid.
                 return
@@ -362,11 +367,11 @@ class Network:
 
         :param Request request: A MPP request.
         """
-        node = Node.from_dict(request.data["author"])
-        if not node:
+        author = Node.from_dict(request.data["author"])
+        if not author:
             return
 
-        if not self.master_node.databases.conversations.is_aes_negotiated(node.id):
+        if not self.master_node.databases.conversations.is_aes_negotiated(author.id):
             # Here, the negotiation is not done yet, so we launch it.
             # If it returns False, meaning the negotiation is not over, we end the function.
             # Otherwise, we continue.
@@ -375,7 +380,7 @@ class Network:
 
         # The AES keys have been negotiated, so we can proceed.
 
-        aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(node.get_id())
+        aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(author.get_id())
         message_dec = Message.from_dict_encrypted(aes_key, nonce, request.data)
 
         if not message_dec:
@@ -390,7 +395,7 @@ class Network:
         message_enc.set_time_received()
 
         self.master_node.databases.conversations.store_new_message(
-            node.get_id(),
+            author.get_id(),
             message_enc
         )
 
@@ -572,14 +577,12 @@ class Network:
 
     def get_all_contacts(self):
         """
-        Returns a contact if we know any.
-        It will prioritize choosing beacons before regular contacts.
-        The contact returned is not assured to be available on the network.
+        Returns a generator of all the contacts we know.
 
-        :return Contact|None: A Contact object if we could find one, None otherwise.
+        :return: A generator object of the contacts.
         """
 
-        def _get_beacons(beacons_list: list) -> Contact or None:
+        def _get_beacons(beacons_list: list):
             for beacon_info in beacons_list:
                 beacon_obj = Beacon.from_raw_address(beacon_info)
 
@@ -590,7 +593,7 @@ class Network:
 
                 yield beacon_info
 
-        def __get_contacts(beacons_list: list, contacts_list: list) -> Contact or None:
+        def __get_contacts(beacons_list: list, contacts_list: list):
             beacons = _get_beacons(beacons_list)
             if beacons:
                 for beacon in beacons:

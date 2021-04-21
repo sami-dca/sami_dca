@@ -224,6 +224,10 @@ class Controller:
 
                 node_name = Node.derive_name(node_id)
                 last_message: Message = self.master_node.databases.conversations.get_last_conversation_message(node_id)
+
+                if not last_message:
+                    continue
+
                 last_message_date = get_date_from_timestamp(last_message.get_time_received())
 
                 # Creates a new sizer to contain a conversation.

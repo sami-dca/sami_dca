@@ -25,3 +25,4 @@ class Databases:
         logging.info(f'Requesting node-specific database(s) with ID {identifier!r}')
         self.conversations = Conversations(self.master_node, pre=identifier + "_")
         self.are_node_specific_databases_open = True
+        # TODO: Load KEP and NPP requests we didn't process. Note: SQL query on `status` to find KEP requests.

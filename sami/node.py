@@ -3,6 +3,9 @@
 import os
 import random
 
+from typing import Optional
+
+from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 
 from .config import Config
@@ -25,12 +28,12 @@ class Node:
         self.id = None
 
     @classmethod
-    def from_dict(cls, node_data: dict) -> object or None:
+    def from_dict(cls, node_data: dict):
         """
         Takes node information as a dictionary and returns a Node object if they are valid.
 
         :param node_data: Node information as a dictionary. Must be valid.
-        :return Node|None: A Node object or None.
+        :return: A Node object or None.
         """
         if not is_valid_node(node_data):
             return
@@ -69,11 +72,11 @@ class Node:
         assert self.rsa_public_key is not None
         self.id = Node.get_id_from_rsa_key(self.rsa_public_key)
 
-    def get_id(self) -> str or None:
+    def get_id(self) -> Optional[str]:
         """
         Returns the Node's ID.
 
-        :return str|None: The Node's ID if set, None otherwise.
+        :return Optional[str]: The Node's ID if set, None otherwise.
         """
         return self.id
 
@@ -126,11 +129,11 @@ class Node:
 
     # RSA section
 
-    def set_rsa_public_key(self, rsa_public_key) -> None:
+    def set_rsa_public_key(self, rsa_public_key: RSA.RsaKey) -> None:
         """
         Sets the instance attribute "self.rsa_public_key".
 
-        :param rsa_public_key: A RSA public key.
+        :param RSA.RsaKey rsa_public_key: A RSA public key.
         """
         self.rsa_public_key = rsa_public_key
 
@@ -160,13 +163,14 @@ class Node:
         return self._sig
 
     @staticmethod
-    def export_rsa_public_key_to_file(rsa_public_key: RSA.RsaKey, location: str, passphrase: str = None) -> None:
+    def export_rsa_public_key_to_file(rsa_public_key: RSA.RsaKey, location: str,
+                                      passphrase: Optional[str] = None) -> None:
         """
         Exports a RSA public key to a file.
 
         :param RSA.RsaKey rsa_public_key: A RSA private key.
         :param str location: Directory to which the public key should be exported to.
-        :param str passphrase: A passphrase that will be used to encrypt the key.
+        :param Optional[str] passphrase: A passphrase that will be used to encrypt the key.
         """
         identifier = Node.get_id_from_rsa_key(rsa_public_key)
         file_name = f"rsa_public_key-{identifier}.pem"
@@ -180,7 +184,7 @@ class Node:
         """
         Sets the Node's hash.
 
-        :param str hexdigest: A hexdigest as a string.
+        :param str hexdigest: An hexdigest as a string.
         """
         self._hash = hexdigest
 
@@ -224,9 +228,6 @@ class MasterNode(Node):
     def set_databases(self, databases) -> None:
         """
         Sets the "databases" attribute, which is an object containing all available databases across the project.
-
-        :param databases:
-        :return:
         """
         self.databases = databases
 
@@ -266,16 +267,16 @@ class MasterNode(Node):
         """
         self._rsa_private_key = rsa_private_key
 
-    def get_rsa_private_key(self):
+    def get_rsa_private_key(self) -> RSA.RsaKey:
         # We shouldn't use this.
         # Ths RSA private key should stick to the master node, and stay private to this object.
         return self._rsa_private_key
 
-    def compute_own_hash(self):
+    def compute_own_hash(self) -> SHA256.SHA256Hash:
         """
         Computes the hash from this node's information.
 
-        :return: A hash object.
+        :return SHA256.SHA256Hash: A hash object.
         """
         return Encryption.get_public_key_hash(self.rsa_public_key)
 
@@ -283,14 +284,15 @@ class MasterNode(Node):
         return Encryption.get_rsa_signature(self._rsa_private_key, self.compute_own_hash())
 
     @staticmethod
-    def export_rsa_private_key_to_file(rsa_private_key: RSA.RsaKey, location: str, passphrase: str = None):
+    def export_rsa_private_key_to_file(rsa_private_key: RSA.RsaKey, location: str,
+                                       passphrase: Optional[str] = None) -> None:
         """
         Exports a RSA private key to a file.
         It can be encrypted, using the passed "passphrase".
 
         :param RSA.RsaKey rsa_private_key: A RSA private key.
         :param str location: Directory to which the private key should be exported to.
-        :param str passphrase: Optional. A passphrase to encrypt the private key. Will be needed when importing it.
+        :param Optional[str] passphrase: A passphrase to encrypt the private key. Will be needed when importing it.
         """
         identifier = Node.get_id_from_rsa_key(rsa_private_key)
         file_name = f"rsa_private_key-{identifier}.pem"

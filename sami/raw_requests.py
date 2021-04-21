@@ -8,7 +8,7 @@ from .request import Request
 from .database import Database
 from .utils import get_timestamp
 
-from typing import List
+from typing import List, Optional
 
 
 class RawRequests:
@@ -78,19 +78,19 @@ class RawRequests:
                 all_requests.pop(index)
         return all_requests
 
-    def get_raw_request(self, request_id: str) -> dict or None:
+    def get_raw_request(self, request_id: str) -> Optional[dict]:
         """
         Returns the request with passed ID ; nothing if the ID is unknown.
 
         :param str request_id: A request ID.
-        :return dict|None: A dictionary or None.
+        :return Optional[dict]: A dictionary or None.
         """
         if self.is_request_known(request_id):
             return self.db.query(self.db.requests_table, request_id)
 
-    def get_last_received(self) -> Request or None:
+    def get_last_received(self) -> Optional[Request]:
         """
-        :return Request: The last request we received, or None if we didn't receive any yet.
+        :return Optional[Request]: The last request we received, or None if we didn't receive any yet.
         """
         requests = self.get_all_raw_requests_info()
 

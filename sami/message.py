@@ -3,6 +3,7 @@
 import logging
 
 from dataclasses import dataclass
+from typing import Optional
 
 from .node import Node
 from .config import Config
@@ -29,7 +30,7 @@ class Message:
     # Class methods section
 
     @classmethod
-    def from_dict_encrypted(cls, aes_key: bytes, nonce: bytes, message_data: dict) -> object or None:
+    def from_dict_encrypted(cls, aes_key: bytes, nonce: bytes, message_data: dict):
         """
         Creates and returns a new object instance created from the dictionary "message_data".
         The message, originally encrypted, is returned with its content in clear-text.
@@ -37,7 +38,7 @@ class Message:
         :param bytes aes_key: The AES key used for decryption.
         :param bytes nonce: The AES nonce linked to the key.
         :param dict message_data: A message information, as a dictionary.
-        :return object|None: A message object or None.
+        :return: A message object or None.
         """
         if not is_valid_received_message(message_data):
             return
@@ -54,14 +55,14 @@ class Message:
         return cls.from_dict(message_data)
 
     @classmethod
-    def from_dict(cls, message_data: dict) -> object or None:
+    def from_dict(cls, message_data: dict):
         """
         Creates a new object instance from the dictionary.
         The message's content is returned as-is ; as long as the structure is respected,
         the content can be encrypted or clear-text, it doesn't matter.
 
         :param dict message_data: A message, as a dict.
-        :return Message|None: A new message object or None.
+        :return: A new message object or None.
         """
         if not is_valid_received_message(message_data):
             return
@@ -129,30 +130,25 @@ class Message:
 
     # Attributes getters section
 
-    def get_message(self) -> str or None:
+    def get_message(self) -> Optional[str]:
         """
         Returns the message's content (its text).
 
-        :return str: The message's text (if set), None otherwise.
+        :return Union[str, None]: The message's text (if set), None otherwise.
         """
         return self.content
 
-    def get_time_sent(self) -> str or None:
+    def get_time_sent(self) -> Optional[int]:
         return self.meta.time_sent
 
-    def get_time_received(self) -> str or None:
-        """
-        Returns the message's "time_received" value.
-
-        :return str|None: The received timestamp as a string if it is set, None otherwise.
-        """
+    def get_time_received(self) -> Optional[int]:
         return self.meta.time_received
 
-    def get_digest(self) -> str or None:
+    def get_digest(self) -> Optional[str]:
         """
         Returns own AES digest.
 
-        :return str|None: A serialized digest if set, otherwise None.
+        :return Optional[str]: A serialized digest if set, otherwise None.
         """
         return self.meta.digest
 

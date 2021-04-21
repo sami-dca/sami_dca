@@ -2,7 +2,7 @@
 
 import os
 
-from typing import List, Set
+from typing import List, Set, Optional
 
 from .config import Config
 from .message import Message
@@ -62,52 +62,57 @@ class Conversations:
         # Messages are stored from the oldest to the latest, and we gather them in this order.
         return {k: v for k, v in self.db.query(self.db.conversation_table, conversation_id).items()}
 
-    def get_all_messages_of_conversation(self, conversation_id: str) -> List[Message]:
+    def get_all_messages_of_conversation(self, conversation_id: str) -> Optional[List[Message]]:
         """
         Returns all messages of a conversation, decrypted.
 
         :param str conversation_id: A node ID.
-        :return list: A list of all the messages in the conversation, decrypted.
+        :return Optional[List[Message]]: A list of all the messages in the conversation, decrypted.
         """
         aes_key, nonce = self.get_decrypted_aes(conversation_id)
         messages = self.get_all_messages_of_conversation_raw(conversation_id)
+        if not messages:
+            # If we don't have any message in this conversation, end.
+            return
         messages_list = []
         for k, v in messages.items():
             messages_list.append(Message.from_dict_encrypted(aes_key, nonce, v))
         return messages_list
 
-    def get_last_conversation_message(self, conversation_id: str) -> Message:
+    def get_last_conversation_message(self, conversation_id: str) -> Optional[Message]:
         """
         Gets the last message of a conversation, decrypted.
 
         :param str conversation_id: A node ID.
-        :return dict: A decrypted message.
+        :return Optional[Message]: A decrypted message object.
         """
-        aes_key, nonce = self.get_decrypted_aes(conversation_id)
         messages = self.get_all_messages_of_conversation_raw(conversation_id)
+        if not messages:
+            # If we don't have any message in this conversation, end.
+            return
         last_index = list(messages.keys())[-1]
+        aes_key, nonce = self.get_decrypted_aes(conversation_id)
         return Message.from_dict_encrypted(aes_key, nonce, messages[last_index])
 
     def store_new_message(self, conversation_id: str, message: Message) -> None:
         """
         Stores a new message in the database.
-        IMPORTANT: This message must be encrypted.
+        IMPORTANT: This message must be AES-encrypted.
 
         :param str conversation_id: The ID of the conversation the message belongs to.
         :param Message message: An encrypted message object.
         """
-        # Get conversation AES key
         message_id = message.get_id()
         message_data = message.to_dict()
         self.db.insert_dict(self.db.conversation_table, {conversation_id: {message_id: message_data}})
 
-    def get_message_from_id(self, conversation_id: str, message_id: str) -> Message or None:
+    def get_message_from_id(self, conversation_id: str, message_id: str) -> Optional[Message]:
         """
         Returns the decrypted message with passed ID.
 
         :param str conversation_id: The ID of the conversation to search in.
         :param str message_id: A message ID.
-        :return Message|None: The decrypted message if it exists, None otherwise.
+        :return Optional[Message]: The decrypted message if it exists, None otherwise.
         """
         if not self.does_conversation_exist_with_node(conversation_id):
             return
@@ -333,14 +338,13 @@ class ConversationsDatabase(Database):
         """
         self.insert_dict(self.keys_table, {node_id: key_dict})
 
-    def modify_aes(self, node_id: str, key_dict: dict):
+    def modify_aes(self, node_id: str, key_dict: dict) -> None:
         """
         Modifies an existing AES key.
         Does not care if it exists or not. This verification must be done beforehand.
 
         :param str node_id: A node ID.
         :param str key_dict: A value containing the AES key and the nonce, encrypted and serialised for storage.
-        :return:
         """
         self.update(self.keys_table, node_id, key_dict)
 

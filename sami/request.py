@@ -39,14 +39,14 @@ class Request:
         return cls(status, data, timestamp)
 
     @set_timestamp_on_call
-    def set_nonce(self, nonce):
+    def set_nonce(self, nonce) -> None:
         """
         Sets the request's nonce.
         This function should only be called by the Proof-of-Work algorithm.
         """
         self.nonce = nonce
 
-    def set_timestamp(self):
+    def set_timestamp(self) -> None:
         """
         Sets instance attribute "timestamp".
         """

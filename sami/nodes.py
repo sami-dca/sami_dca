@@ -6,7 +6,7 @@ from .node import Node
 from .config import Config
 from .database import Database
 
-from typing import List
+from typing import List, Optional
 
 
 class Nodes:
@@ -25,11 +25,11 @@ class Nodes:
         if not self.node_exists(node_id):
             self.db.insert_dict(self.db.nodes_table, {node_id: node.to_dict()})
 
-    def get_all_node_ids(self) -> list:
+    def get_all_node_ids(self) -> List[str]:
         """
         Lists all known nodes' IDs.
 
-        :return list: A list of all the nodes ID we know.
+        :return List[str]: A list of all the nodes ID we know.
         """
         return list(self.db.query_column(self.db.nodes_table).keys())
 
@@ -45,12 +45,12 @@ class Nodes:
             nodes.append(Node.from_dict(node_info))
         return nodes
 
-    def get_node_info(self, node_id: str) -> dict or None:
+    def get_node_info(self, node_id: str) -> Optional[dict]:
         """
         Takes a node ID and queries the database to retrieve its information.
 
         :param str node_id: A node ID.
-        :return dict|None: A dictionary containing the node's information if it exists, None otherwise.
+        :return Optional[dict]: A dictionary containing the node's information if it exists, None otherwise.
         """
         if self.node_exists(node_id):
             return self.db.query(self.db.nodes_table, node_id)

@@ -2,7 +2,7 @@
 
 import os
 
-from typing import List
+from typing import List, Optional
 
 from .config import Config
 from .contact import Contact
@@ -51,12 +51,12 @@ class Contacts:
                 all_contacts.remove(identifier)
         return list(all_contacts)
 
-    def get_contact_info(self, contact_id: str) -> dict or None:
+    def get_contact_info(self, contact_id: str) -> Optional[dict]:
         """
         Tries to get the information of a contact.
 
         :param str contact_id: A contact ID.
-        :return dict|None: A dictionary containing the contact's information if it exists, None otherwise.
+        :return Optional[dict]: A dictionary containing the contact's information if it exists, None otherwise.
         """
         if self.contact_exists(contact_id):
             return self.db.query(self.db.contacts_table, contact_id)

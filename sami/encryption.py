@@ -3,6 +3,8 @@
 import base64
 import logging
 
+from typing import Optional
+
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
@@ -51,17 +53,18 @@ class Encryption:
         return private_key.publickey()
 
     @staticmethod
-    def construct_rsa_object(n: int, e: int, d: int = None, p: int = None, q: int = None) -> RSA.RsaKey:
+    def construct_rsa_object(n: int, e: int, d: Optional[int] = None, p: Optional[int] = None,
+                             q: Optional[int] = None) -> RSA.RsaKey:
         """
         Construct and returns a RSA key from passed values..
-        If you want a public key, pass n and e.
-        If you want a private key, also pass d, p and q.
+        For a public key, pass n and e.
+        For a private key, pass d, p and q as well.
 
         :param int n: Modulus.
         :param int e: Public exponent.
-        :param int p: First factor.
-        :param int q: Second factor.
-        :param int d: Private exponent.
+        :param Optional[int] p: First factor.
+        :param Optional[int] q: Second factor.
+        :param Optional[int] d: Private exponent.
         :return RSA.RsaKey: A RSA key object, public or private depending on the arguments passed.
         """
         # If d, p and q are set
@@ -72,14 +75,14 @@ class Encryption:
         return RSA.construct((n, e), True)
 
     @staticmethod
-    def import_rsa_private_key_from_file(file_location: str, passphrase: str or None = None):
+    def import_rsa_private_key_from_file(file_location: str, passphrase: Optional[str] = None) -> Optional[RSA.RsaKey]:
         """
         Opens a file and reads its content to get the RSA private key stored.
         Takes care of error handling.
 
         :param str file_location: Path to the file.
-        :param str passphrase: The passphrase used to read the key.
-        :return RSA.RsaKey|None: A RSA private key or None.
+        :param Optional[str] passphrase: The passphrase used to read the key.
+        :return Optional[RSA.RsaKey]: A RSA private key or None.
         """
         with open(file_location, "rb") as k:
             try:
@@ -141,7 +144,7 @@ class Encryption:
 
         :param RSA.RsaKey rsa_public: A RSA public key. Also works with a private key.
         :param bytes data: The data to encrypt and serialize.
-        :return string: The encrypted and serialized data.
+        :return str: The encrypted and serialized data.
         """
         en_data = Encryption.encrypt_asymmetric_raw(rsa_public, data)
         se_en_data = Encryption.serialize_bytes(en_data)
@@ -180,7 +183,7 @@ class Encryption:
         :param RSA.RsaKey rsa_public_key: An RSA public key object.
         :param SHA256.SHA256Hash hash_object: The hash object.
         :param bytes sig: A signature of the above hash.
-        :return: True if it is, False otherwise.
+        :return bool: True if it is, False otherwise.
         """
         try:
             pkcs1_15.new(rsa_public_key).verify(hash_object, sig)
@@ -226,12 +229,12 @@ class Encryption:
         return int(keys_length - (2 + sha_length * 2))
 
     @staticmethod
-    def get_public_key_hash(rsa_public_key: RSA.RsaKey):
+    def get_public_key_hash(rsa_public_key: RSA.RsaKey) -> SHA256.SHA256Hash:
         """
         Returns a hash of the public key's n and e.
         Please refer to "Encryption.hash_iterable()" for more information.
 
-        :return RSA.RsaKey: A hash object.
+        :return SHA256.SHA256Hash: A hash object.
         """
         return Encryption.hash_iterable([rsa_public_key.n, rsa_public_key.e])
 
