@@ -80,6 +80,9 @@ class Message:
                 logging.debug(f"Message's {time_sent=!r} is invalid ({type(time_sent)})")
             return
         msg.set_time_sent(int(time_sent))
+
+        msg.set_digest(message_data["meta"]["digest"])
+
         return msg
 
     # Attributes setters section
@@ -205,7 +208,6 @@ class Message:
                 "time_sent": time_sent,
                 "time_received": time_received,
                 "digest": digest
-                # !!! No signature ?!
             },
             "author": author
         }
@@ -272,7 +274,6 @@ class OwnMessage(Message):
             "meta": {
                 "time_sent": time_sent,
                 "digest": digest
-                # !!! No signature ?!
             },
             "author": author
         }
