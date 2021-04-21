@@ -58,6 +58,7 @@ def is_int(value) -> bool:
     """
     Tests a value to check if it is an integer or not.
     "value" can be of any type, as long as it can be converted to int.
+    Note: `is_int(None)` will raise TypeError.
     """
     try:
         int(value)
