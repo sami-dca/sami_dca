@@ -75,9 +75,9 @@ class Message:
         msg = cls(author, message_data["content"])
         time_sent = message_data['meta']['time_sent']
         # We check the time sent is passed as expected.
-        if not isinstance(time_sent, str) and time_sent and is_int(time_sent):
+        if not (time_sent and is_int(time_sent)):
             if Config.log_validation:
-                logging.debug(f"Message's {time_sent=!r} is invalid (type={type(time_sent)})")
+                logging.debug(f"Message's {time_sent=!r} is invalid ({type(time_sent)})")
             return
         msg.set_time_sent(int(time_sent))
         return msg
