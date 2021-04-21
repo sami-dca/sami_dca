@@ -217,7 +217,7 @@ class Network:
             :param bytes key: The AES key.
             :param bytes|None nonce: The nonce, bytes if the negotiation is over, None otherwise.
             """
-            # Concatenate both if nonce is passed.
+            # Concatenate key and nonce if the later is passed.
             if nonce is not None:
                 f_key = key + nonce
             else:
@@ -294,7 +294,7 @@ class Network:
         if not self.master_node.databases.are_node_specific_databases_open:
             return False
 
-        status = request.status
+        status: str = request.status
         own_id = self.master_node.get_id()
 
         # We will take the author's RSA public key to encrypt our part of the AES key.
@@ -310,19 +310,21 @@ class Network:
                     if Config.verbose:
                         msg += f": got {recipient_id!r}, ours is {own_id!r}"
                 return False
+
         elif status == "NPP":
-            # If we are the node of the request, we'll create a new AES key for ourself.
             author_node = Node.from_dict(request.data)
-            key_id = author_node.get_id()
-            if key_id == own_id:
-                aes_key, nonce = Encryption.create_aes()
-                store(key_id, aes_key, nonce)
-                return True
+
         else:
             msg = f'Invalid protocol {request.status!r} called function {Network.negotiate_aes.__name__!r}'
             logging.critical(msg)
             raise ValueError(msg)
         key_id = author_node.get_id()
+
+        # Special case: if we are the node of the NPP request, we'll create a new AES key for ourself.
+        if status == "NPP" and key_id == own_id:
+            aes_key, nonce = Encryption.create_aes()
+            store(key_id, aes_key, nonce)
+            return True
 
         # If the key is already negotiated, end.
         if self.master_node.databases.conversations.is_aes_negotiated(key_id):

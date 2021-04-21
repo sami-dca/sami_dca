@@ -111,7 +111,7 @@ class Encryption:
     def encrypt_asymmetric_raw(rsa_public: RSA.RsaKey, data: bytes) -> bytes:
         """
         Encrypts data with RSA.
-        Must be reversible with Encryption.decrypt_asymmetric_raw().
+        Must be reversible with `Encryption.decrypt_asymmetric_raw()`.
 
         :param RSA.RsaKey rsa_public: A RSA public key.
         :param bytes data: Data, as bytes.
@@ -123,7 +123,7 @@ class Encryption:
     def decrypt_asymmetric_raw(rsa_private: RSA.RsaKey, en_data: bytes) -> bytes:
         """
         Decrypts data with RSA.
-        Must be reversible with Encryption.encrypt_asymmetric_raw().
+        Must be reversible with `Encryption.encrypt_asymmetric_raw()`.
 
         :param RSA.RsaKey rsa_private: A RSA private key.
         :param bytes en_data: Encrypted data, as bytes.
@@ -137,10 +137,10 @@ class Encryption:
     def encrypt_asymmetric(rsa_public: RSA.RsaKey, data: bytes) -> str:
         """
         Encrypts and serializes data.
-        Must be reversible with Encryption.decrypt_asymmetric().
+        Must be reversible with `Encryption.decrypt_asymmetric()`.
 
-        :param RSA.RsaKey rsa_public: A RSA public key.
-        :param bytes data: The data to encrypt.
+        :param RSA.RsaKey rsa_public: A RSA public key. Also works with a private key.
+        :param bytes data: The data to encrypt and serialize.
         :return string: The encrypted and serialized data.
         """
         en_data = Encryption.encrypt_asymmetric_raw(rsa_public, data)
@@ -151,7 +151,7 @@ class Encryption:
     def decrypt_asymmetric(rsa_private: RSA.RsaKey, se_en_data: str) -> bytes:
         """
         Deserialized and decrypts data.
-        Must be reversible with Encryption.encrypt_asymmetric().
+        Must be reversible with `Encryption.encrypt_asymmetric()`.
 
         :param RSA.RsaKey rsa_private: A RSA private key.
         :param str se_en_data: Encrypted and serialized data.
@@ -263,7 +263,7 @@ class Encryption:
     def serialize_bytes(b: bytes) -> str:
         """
         Takes a bytes object and serialize it.
-        Must be reversible with Encryption.deserialize_string().
+        Must be reversible with `Encryption.deserialize_string()`.
 
         :param bytes b: Data, as bytes.
         :return str: A serialized string of the passed data.
@@ -274,7 +274,7 @@ class Encryption:
     def deserialize_string(s: str) -> bytes:
         """
         Takes a string and deserialize it.
-        Must be reversible with Encryption.serialize_bytes().
+        Must be reversible with `Encryption.serialize_bytes()`.
 
         :param str s: Data, as a string.
         :return bytes: The deserialized string of the passed data.

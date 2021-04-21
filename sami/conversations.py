@@ -124,7 +124,7 @@ class Conversations:
 
     def store_aes(self, key_id: str, key: bytes, timestamp: int) -> None:
         """
-        This function is called at every step of the KEP negotiation to store the AES in the database.
+        This function is called to store the AES key (half or full) in the database.
         Will do nothing if the negotiation is already over.
 
         :param str key_id: The ID under which the AES key will be referenced.
@@ -143,10 +143,10 @@ class Conversations:
         }
 
         status = values[len(key)]  # Tries to get the status from the above dictionary ; raises KeyError if invalid.
-        key = Encryption.encrypt_asymmetric(self.master_node.rsa_public_key, key)
+        se_en_key = Encryption.encrypt_asymmetric(self.master_node.rsa_public_key, key)
 
         key_dict = {
-            "key": key,
+            "key": se_en_key,
             "status": status,
             "timestamp": timestamp
         }

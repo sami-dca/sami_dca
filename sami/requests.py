@@ -31,14 +31,14 @@ class Requests:
         master_node_info: dict = master_node.to_dict()
         node_info: dict = node.to_dict()
         h_object = Encryption.hash_iterable(se_en_half_aes_key)
-        h: str = h_object.hexdigest()
-        sig: str = Encryption.serialize_bytes(Encryption.get_rsa_signature(master_node.get_rsa_private_key(), h_object))
+        h_str: str = h_object.hexdigest()
+        se_sig: str = Encryption.serialize_bytes(Encryption.get_rsa_signature(master_node.get_rsa_private_key(), h_object))
 
         data = {
             "key": {
                 "value": se_en_half_aes_key,
-                "hash": h,
-                "sig": sig
+                "hash": h_str,
+                "sig": se_sig
             },
             "author": master_node_info,
             "recipient": node_info
@@ -54,14 +54,14 @@ class Requests:
         # Verify nodes values are valid.
         if not is_valid_node(request.data["author"]):
             msg = (f'Request {request.status!r} {request.get_id()!r}: '
-                   f'"author" field is invalid')
+                   f'"author" field is invalid.')
             if Config.verbose:
                 msg = f"{msg} Got {request.data['author']}"
             logging.warning(msg)
             return False
         if not is_valid_node(request.data['recipient']):
             msg = (f'Request {request.status!r} {request.get_id()!r}: '
-                   f'"recipient" field is invalid')
+                   f'"recipient" field is invalid.')
             if Config.verbose:
                 msg += f"{msg} Got {(request.data['recipient'])}"
             logging.warning(msg)
@@ -69,9 +69,9 @@ class Requests:
 
         author = Node.from_dict(request.data['author'])
 
-        data = request.data["key"]["value"]
-        original_hash = request.data["key"]["hash"]
-        original_sig = request.data["key"]["sig"]
+        data: str = request.data["key"]["value"]
+        original_hash: str = request.data["key"]["hash"]
+        original_sig: str = request.data["key"]["sig"]
 
         if not Encryption.are_hash_and_sig_valid(data, author.get_rsa_public_key(), original_hash, original_sig):
             msg = f'Request {request.status!r} {request.get_id()}: hash and sig are invalid'
