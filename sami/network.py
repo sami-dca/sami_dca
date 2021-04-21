@@ -382,9 +382,13 @@ class Network:
             # We won't log anything else: any error should have been logged by the message constructor above.
             return
 
+        # At this point, the message has been read and we can store it (encrypted) in our conversations database.
+
         message_enc = Message.from_dict(request.data)
 
-        # At this point, the message has been read and we can store it (encrypted) in our conversations database.
+        # We'll add the `time_received` attribute, which is necessary for storing the message.
+        message_enc.set_time_received()
+
         self.master_node.databases.conversations.store_new_message(
             node.get_id(),
             message_enc
@@ -750,7 +754,7 @@ class Network:
         for contact in contacts:
             self.send_request(request, contact)
 
-        logging.info(f'Broadcast request {request.get_id()!r} to {len(contacts)} contacts.')
+        logging.info(f'Broadcast request {request.get_id()!r} to {len(contacts)} contacts')
 
     def send_dummy_data_to_self(self) -> None:
         # Mocks the ``to_json()`` method.
