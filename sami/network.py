@@ -178,6 +178,8 @@ class Network:
 
         :param Request request: A valid request.
         :return bool: True if the negotiation is over, False otherwise.
+
+        TODO: Get rid of assertions
         """
 
         def concatenate_keys(key1: bytes, key2: bytes) -> tuple:
@@ -222,24 +224,38 @@ class Network:
                 f_key = key
             self.master_node.databases.conversations.store_aes(key_identifier, f_key, get_timestamp())
 
+        def get_peer_half_key() -> bytes or None:
+            if not verify_received_aes_key(request.data["key"], author_node.get_rsa_public_key()):
+                # The AES key sent is invalid.
+                return
+
+            # This AES key's length is 16 bytes.
+            se_en_half_key = request.data["key"]["value"]
+            half_key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), se_en_half_key)
+            assert len(half_key) == Config.aes_keys_length // 2
+
+            return half_key
+
         def finish_negotiation() -> None:
             """
-            Used when a negotiation is already initialized and we want to conclude it.
+            Used when we already initialized the negotiation and we just received the second part to conclude it.
             At the end of this function, we have a valid AES key for communicating with this node.
             """
-            aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(key_id)
+            stored_half_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(key_id)
 
             # nonce should be empty and aes_key should be exactly half the expected key length
             assert nonce is None
             assert len(aes_key) == Config.aes_keys_length // 2
 
-            half_aes_key = Encryption.create_half_aes_key()
-            key, nonce = concatenate_keys(aes_key, half_aes_key)
+            half_key = get_peer_half_key()
+            if half_key is None:
+                return
+
+            key, nonce = concatenate_keys(half_key, stored_half_key)
 
             assert len(key) == Config.aes_keys_length
             assert len(nonce) == Config.aes_keys_length // 2
 
-            propagate(half_aes_key)
             store(key_id, key, nonce)
             logging.info(f'Finished negotiation with {key_id!r}')
 
@@ -250,15 +266,7 @@ class Network:
             At the end of this function, we have a valid AES key for communicating with this node.
             """
             new_half_key = Encryption.create_half_aes_key()
-            if not verify_received_aes_key(request.data["key"], author_node.get_rsa_public_key()):
-                # The AES key sent is invalid.
-                return
-
-            # This AES key's length is 16 bytes.
-            se_en_half_key = request.data["key"]["value"]
-            half_key = Encryption.decrypt_asymmetric(self.master_node.get_rsa_private_key(), se_en_half_key)
-
-            assert len(half_key) == Config.aes_keys_length // 2
+            half_key = get_peer_half_key()
 
             key, nonce = concatenate_keys(half_key, new_half_key)
 
@@ -367,7 +375,7 @@ class Network:
         message_dec = Message.from_dict_encrypted(aes_key, nonce, request.data)
 
         if not message_dec:
-            # We could not decrypt the message.
+            logging.debug(f'We could not decrypt the message.')
             return
 
         message_enc = Message.from_dict(request.data)
@@ -738,7 +746,7 @@ class Network:
         for contact in contacts:
             self.send_request(request, contact)
 
-        logging.info(f'Broadcast request {request.get_id()} to {len(contacts)} contacts.')
+        logging.info(f'Broadcast request {request.get_id()!r} to {len(contacts)} contacts.')
 
     def send_dummy_data_to_self(self) -> None:
         # Mocks the ``to_json()`` method.
