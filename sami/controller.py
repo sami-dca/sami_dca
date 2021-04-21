@@ -179,7 +179,9 @@ class Controller:
             self.user_filter = ""
             # Selected node of the "new message" box.
             # By default the first one, with index 0.
-            self.new_message_recipient_id = self.recipient_choices_ids[0]
+            # If the list if empty however, we'll just won't set the var.
+            if len(self.recipient_choices_ids) > 0:
+                self.new_message_recipient_id = self.recipient_choices_ids[0]
 
             self.display_conversations(self.scroll_index, self.user_filter)
 
@@ -261,7 +263,10 @@ class Controller:
                 self.chat_container_main_bSizer.Add(self.conversations_scrollBar, 0, wx.ALL | wx.EXPAND, 5)
                 self.conversations_scrollBar.Bind(wx.EVT_SCROLL, self.scroll)
 
-        def show_new_message_box(self):
+        def show_new_message_box(self) -> None:
+            if len(self.recipient_choices_ids) == 0:
+                return
+
             recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_ids]
 
             # Adds the choice box.
@@ -313,22 +318,22 @@ class Controller:
             full_conversation.Show()
             self.Hide()
 
-        def update_new_message_recipient(self, event):
+        def update_new_message_recipient(self, event) -> None:
             self.new_message_recipient_id = self.recipient_choices_ids[event.GetSelection()]
 
-        def send_message_to_new_node(self, event: wx.CommandEvent):
+        def send_message_to_new_node(self, event: wx.CommandEvent) -> None:
             node_info: dict = self.master_node.databases.nodes.get_node_info(self.new_message_recipient_id)
 
             if not node_info:
                 raise KeyError("Tried to send a message to a node we don't know ?!")
             if not is_valid_node(node_info):
                 # TODO: We should delete the entry from the database.
-                raise ValueError("Invalid node information from the database.")
+                raise ValueError(f"Invalid node information in the database for {self.new_message_recipient_id}")
 
             node = Node.from_dict(node_info)
 
             if not node:
-                raise InterruptedError('Could not create node object.')
+                raise InterruptedError('Could not create node object')
 
             # TODO: Should be sent to a MP queue ; as of now, the window freezes when clicking "Send".
             self.network.send_message(node, self.new_message)
