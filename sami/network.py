@@ -245,7 +245,7 @@ class Network:
 
             # nonce should be empty and aes_key should be exactly half the expected key length
             assert nonce is None
-            assert len(aes_key) == Config.aes_keys_length // 2
+            assert len(stored_half_key) == Config.aes_keys_length // 2
 
             half_key = get_peer_half_key()
             if half_key is None:
@@ -267,6 +267,8 @@ class Network:
             """
             new_half_key = Encryption.create_half_aes_key()
             half_key = get_peer_half_key()
+            if half_key is None:
+                return
 
             key, nonce = concatenate_keys(half_key, new_half_key)
 
