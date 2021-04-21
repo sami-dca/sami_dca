@@ -25,11 +25,11 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
     """
     if not isinstance(dictionary, dict):
         if Config.log_validation:
-            logging.debug(f"Expected dict as argument 'dictionary', got {type(dictionary)}: {dictionary!r}")
+            logging.error(f"Expected dict as argument 'dictionary', got {type(dictionary)}: {dictionary!r}")
         return False
     if not isinstance(struct, dict):
         if Config.log_validation:
-            logging.debug(f"Excepted dict as argument 'struct', got {type(struct)}: {struct}")
+            logging.error(f"Excepted dict as argument 'struct', got {type(struct)}: {struct}")
         return False
 
     if len(dictionary) != len(struct):
@@ -37,7 +37,7 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
             log_msg = f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}'
             if Config.verbose:
                 log_msg += f' (passed {dictionary}, expected {struct})'
-            logging.debug(log_msg)
+            logging.error(log_msg)
         return False
 
     for key, struct_value in struct.items():
@@ -45,18 +45,18 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
             dict_value = dictionary[key]
         except KeyError:
             if Config.log_validation:
-                logging.debug(f"Couldn't find field {key!r} in passed dictionary")
+                logging.error(f"Couldn't find field {key!r} in passed dictionary")
             return False
         if isinstance(struct_value, type):
             # If value is a type object, we want to check that the value from the dict is of this type.
             if not isinstance(dict_value, struct_value):
                 if Config.log_validation:
-                    logging.debug(f'Expected {struct_value} for {key!r}, got {type(dict_value)}')
+                    logging.error(f'Expected {struct_value} for {key!r}, got {type(dict_value)}')
                 return False
             if struct_value is int:
                 if not is_int(dict_value):
                     if Config.log_validation:
-                        logging.debug(f"Couldn't cast to int: {key!r}: {dict_value!r}")
+                        logging.error(f"Couldn't cast to int: {key!r}: {dict_value!r}")
                     return False
         elif isinstance(struct_value, dict):
             # If value is a dict, we want to call this function recursively.
@@ -82,7 +82,7 @@ def verify_received_aes_key(key: dict, rsa_public_key) -> bool:
     expected_digest = h.hexdigest()
     if h_str != expected_digest:
         if Config.log_validation:
-            logging.debug(f'Failed to validate key: indicated digest ({h_str!r}) '
+            logging.error(f'Failed to validate key: indicated digest ({h_str!r}) '
                           f'is different from the one computed ({expected_digest})')
         return False
     if not Encryption.is_signature_valid(rsa_public_key, h, sig):
@@ -117,18 +117,18 @@ def is_valid_contact(contact_data: dict) -> bool:
 
     if len(address) != 2:
         if Config.log_validation:
-            logging.debug(f'Splitting expected 2 values, got {len(address)}: {address!r}')
+            logging.error(f'Splitting expected 2 values, got {len(address)}: {address!r}')
         return False
 
     ip_address, port = address
 
     if not is_address_valid(ip_address):
         if Config.log_validation:
-            logging.debug(f'Invalid address: {ip_address!r}')
+            logging.error(f'Invalid address: {ip_address!r}')
         return False
     if not is_network_port_valid(port):
         if Config.log_validation:
-            logging.debug(f'Invalid port: {port!r}')
+            logging.error(f'Invalid port: {port!r}')
         return False
 
     return True
@@ -171,12 +171,12 @@ def is_valid_node(node_data: dict) -> bool:
 
 def is_valid_received_message(message_data: dict) -> bool:
     """
-    Performs tests on the data passed to check if the message we just received is correct.
+    Performs tests on the data passed to check messages we receive are correct.
+    AFAIK, it's not possible to verify the digest without decrypting the message,
+    that's why we don't perform this test here.
 
     :param dict message_data: A message, as a dict.
     :return bool: True if it is, False otherwise.
-
-    TODO: Verify digest
     """
     if not validate_fields(message_data, Structures.received_message_structure):
         return False
