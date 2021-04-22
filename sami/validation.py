@@ -188,6 +188,11 @@ def is_valid_received_message(message_data: dict) -> bool:
 
 
 def validate_export_structure(*struct_name):
+    """
+    Decorator used to validate a `to_dict` method returns the expected values.
+    See `structures.py` for all structures and the string to structure mapping.
+    """
+
     if len(list(struct_name)) != 1:
         msg = "Invalid arguments passed to the decorator."
         logging.critical(msg)

@@ -4,7 +4,7 @@ import logging
 
 from .node import Node
 from .config import Config
-from .message import Message
+from .message import OwnMessage
 from .node import MasterNode
 from .request import Request
 from .encryption import Encryption
@@ -115,8 +115,8 @@ class Requests:
     # MPP section
 
     @staticmethod
-    def mpp(message: Message) -> Request:
-        data = message.to_dict()
+    def mpp(own_message: OwnMessage) -> Request:
+        data = own_message.to_dict()
         return Request(Requests.mpp.__name__.upper(), data)
 
     @staticmethod

@@ -182,7 +182,7 @@ class Message:
     @validate_export_structure('stored_message_structure')
     def to_dict(self) -> dict:
         """
-        Returns the message instance's attributes as a dictionary.
+        Returns the message instance's attributes as a dictionary, ready for storage.
 
         :return dict: The message, as a dictionary.
         """
@@ -190,13 +190,11 @@ class Message:
         time_sent = self.get_time_sent()
         time_received = self.get_time_received()
         digest = self.get_digest()
-        author = self.author.to_dict()
 
         assert content
         assert time_sent
         assert time_received
         assert digest
-        assert author
 
         return {
             "content": content,
@@ -204,17 +202,8 @@ class Message:
                 "time_sent": time_sent,
                 "time_received": time_received,
                 "digest": digest
-            },
-            "author": author
+            }
         }
-
-    def to_json(self) -> str:
-        """
-        Converts the current object to a JSON-encoded string.
-
-        :return str: A JSON-encoded string.
-        """
-        return encode_json(self.to_dict())
 
 
 class OwnMessage(Message):
@@ -226,18 +215,14 @@ class OwnMessage(Message):
     def prepare(self, aes) -> None:
         """
         Prepare message: encrypts and sets values.
-        Use the "to_json" method to get a JSON-encoded string for network communication and storage.
 
         :param aes: AES key object used for symmetric encryption.
         """
-        encoded_content = Encryption.encode_string(self.content)
-        se_en_content, digest = Encryption.encrypt_symmetric(aes, encoded_content)
+        bytes_content = Encryption.encode_string(self.content)
+        se_en_content, digest = Encryption.encrypt_symmetric(aes, bytes_content)
         self.set_message(se_en_content)
         self.set_digest(digest)
         self.set_time_sent()
-        # We pretend we just received the message, as it is ours, that makes sense.
-        # Notably, doing this avoids having to hack our way around when we want to store our messages.
-        self.set_time_received()
         self.set_id()
 
         self._is_prepared = True

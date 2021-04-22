@@ -40,8 +40,7 @@ class Structures:
             "time_sent": int,
             "time_received": int,
             "digest": str
-        },
-        "author": node_structure
+        }
     }
 
     # Requests section

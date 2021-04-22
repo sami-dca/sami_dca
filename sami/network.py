@@ -545,26 +545,23 @@ class Network:
 
     def send_message(self, recipient: Node, own_message: OwnMessage) -> None:
 
-        def prepare_message_for_recipient(node: Node, message: OwnMessage) -> None:
-            """
-            Prepares a message by encrypting its values.
-            This message is addressed to a specific node.
-            """
-            aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(node.get_id())
-            aes = Encryption.construct_aes_object(aes_key, nonce)
-            message.prepare(aes)
-        # End of prepare_message_for_recipient method.
-
         if not self.master_node.databases.conversations.is_aes_negotiated(recipient.get_id()):
             logging.error(f'Tried to send a message to node {recipient.get_id()}, '
                           f'but AES negotiation is not complete.')
             return
 
-        prepare_message_for_recipient(recipient, own_message)
+        aes_key, nonce = self.master_node.databases.conversations.get_decrypted_aes(recipient.get_id())
+        aes = Encryption.construct_aes_object(aes_key, nonce)
+        own_message.prepare(aes)
 
         if not own_message.is_prepared():
             logging.error(f'Something went wrong during the preparation of the message.')
             return
+
+        # Convert OwnMessage to Message, and store it in the conversations database.
+        msg_data = own_message.to_dict()
+        msg = Message.from_dict(msg_data)
+        self.master_node.databases.conversations.store_new_message(recipient.get_id(), msg)
 
         req = Requests.mpp(own_message)
         self.broadcast_request(req)
