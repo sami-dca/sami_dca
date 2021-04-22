@@ -41,6 +41,8 @@ class Message:
         :param dict message_data: A message information, as a dictionary.
         :return: A message object or None.
         """
+        message_data = message_data.copy()
+
         if not is_valid_received_message(message_data):
             return
 
