@@ -184,13 +184,8 @@ class Controller:
             if len(self.recipient_choices_ids) > 0:
                 self.new_message_recipient_id = self.recipient_choices_ids[0]
                 self.show_new_message_box()
-                self.recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)
 
             self.display_conversations(self.scroll_index, self.user_filter)
-
-            # Add events
-            self.new_chat_message_textCtrl.Bind(wx.EVT_TEXT, self.update_message)
-            self.send_new_chat_button.Bind(wx.EVT_BUTTON, self.send_message_to_new_node)
 
         def __del__(self):
             self.parent.Show()
@@ -302,6 +297,11 @@ class Controller:
             self.send_new_chat_button = wx.Button(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send",
                                                   wx.DefaultPosition, wx.DefaultSize, 0)
             self.new_chat_sbSizer.Add(self.send_new_chat_button, 0, wx.ALL, 5)
+
+            # Add events
+            self.recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)
+            self.new_chat_message_textCtrl.Bind(wx.EVT_TEXT, self.update_message)
+            self.send_new_chat_button.Bind(wx.EVT_BUTTON, self.send_message_to_new_node)
 
         def scroll(self, event) -> None:
             print("scroll event type: ", type(event))
