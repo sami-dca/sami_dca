@@ -34,7 +34,7 @@ def validate_fields(dictionary: dict, struct: dict) -> bool:
 
     if len(dictionary) != len(struct):
         if Config.log_validation:
-            log_msg = f'Lengths do not match: passed dict is {len(dictionary)}, expected {len(struct)}'
+            log_msg = f'Lengths do not match: passed dict length is {len(dictionary)}, expected {len(struct)}'
             if Config.verbose:
                 log_msg += f' (passed {dictionary}, expected {struct})'
             logging.error(log_msg)
@@ -182,6 +182,19 @@ def is_valid_received_message(message_data: dict) -> bool:
         return False
 
     if not is_valid_node(message_data["author"]):
+        return False
+
+    return True
+
+
+def is_valid_stored_message(message_data: dict) -> bool:
+    """
+    Performs tests on the data passed to check messages stored are valid.
+
+    :param dict message_data: A message, as a dict.
+    :return bool: True if it is, False otherwise.
+    """
+    if not validate_fields(message_data, Structures.stored_message_structure):
         return False
 
     return True

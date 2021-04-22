@@ -2,14 +2,14 @@
 
 import logging
 
-from dataclasses import dataclass
 from typing import Optional
+from dataclasses import dataclass
 
 from .node import Node
 from .config import Config
 from .encryption import Encryption
-from .utils import get_timestamp, is_int
-from .validation import is_valid_received_message, validate_export_structure
+from .utils import get_timestamp
+from .validation import is_valid_received_message, is_valid_stored_message, validate_export_structure
 
 
 @dataclass
@@ -22,7 +22,7 @@ class Meta:
 
 class Message:
 
-    def __init__(self, author: Node, content: str = None):
+    def __init__(self, author: Optional[Node] = None, content: Optional[str] = None):
         self.content = content
         self.author = author
         self.meta = Meta()
@@ -41,16 +41,20 @@ class Message:
         :param dict message_data: A message information, as a dictionary.
         :return: A message object or None.
         """
+        # As we'll directly modify the dictionary,
+        # we'll create a copy to avoid interfering with outside instances.
         message_data = message_data.copy()
+        message_id = cls.get_id_from_values(message_data['meta']['time_sent'],
+                                            message_data['meta']['digest'])
 
-        if not is_valid_received_message(message_data):
+        if not (is_valid_received_message(message_data) or is_valid_stored_message(message_data)):
             return
 
         aes = Encryption.construct_aes_object(aes_key, nonce)
         try:
             content = Encryption.decrypt_symmetric(aes, message_data["content"], message_data["meta"]["digest"])
         except (ValueError, KeyError):
-            logging.debug('We could not decrypt the message')
+            logging.debug(f'We could not decrypt message {message_id!r}')
             return
 
         content = Encryption.decode_bytes(content)
@@ -67,29 +71,40 @@ class Message:
         :param dict message_data: A message, as a dict.
         :return: A new message object or None.
         """
-        if not is_valid_received_message(message_data):
+        if not (is_valid_received_message(message_data) or is_valid_stored_message(message_data)):
             return
 
-        author = Node.from_dict(message_data["author"])
-        if not isinstance(author, Node):
-            logging.warning('Author is invalid, which makes no sense because '
-                            'we are supposed to have validated its values beforehand !')
-            return
+        if 'author' in message_data.keys():
+            author = Node.from_dict(message_data["author"])
+            if not isinstance(author, Node):
+                logging.warning('Author is invalid, which makes no sense because '
+                                'we are supposed to have validated its values beforehand !')
+                return
+            msg = cls(author=author, content=message_data["content"])
+        else:
+            msg = cls(content=message_data["content"])
 
-        msg = cls(author, message_data["content"])
-        time_sent = message_data['meta']['time_sent']
-        # We check the time sent is passed as expected.
-        if not (time_sent and is_int(time_sent)):
-            if Config.log_validation:
-                logging.debug(f"Message's {time_sent=!r} is invalid ({type(time_sent)})")
-            return
-        msg.set_time_sent(int(time_sent))
+        if 'time_received' in message_data['meta']:
+            time_received = int(message_data['meta']['time_received'])
+            msg.set_time_received(time_received)
 
+        time_sent = int(message_data['meta']['time_sent'])
+        msg.set_time_sent(time_sent)
         msg.set_digest(message_data["meta"]["digest"])
-
         msg.set_id()
 
         return msg
+
+    # Static methods
+
+    @staticmethod
+    def get_id_from_values(time_sent: int, digest: str):
+        """
+        Create an identifier from the time sent and the digest.
+        We use these two because the time sent is a constant set by the author,
+        and the digest is a hash of the content.
+        """
+        return Encryption.hash_iterable([time_sent, digest]).hexdigest()[:Config.id_len]
 
     # Attributes setters section
 
@@ -110,11 +125,15 @@ class Message:
         else:
             self.meta.time_sent = get_timestamp()
 
-    def set_time_received(self) -> None:
+    def set_time_received(self, value: Optional[int] = None) -> None:
         """
-        Sets the message's "time_received" timestamp as the actual time.
+        Sets the message's "time_received" timestamp as the actual time,
+        or as "value" if passed.
         """
-        self.meta.time_received = get_timestamp()
+        if isinstance(value, int):
+            self.meta.time_received = value
+        else:
+            self.meta.time_received = get_timestamp()
 
     def set_digest(self, digest: str) -> None:
         """
@@ -131,10 +150,7 @@ class Message:
         # Assert the values are set.
         assert self.meta.time_sent
         assert self.meta.digest
-        # Create an identifier from the time sent and the digest.
-        # We use these two because the time sent is a constant set by the author,
-        # and the digest is a hash of the content.
-        self._id = Encryption.hash_iterable([self.meta.time_sent, self.meta.digest]).hexdigest()
+        self._id = self.get_id_from_values(self.meta.time_sent, self.meta.digest)
 
     # Attributes getters section
 
