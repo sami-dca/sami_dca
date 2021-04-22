@@ -51,14 +51,14 @@ class MainMenu ( wx.Frame ):
 		self.node_name_info_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Your name : ", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.node_name_info_staticText.Wrap( -1 )
 
-		node_name_bSizer.Add( self.node_name_info_staticText, 0, wx.EXPAND, 5 )
+		node_name_bSizer.Add( self.node_name_info_staticText, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL|wx.EXPAND, 5 )
 
 		self.node_name_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.node_name_staticText.Wrap( -1 )
 
 		self.node_name_staticText.SetFont( wx.Font( wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, wx.EmptyString ) )
 
-		node_name_bSizer.Add( self.node_name_staticText, 0, wx.EXPAND, 5 )
+		node_name_bSizer.Add( self.node_name_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.EXPAND, 5 )
 
 
 		info_sbSizer.Add( node_name_bSizer, 1, wx.EXPAND, 5 )
@@ -263,59 +263,14 @@ class Conversation ( wx.Frame ):
 
 		messages_main_bSizer = wx.BoxSizer( wx.VERTICAL )
 
-		messages_bSizer = wx.BoxSizer( wx.VERTICAL )
-
-		message_1_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"node1" ), wx.HORIZONTAL )
-
-		self.message_content_1_staticText = wx.StaticText( message_1_sbSizer.GetStaticBox(), wx.ID_ANY, u"Hey, how are you doing today ? I eat pastas on a daily basis though", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.message_content_1_staticText.Wrap( -1 )
-
-		message_1_sbSizer.Add( self.message_content_1_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5 )
-
-		self.message_timestamp_1_staticText = wx.StaticText( message_1_sbSizer.GetStaticBox(), wx.ID_ANY, u"11:12 14/04/2020", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.message_timestamp_1_staticText.Wrap( -1 )
-
-		message_1_sbSizer.Add( self.message_timestamp_1_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
+		self.messages_bSizer = wx.BoxSizer( wx.VERTICAL )
 
 
-		messages_bSizer.Add( message_1_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
-
-		message_2_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"me (node5)" ), wx.HORIZONTAL )
-
-		self.message_content_2_staticText = wx.StaticText( message_2_sbSizer.GetStaticBox(), wx.ID_ANY, u"Nice, I eat bolognese along with banana", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.message_content_2_staticText.Wrap( -1 )
-
-		message_2_sbSizer.Add( self.message_content_2_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5 )
-
-		self.message_timestamp_2_staticText = wx.StaticText( message_2_sbSizer.GetStaticBox(), wx.ID_ANY, u"11:15 14/04/2020", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.message_timestamp_2_staticText.Wrap( -1 )
-
-		message_2_sbSizer.Add( self.message_timestamp_2_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
-
-
-		messages_bSizer.Add( message_2_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
-
-		message_3_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"node1" ), wx.HORIZONTAL )
-
-		self.message_content_3_staticText = wx.StaticText( message_3_sbSizer.GetStaticBox(), wx.ID_ANY, u"Thanks I like that too", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.message_content_3_staticText.Wrap( -1 )
-
-		message_3_sbSizer.Add( self.message_content_3_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5 )
-
-		self.message_timestamp_3_staticText = wx.StaticText( message_3_sbSizer.GetStaticBox(), wx.ID_ANY, u"11:16 14/04/2020", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.message_timestamp_3_staticText.Wrap( -1 )
-
-		message_3_sbSizer.Add( self.message_timestamp_3_staticText, 0, wx.ALL, 5 )
-
-
-		messages_bSizer.Add( message_3_sbSizer, 0, wx.ALL|wx.EXPAND, 5 )
-
-
-		messages_main_bSizer.Add( messages_bSizer, 1, wx.EXPAND, 5 )
+		messages_main_bSizer.Add( self.messages_bSizer, 1, wx.EXPAND, 5 )
 
 		new_message_bSizer = wx.BoxSizer( wx.HORIZONTAL )
 
-		self.new_message_textCtrl = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.new_message_textCtrl = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_AUTO_URL )
 		new_message_bSizer.Add( self.new_message_textCtrl, 1, wx.ALL|wx.EXPAND, 5 )
 
 		self.send_message_button = wx.Button( self, wx.ID_ANY, u"Send", wx.DefaultPosition, wx.DefaultSize, wx.BU_EXACTFIT )
@@ -337,6 +292,7 @@ class Conversation ( wx.Frame ):
 		self.Centre( wx.BOTH )
 
 		# Connect Events
+		self.new_message_textCtrl.Bind( wx.EVT_TEXT, self.update_new_message )
 		self.send_message_button.Bind( wx.EVT_BUTTON, self.send_message_to_current_node )
 
 	def __del__( self ):
@@ -344,6 +300,9 @@ class Conversation ( wx.Frame ):
 
 
 	# Virtual event handlers, overide them in your derived class
+	def update_new_message( self, event ):
+		event.Skip()
+
 	def send_message_to_current_node( self, event ):
 		event.Skip()
 

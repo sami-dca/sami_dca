@@ -40,18 +40,6 @@ class Controller:
 
     And
 
-    chat_container_bSizer
-    by
-    self.chat_container_bSizer
-
-    And
-
-    recipient_bSizer
-    by
-    self.recipient_bSizer
-
-    And
-
     chat_container_main_bSizer
     by
     self.chat_container_main_bSizer
@@ -61,6 +49,12 @@ class Controller:
     received_messages_bSizer
     by
     self.received_messages_bSizer
+    
+    And
+    
+    messages_bSizer
+    by
+    self.messages_bSizer
 
     """
 
@@ -183,6 +177,7 @@ class Controller:
             # If the list if empty however, we'll just won't set the var
             # and won't display the new message box.
             if len(self.recipient_choices_ids) > 0:
+                self.new_message = None
                 self.new_message_recipient_id = self.recipient_choices_ids[0]
                 self.show_new_message_box()
 
@@ -232,79 +227,80 @@ class Controller:
                 node_sb_sizer = wx.StaticBoxSizer(wx.StaticBox(self, id=wx.ID_ANY, label=node_name), wx.HORIZONTAL)
 
                 # Displays the last message of the conversation.
-                self.conv_snippet_staticText = wx.StaticText(node_sb_sizer.GetStaticBox(), wx.ID_ANY,
-                                                             last_message.get_message(), wx.DefaultPosition,
-                                                             wx.DefaultSize, wx.ST_ELLIPSIZE_END)
-                self.conv_snippet_staticText.Wrap(-1)
-                node_sb_sizer.Add(self.conv_snippet_staticText, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+                conv_snippet_static_text = wx.StaticText(node_sb_sizer.GetStaticBox(), wx.ID_ANY,
+                                                         last_message.get_message(), wx.DefaultPosition,
+                                                         wx.DefaultSize, wx.ST_ELLIPSIZE_END)
+                conv_snippet_static_text.Wrap(-1)
+                node_sb_sizer.Add(conv_snippet_static_text, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-                self.conv_last_date_staticText = wx.StaticText(node_sb_sizer.GetStaticBox(), wx.ID_ANY,
-                                                               last_message_date, wx.DefaultPosition,
-                                                               wx.DefaultSize, 0)
-                self.conv_last_date_staticText.Wrap(-1)
-                node_sb_sizer.Add(self.conv_last_date_staticText, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL |
+                conv_last_date_static_text = wx.StaticText(node_sb_sizer.GetStaticBox(), wx.ID_ANY,
+                                                           last_message_date, wx.DefaultPosition,
+                                                           wx.DefaultSize, 0)
+                conv_last_date_static_text.Wrap(-1)
+                node_sb_sizer.Add(conv_last_date_static_text, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL |
                                   wx.ALIGN_CENTER_HORIZONTAL, 5)
 
-                # Adds an "open" button on the conversation sizer.
-                self.conv_open_button = wx.Button(node_sb_sizer.GetStaticBox(), wx.ID_ANY, u"Open", wx.DefaultPosition,
-                                                  wx.DefaultSize, wx.BU_EXACTFIT)
-                node_sb_sizer.Add(self.conv_open_button, 0, wx.ALL, 5)
+                # Adds an interaction button on the conversation sizer.
+                open_conversation_button_label = u"Open"
+                conv_open_button = wx.Button(node_sb_sizer.GetStaticBox(), wx.ID_ANY, open_conversation_button_label,
+                                             wx.DefaultPosition, wx.DefaultSize, wx.BU_EXACTFIT)
+                node_sb_sizer.Add(conv_open_button, 0, wx.ALL, 5)
                 self.received_messages_bSizer.Add(node_sb_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
                 # We're passing custom data using a lambda function
-                self.conv_open_button.Bind(wx.EVT_BUTTON, lambda event: self.open_chat_id(event, node_id))
+                conv_open_button.Bind(wx.EVT_BUTTON, lambda event: self.open_chat_id(event, node_id))
 
                 displayed_conversations += 1
 
             # If one or more conversation are displayed
             if displayed_conversations > 0:
                 # Adds a scrollbar
-                self.conversations_scrollBar = wx.ScrollBar(self, wx.ID_ANY, pos=wx.Point(displayed_conversations,
-                                                                                          displayed_conversations),
-                                                            size=wx.DefaultSize, style=wx.SB_VERTICAL)
-                self.chat_container_main_bSizer.Add(self.conversations_scrollBar, 0, wx.ALL | wx.EXPAND, 5)
-                self.conversations_scrollBar.Bind(wx.EVT_SCROLL, self.scroll)
+                scroll_bar = wx.ScrollBar(self, wx.ID_ANY,
+                                          pos=wx.Point(displayed_conversations, displayed_conversations),
+                                          size=wx.DefaultSize, style=wx.SB_VERTICAL)
+                self.chat_container_main_bSizer.Add(scroll_bar, 0, wx.ALL | wx.EXPAND, 5)
+                scroll_bar.Bind(wx.EVT_SCROLL, self.scroll)
 
         def show_new_message_box(self) -> None:
             recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_ids]
 
             # Adds the choice box.
-            self.recipient_choice = wx.Choice(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
-                                              wx.DefaultSize, recipient_choices_names, 0)
+            recipient_choice = wx.Choice(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
+                                         wx.DefaultSize, recipient_choices_names, 0)
             # Initialize the selection to 0.
-            self.recipient_choice.SetSelection(0)
+            recipient_choice.SetSelection(0)
             # Add to the sizer (display).
-            self.new_chat_sbSizer.Add(self.recipient_choice, 1, wx.ALL, 5)
+            self.new_chat_sbSizer.Add(recipient_choice, 1, wx.ALL, 5)
 
-            # Adds some text.
-            message_staticText = wx.StaticText(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Message",
-                                               wx.DefaultPosition, wx.DefaultSize, 0)
-            # Add style
-            message_staticText.Wrap(-1)
-            # Add to the sizer (display).
-            self.new_chat_sbSizer.Add(message_staticText, 0, 0, 5)
+            # Adds box description
+            description = u"Message"
+            message_static_text = wx.StaticText(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
+                                                description, wx.DefaultPosition, wx.DefaultSize, 0)
+            message_static_text.Wrap(-1)
+            self.new_chat_sbSizer.Add(message_static_text, 0, 0, 5)
 
             # Adds the textControl box, for the user to compose a message
 
             # Create a new message object.
             self.new_message = OwnMessage(self.master_node)
-            self.new_chat_message_textCtrl = wx.TextCtrl(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
-                                                         wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
-                                                         wx.TE_AUTO_URL | wx.TE_BESTWRAP | wx.TE_CHARWRAP |
-                                                         wx.TE_MULTILINE | wx.TE_NOHIDESEL | wx.TE_RICH |
-                                                         wx.TE_RICH2 | wx.TE_WORDWRAP)
-            self.new_chat_message_textCtrl.SetMinSize(wx.Size(-1, 50))
-            self.new_chat_sbSizer.Add(self.new_chat_message_textCtrl, 1, wx.ALL | wx.EXPAND, 5)
+            new_chat_message_text_ctrl = wx.TextCtrl(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
+                                                     wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
+                                                     wx.TE_AUTO_URL | wx.TE_BESTWRAP | wx.TE_CHARWRAP |
+                                                     wx.TE_MULTILINE | wx.TE_NOHIDESEL | wx.TE_RICH |
+                                                     wx.TE_RICH2 | wx.TE_WORDWRAP)
+            new_chat_message_text_ctrl.SetMinSize(wx.Size(-1, 50))
+            self.new_chat_sbSizer.Add(new_chat_message_text_ctrl, 1, wx.ALL | wx.EXPAND, 5)
 
-            # Add the "Send" button.
-            self.send_new_chat_button = wx.Button(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send",
-                                                  wx.DefaultPosition, wx.DefaultSize, 0)
-            self.new_chat_sbSizer.Add(self.send_new_chat_button, 0, wx.ALL, 5)
+            # Add the submit button.
+            button_label = u"Send"
+            send_new_chat_button = wx.Button(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
+                                             button_label, wx.DefaultPosition, wx.DefaultSize, 0)
+            self.new_chat_sbSizer.Add(send_new_chat_button, 0, wx.ALL, 5)
 
             # Add events
-            self.recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)
-            self.new_chat_message_textCtrl.Bind(wx.EVT_TEXT, self.update_message)
-            self.send_new_chat_button.Bind(wx.EVT_BUTTON, self.send_message_to_new_node)
+            recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)
+            new_chat_message_text_ctrl.Bind(wx.EVT_TEXT, self.update_message)
+            send_new_chat_button.Bind(wx.EVT_BUTTON, self.send_message_to_new_node)
 
         def scroll(self, event: wx.ScrollEvent) -> None:
             self.scroll_index = event.GetPosition()
@@ -316,11 +312,12 @@ class Controller:
             self.display_conversations(self.scroll_index, self.user_filter)
 
         def open_chat_id(self, event: wx.CommandEvent, node_id: str) -> None:
-            full_conversation = Controller.ConversationWrapper(self, self.master_node, node_id)
+            full_conversation = Controller.ConversationWrapper(self, self.master_node, self.network, node_id)
             full_conversation.Show()
             self.Hide()
+            event.Skip()
 
-        def update_new_message_recipient(self, event) -> None:
+        def update_new_message_recipient(self, event: wx.CommandEvent) -> None:
             self.new_message_recipient_id = self.recipient_choices_ids[event.GetSelection()]
 
         def send_message_to_new_node(self, event: wx.CommandEvent) -> None:
@@ -330,7 +327,7 @@ class Controller:
                 raise KeyError("Tried to send a message to a node we don't know ?!")
             if not is_valid_node(node_info):
                 # TODO: We should delete the entry from the database.
-                raise ValueError(f"Invalid node information in the database for {self.new_message_recipient_id}")
+                raise ValueError(f"Invalid node information in the database for {self.new_message_recipient_id!r}")
 
             node = Node.from_dict(node_info)
 
@@ -339,6 +336,8 @@ class Controller:
 
             # TODO: Should be sent to a MP queue ; as of now, the window freezes when clicking "Send".
             self.network.prepare_and_send_own_message(node, self.new_message)
+
+            event.Skip()
 
         def update_message(self, event: wx.CommandEvent) -> None:
             """
@@ -349,43 +348,63 @@ class Controller:
 
     class ConversationWrapper(Conversation):
 
-        def __init__(self, parent, master_node, recipient_node_id):
+        def __init__(self, parent, master_node, network, recipient_node_id):
             Conversation.__init__(self, parent)
             self.parent = parent
+            self.network = network
             self.master_node = master_node
             self.recipient_id = recipient_node_id
+            self.new_message = OwnMessage(self.master_node)
 
         def __del__(self):
             self.parent.Show()
 
         def display_conversation(self):
-            messages = self.master_node.databases.conversations.get_all_messages_of_conversation_raw(self.master_node.get_rsa_private_key(),
-                                                                                                     self.recipient_id)
-            messages_wx_objects = {}
+            messages = self.master_node.databases.conversations.get_all_messages_of_conversation(self.recipient_id)
+
             for message in messages:
-                msg_content = message.get_message()
-                msg_received = get_date_from_timestamp(message.get_time_received())
+                content = message.get_message()
+                received_timestamp = get_date_from_timestamp(message.get_time_received())
                 rcp_name = Node.derive_name(self.recipient_id)
 
                 # Variable implementation, might need a dictionary implementation.
 
-                message_1_sbSizer = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, rcp_name, wx.HORIZONTAL))
+                message_sb_sizer = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, rcp_name, wx.HORIZONTAL))
 
-                self.message_content_1_staticText = wx.StaticText(message_1_sbSizer.GetStaticBox(), wx.ID_ANY,
-                                                                  msg_content,
-                                                                  wx.DefaultPosition, wx.DefaultSize, 0)
-                self.message_content_1_staticText.Wrap(-1)
+                message_content_static_text = wx.StaticText(message_sb_sizer.GetStaticBox(), wx.ID_ANY,
+                                                            content, wx.DefaultPosition, wx.TE_AUTO_URL,
+                                                            wx.DefaultSize, 0)
+                message_content_static_text.Wrap(-1)
 
-                message_1_sbSizer.Add(self.message_content_1_staticText, 1, wx.ALIGN_CENTER_VERTICAL, 5)
+                message_sb_sizer.Add(message_content_static_text, 1, wx.ALIGN_CENTER_VERTICAL, 5)
 
-                self.message_timestamp_1_staticText = wx.StaticText(message_1_sbSizer.GetStaticBox(), wx.ID_ANY,
-                                                                    msg_received, wx.DefaultPosition, wx.DefaultSize,
-                                                                    0)
-                self.message_timestamp_1_staticText.Wrap(-1)
+                message_timestamp_static_text = wx.StaticText(message_sb_sizer.GetStaticBox(), wx.ID_ANY,
+                                                              received_timestamp, wx.DefaultPosition,
+                                                              wx.DefaultSize, 0)
+                message_timestamp_static_text.Wrap(-1)
 
-                message_1_sbSizer.Add(self.message_timestamp_1_staticText, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+                message_sb_sizer.Add(message_timestamp_static_text, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-                self.messages_bSizer.Add(message_1_sbSizer, 0, wx.ALL | wx.EXPAND, 5)
+                self.messages_bSizer.Add(message_sb_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
-        def send_message_to_current_node(self, event):
+        def update_new_message(self, event: wx.CommandEvent):
+            self.new_message.set_message(event.GetString())
+
+        def send_message_to_current_node(self, event: wx.CommandEvent):
+            node_info: dict = self.master_node.databases.nodes.get_node_info(self.recipient_id)
+
+            if not node_info:
+                raise KeyError("Tried to send a message to a node we don't know ?!")
+            if not is_valid_node(node_info):
+                # TODO: We should delete the entry from the database.
+                raise ValueError(f"Invalid node information in the database for {self.recipient_id!r}")
+
+            node = Node.from_dict(node_info)
+
+            if not node:
+                raise InterruptedError('Could not create node object')
+
+            # TODO: Should be sent to a MP queue ; as of now, the window freezes when clicking "Send".
+            self.network.prepare_and_send_own_message(node, self.new_message)
+
             event.Skip()
