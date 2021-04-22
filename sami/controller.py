@@ -179,16 +179,16 @@ class Controller:
             self.user_filter = ""
             # Selected node of the "new message" box.
             # By default the first one, with index 0.
-            # If the list if empty however, we'll just won't set the var.
+            # If the list if empty however, we'll just won't set the var
+            # and won't display the new message box.
             if len(self.recipient_choices_ids) > 0:
                 self.new_message_recipient_id = self.recipient_choices_ids[0]
+                self.show_new_message_box()
+                self.recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)
 
             self.display_conversations(self.scroll_index, self.user_filter)
 
-            self.show_new_message_box()
-
             # Add events
-            self.recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)
             self.new_chat_message_textCtrl.Bind(wx.EVT_TEXT, self.update_message)
             self.send_new_chat_button.Bind(wx.EVT_BUTTON, self.send_message_to_new_node)
 
@@ -268,9 +268,6 @@ class Controller:
                 self.conversations_scrollBar.Bind(wx.EVT_SCROLL, self.scroll)
 
         def show_new_message_box(self) -> None:
-            if len(self.recipient_choices_ids) == 0:
-                return
-
             recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_ids]
 
             # Adds the choice box.
