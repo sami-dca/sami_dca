@@ -543,7 +543,7 @@ class Network:
     # Network interactions section #
     ################################
 
-    def send_message(self, recipient: Node, own_message: OwnMessage) -> None:
+    def prepare_and_send_own_message(self, recipient: Node, own_message: OwnMessage) -> None:
 
         if not self.master_node.databases.conversations.is_aes_negotiated(recipient.get_id()):
             logging.error(f'Tried to send a message to node {recipient.get_id()}, '
@@ -561,6 +561,8 @@ class Network:
         # Convert OwnMessage to Message, and store it in the conversations database.
         msg_data = own_message.to_dict()
         msg = Message.from_dict(msg_data)
+        # Hack our way around AssertionError
+        msg.set_time_received()
         self.master_node.databases.conversations.store_new_message(recipient.get_id(), msg)
 
         req = Requests.mpp(own_message)

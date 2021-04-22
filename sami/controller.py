@@ -340,7 +340,7 @@ class Controller:
                 raise InterruptedError('Could not create node object')
 
             # TODO: Should be sent to a MP queue ; as of now, the window freezes when clicking "Send".
-            self.network.send_message(node, self.new_message)
+            self.network.prepare_and_send_own_message(node, self.new_message)
 
         def update_message(self, event: wx.CommandEvent) -> None:
             """

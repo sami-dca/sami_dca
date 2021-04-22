@@ -218,6 +218,8 @@ class Node:
 
 class MasterNode(Node):
 
+    # TODO: Make singleton (persistent instance)
+
     def __init__(self):
         Node.__init__(self)
         self._rsa_private_key = None

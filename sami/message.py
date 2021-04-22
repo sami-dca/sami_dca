@@ -198,6 +198,7 @@ class Message:
 class OwnMessage(Message):
 
     def __init__(self, author):
+        # TODO: get rid of author once the MasterNode is a singleton.
         Message.__init__(self, author)
         self._is_prepared: bool = False
 
