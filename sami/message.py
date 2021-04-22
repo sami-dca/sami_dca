@@ -8,7 +8,7 @@ from typing import Optional
 from .node import Node
 from .config import Config
 from .encryption import Encryption
-from .utils import get_timestamp, encode_json, is_int
+from .utils import get_timestamp, is_int
 from .validation import is_valid_received_message, validate_export_structure
 
 
@@ -22,10 +22,11 @@ class Meta:
 
 class Message:
 
-    def __init__(self, author, content: str = None):
+    def __init__(self, author: Node, content: str = None):
         self.content = content
         self.author = author
         self.meta = Meta()
+        self._id = None
 
     # Class methods section
 
@@ -84,6 +85,8 @@ class Message:
 
         msg.set_digest(message_data["meta"]["digest"])
 
+        msg.set_id()
+
         return msg
 
     # Attributes setters section
@@ -113,20 +116,23 @@ class Message:
 
     def set_digest(self, digest: str) -> None:
         """
-        Sets the "message["meta"]["digest"]" attribute.
+        Sets the digest attribute.
 
         :param str digest: The digest of the encrypted message.
         """
         self.meta.digest = digest
 
-    def set_signature(self, sig) -> None:
-        pass
-
     def set_id(self) -> None:
         """
         Sets the message's id.
         """
-        self.meta.id = self.get_id()
+        # Assert the values are set.
+        assert self.meta.time_sent
+        assert self.meta.digest
+        # Create an identifier from the time sent and the digest.
+        # We use these two because the time sent is a constant set by the author,
+        # and the digest is a hash of the content.
+        self._id = Encryption.hash_iterable([self.meta.time_sent, self.meta.digest]).hexdigest()
 
     # Attributes getters section
 
@@ -158,24 +164,7 @@ class Message:
 
         :return str: The message's unique ID.
         """
-        return Message.get_id_from_message(self.to_dict())
-
-    @staticmethod
-    def get_id_from_message(message: dict) -> str:
-        """
-        Gets an ID from a message's information.
-        It is unique, and can be computed by anyone at anytime.
-
-        :param dict message: A message information, as a dictionary.
-        :return str: An identifier for this message.
-        """
-        # Assert the values are set.
-        assert message["meta"]["time_sent"]
-        assert message["meta"]["digest"]
-        # Create an identifier from the time sent and the digest.
-        # We use these two because the time sent is a constant set by the author,
-        # and the digest is a hash of the content.
-        return Encryption.hash_iterable([message["meta"]["time_sent"], message["meta"]["digest"]]).hexdigest()
+        return self._id
 
     # Export section
 
@@ -211,6 +200,10 @@ class OwnMessage(Message):
     def __init__(self, author):
         Message.__init__(self, author)
         self._is_prepared: bool = False
+
+    @classmethod
+    def from_dict(cls, *args, **kwargs):
+        raise PermissionError('Illegal operation.')
 
     def prepare(self, aes) -> None:
         """
