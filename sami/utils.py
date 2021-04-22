@@ -1,6 +1,7 @@
 # -*- coding: UTF8 -*-
 
 import re
+import copy
 import json
 import time
 import socket
@@ -13,6 +14,21 @@ from difflib import get_close_matches
 from urllib.request import urlopen
 
 from .config import Config
+
+
+def resettable(f):
+    # From https://stackoverflow.com/a/4866695/9084059
+
+    def __init_and_copy__(self, *args, **kwargs):
+        f(self, *args, **kwargs)
+        self.__original_dict__ = copy.deepcopy(self.__dict__)
+
+        def reset(o=self):
+            o.__dict__ = o.__original_dict__
+
+        self.reset = reset
+
+    return __init_and_copy__
 
 
 def encode_json(dictionary: dict) -> str:

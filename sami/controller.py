@@ -11,10 +11,10 @@ import wx.xrc
 
 from .node import Node
 from .encryption import Encryption
-from .message import Message, OwnMessage
-from .utils import get_date_from_timestamp
-from .wxdisplay import MainMenu, Conversation, CreateNewKeyPair, ReceivedMessages
 from .validation import is_valid_node
+from .message import Message, OwnMessage
+from .utils import get_date_from_timestamp, resettable
+from .wxdisplay import MainMenu, Conversation, CreateNewKeyPair, ReceivedMessages
 
 
 class Controller:
@@ -36,13 +36,13 @@ class Controller:
 
     new_chat_sbSizer
     by
-    self.newChat_sbSizer
+    self.new_chat_sbSizer
 
     And
 
     chat_container_bSizer
     by
-    self.chatContainer_bSizer
+    self.chat_container_bSizer
 
     And
 
@@ -54,7 +54,7 @@ class Controller:
 
     chat_container_main_bSizer
     by
-    self.chatContainerMain_bSizer
+    self.chat_container_main_bSizer
 
     And
     
@@ -161,6 +161,7 @@ class Controller:
 
     class ReceivedMessagesWrapper(ReceivedMessages):
 
+        @resettable
         def __init__(self, parent, master_node, network):
             ReceivedMessages.__init__(self, parent)
             self.parent = parent
@@ -204,6 +205,8 @@ class Controller:
             :param int scroll_index:
             :param str user_filter:
             """
+            self.reset()
+
             all_conv_ids = self.master_node.databases.conversations.get_all_conversations_ids()
 
             displayed_conversations = 0
@@ -303,8 +306,7 @@ class Controller:
             self.new_chat_message_textCtrl.Bind(wx.EVT_TEXT, self.update_message)
             self.send_new_chat_button.Bind(wx.EVT_BUTTON, self.send_message_to_new_node)
 
-        def scroll(self, event) -> None:
-            print("scroll event type: ", type(event))
+        def scroll(self, event: wx.ScrollEvent) -> None:
             self.scroll_index = event.GetPosition()
             self.display_conversations(self.scroll_index, self.user_filter)
 
@@ -314,7 +316,6 @@ class Controller:
             self.display_conversations(self.scroll_index, self.user_filter)
 
         def open_chat_id(self, event: wx.CommandEvent, node_id: str) -> None:
-            print("open_chat_id event type: ", type(event))
             full_conversation = Controller.ConversationWrapper(self, self.master_node, node_id)
             full_conversation.Show()
             self.Hide()
