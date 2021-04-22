@@ -51,14 +51,14 @@ class MainMenu ( wx.Frame ):
 		self.node_name_info_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, u"Your name : ", wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.node_name_info_staticText.Wrap( -1 )
 
-		node_name_bSizer.Add( self.node_name_info_staticText, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL|wx.EXPAND, 5 )
+		node_name_bSizer.Add( self.node_name_info_staticText, 0, wx.ALL|wx.EXPAND, 5 )
 
 		self.node_name_staticText = wx.StaticText( info_sbSizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
 		self.node_name_staticText.Wrap( -1 )
 
 		self.node_name_staticText.SetFont( wx.Font( wx.NORMAL_FONT.GetPointSize(), wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, False, wx.EmptyString ) )
 
-		node_name_bSizer.Add( self.node_name_staticText, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.EXPAND, 5 )
+		node_name_bSizer.Add( self.node_name_staticText, 0, wx.ALL|wx.EXPAND, 5 )
 
 
 		info_sbSizer.Add( node_name_bSizer, 1, wx.EXPAND, 5 )
