@@ -391,13 +391,9 @@ class Network:
 
         message_enc = Message.from_dict(request.data)
 
-        # We'll add the `time_received` attribute, which is necessary for storing the message.
         message_enc.set_time_received()
 
-        self.master_node.databases.conversations.store_new_message(
-            author.get_id(),
-            message_enc
-        )
+        self.master_node.databases.conversations.store_new_message(author.get_id(), message_enc)
 
     def handle_new_node(self, request: Request) -> None:
         """
@@ -513,9 +509,8 @@ class Network:
 
         for contact in self.find_available_contact():
             req = Requests.wup_ini(last_received_request.timestamp, contact)
-            for _ in range(10):  # 10 tries
-                if self.send_request(req, contact):
-                    return
+            if self.send_request(req, contact):
+                return
 
     def request_nodes(self) -> None:
         """
