@@ -155,7 +155,6 @@ class Controller:
 
     class ReceivedMessagesWrapper(ReceivedMessages):
 
-        @resettable
         def __init__(self, parent, master_node, network):
             ReceivedMessages.__init__(self, parent)
             self.parent = parent
@@ -200,8 +199,6 @@ class Controller:
             :param int scroll_index:
             :param str user_filter:
             """
-            self.reset()
-
             all_conv_ids = self.master_node.databases.conversations.get_all_conversations_ids()
 
             displayed_conversations = 0
