@@ -250,7 +250,7 @@ class Controller:
                 displayed_conversations += 1
 
             # If one or more conversation are displayed
-            if displayed_conversations > 0:
+            if displayed_conversations > 0 and False:  # Disabled
                 # Adds a scrollbar
                 scroll_bar = wx.ScrollBar(self, wx.ID_ANY,
                                           pos=wx.Point(displayed_conversations, displayed_conversations),
