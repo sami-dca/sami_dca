@@ -357,8 +357,9 @@ class Controller:
 
             for message in messages:
                 content = message.get_message()
+                message_author = Node.from_dict(message['author'])
                 received_timestamp = get_date_from_timestamp(message.get_time_received())
-                rcp_name = Node.derive_name(self.recipient_id)
+                rcp_name = Node.derive_name(message_author.get_id())
 
                 message_sb_sizer = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, rcp_name), wx.HORIZONTAL)
 
