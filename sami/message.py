@@ -168,6 +168,9 @@ class Message:
     def get_time_received(self) -> Optional[int]:
         return self.meta.time_received
 
+    def get_author(self) -> Optional[Node]:
+        return self.author
+
     def get_digest(self) -> Optional[str]:
         """
         Returns own AES digest.

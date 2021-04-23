@@ -357,7 +357,7 @@ class Controller:
 
             for message in messages:
                 content = message.get_message()
-                message_author = Node.from_dict(message['author'])
+                message_author = message.get_author()
                 received_timestamp = get_date_from_timestamp(message.get_time_received())
                 rcp_name = Node.derive_name(message_author.get_id())
 
