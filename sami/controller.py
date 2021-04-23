@@ -13,7 +13,7 @@ from .node import Node
 from .encryption import Encryption
 from .validation import is_valid_node
 from .message import Message, OwnMessage
-from .utils import get_date_from_timestamp, resettable
+from .utils import get_date_from_timestamp
 from .wxdisplay import MainMenu, Conversation, CreateNewKeyPair, ReceivedMessages
 
 
