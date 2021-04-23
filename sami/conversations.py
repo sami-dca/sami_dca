@@ -105,8 +105,11 @@ class Conversations:
         message_id = message.get_id()
         message_data = message.to_dict()
         # Get the whole conversation, and append the message to it.
-        full_conversation = self.db.query(self.db.conversation_table, conversation_id)
-        full_conversation.update({message_id: message_data})
+        if self.db.key_exists(self.db.conversation_table, conversation_id):
+            full_conversation = self.db.query(self.db.conversation_table, conversation_id)
+            full_conversation.update({message_id: message_data})
+        else:
+            full_conversation = {message_id: message_data}
         self.db.insert_dict(self.db.conversation_table, {conversation_id: full_conversation})
 
     def get_message_from_id(self, conversation_id: str, message_id: str) -> Optional[Message]:
