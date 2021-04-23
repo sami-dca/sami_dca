@@ -197,7 +197,7 @@ class Message:
         time_sent = self.get_time_sent()
         time_received = self.get_time_received()
         digest = self.get_digest()
-        author = self.author
+        author = self.author.to_dict()
 
         assert content
         assert time_sent
