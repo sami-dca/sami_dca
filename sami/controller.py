@@ -259,39 +259,54 @@ class Controller:
                 scroll_bar.Bind(wx.EVT_SCROLL, self.scroll)
 
         def show_new_message_box(self) -> None:
+
+            new_chat_sb_sizer = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, u"New conversation"), wx.VERTICAL)
+
+            recipient_b_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+            recipient_static_text = wx.StaticText(new_chat_sb_sizer.GetStaticBox(), wx.ID_ANY, u"Send to:",
+                                                  wx.DefaultPosition, wx.DefaultSize, 0)
+            recipient_static_text.Wrap(-1)
+
+            recipient_b_sizer.Add(recipient_static_text, 0, wx.ALIGN_CENTER_VERTICAL, 5)
+
+            new_chat_sb_sizer.Add(recipient_b_sizer, 0, wx.EXPAND, 5)
+
+            self.received_messages_bSizer.Add(new_chat_sb_sizer, 0, wx.EXPAND, 5)
+
             recipient_choices_names = [Node.derive_name(i) for i in self.recipient_choices_ids]
 
             # Adds the choice box.
-            recipient_choice = wx.Choice(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
+            recipient_choice = wx.Choice(new_chat_sb_sizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition,
                                          wx.DefaultSize, recipient_choices_names, 0)
             # Initialize the selection to 0.
             recipient_choice.SetSelection(0)
             # Add to the sizer (display).
-            self.new_chat_sbSizer.Add(recipient_choice, 1, wx.ALL, 5)
+            new_chat_sb_sizer.Add(recipient_choice, 1, wx.ALL, 5)
 
             # Adds box description
             description = u"Message"
-            message_static_text = wx.StaticText(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
+            message_static_text = wx.StaticText(new_chat_sb_sizer.GetStaticBox(), wx.ID_ANY,
                                                 description, wx.DefaultPosition, wx.DefaultSize, 0)
             message_static_text.Wrap(-1)
-            self.new_chat_sbSizer.Add(message_static_text, 0, 0, 5)
+            new_chat_sb_sizer.Add(message_static_text, 0, 0, 5)
 
             # Adds the textControl box, for the user to compose a message
 
             self.new_message = OwnMessage(self.master_node)
-            new_chat_message_text_ctrl = wx.TextCtrl(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
+            new_chat_message_text_ctrl = wx.TextCtrl(new_chat_sb_sizer.GetStaticBox(), wx.ID_ANY,
                                                      wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
                                                      wx.TE_AUTO_URL | wx.TE_BESTWRAP | wx.TE_CHARWRAP |
                                                      wx.TE_MULTILINE | wx.TE_NOHIDESEL | wx.TE_RICH |
                                                      wx.TE_RICH2 | wx.TE_WORDWRAP)
             new_chat_message_text_ctrl.SetMinSize(wx.Size(-1, 50))
-            self.new_chat_sbSizer.Add(new_chat_message_text_ctrl, 1, wx.ALL | wx.EXPAND, 5)
+            new_chat_sb_sizer.Add(new_chat_message_text_ctrl, 1, wx.ALL | wx.EXPAND, 5)
 
             # Add the submit button.
             button_label = u"Send"
-            send_new_chat_button = wx.Button(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
+            send_new_chat_button = wx.Button(new_chat_sb_sizer.GetStaticBox(), wx.ID_ANY,
                                              button_label, wx.DefaultPosition, wx.DefaultSize, 0)
-            self.new_chat_sbSizer.Add(send_new_chat_button, 0, wx.ALL, 5)
+            new_chat_sb_sizer.Add(send_new_chat_button, 0, wx.ALL, 5)
 
             # Add events
             recipient_choice.Bind(wx.EVT_CHOICE, self.update_new_message_recipient)

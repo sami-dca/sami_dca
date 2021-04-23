@@ -215,22 +215,6 @@ class ReceivedMessages ( wx.Frame ):
 
 		self.received_messages_bSizer.Add( self.chat_container_main_bSizer, 1, wx.EXPAND, 5 )
 
-		self.new_chat_sbSizer = wx.StaticBoxSizer( wx.StaticBox( self, wx.ID_ANY, u"New conversation" ), wx.VERTICAL )
-
-		recipient_bSizer = wx.BoxSizer( wx.HORIZONTAL )
-
-		self.recipient_staticText = wx.StaticText( self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY, u"Send to:", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.recipient_staticText.Wrap( -1 )
-
-		recipient_bSizer.Add( self.recipient_staticText, 0, wx.ALIGN_CENTER_VERTICAL, 5 )
-
-
-		self.new_chat_sbSizer.Add( recipient_bSizer, 0, wx.EXPAND, 5 )
-
-
-		self.received_messages_bSizer.Add( self.new_chat_sbSizer, 0, wx.EXPAND, 5 )
-
-
 		self.SetSizer( self.received_messages_bSizer )
 		self.Layout()
 
