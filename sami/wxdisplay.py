@@ -282,8 +282,8 @@ class Conversation ( wx.Frame ):
 
 		conversation_bSizer.Add( messages_main_bSizer, 1, wx.EXPAND, 5 )
 
-		self.messages_scrollBar = wx.ScrollBar( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.SB_VERTICAL )
-		conversation_bSizer.Add( self.messages_scrollBar, 0, wx.EXPAND, 5 )
+		# self.messages_scrollBar = wx.ScrollBar( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.SB_VERTICAL )
+		# conversation_bSizer.Add( self.messages_scrollBar, 0, wx.EXPAND, 5 )
 
 
 		self.SetSizer( conversation_bSizer )
