@@ -281,7 +281,6 @@ class Controller:
 
             # Adds the textControl box, for the user to compose a message
 
-            # Create a new message object.
             self.new_message = OwnMessage(self.master_node)
             new_chat_message_text_ctrl = wx.TextCtrl(self.new_chat_sbSizer.GetStaticBox(), wx.ID_ANY,
                                                      wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
@@ -340,10 +339,6 @@ class Controller:
             event.Skip()
 
         def update_message(self, event: wx.CommandEvent) -> None:
-            """
-            This function is called every time the new message txtCtrl is updated.
-            Relatively inefficient performance-wise ; needs to be improved.
-            """
             self.new_message.set_message(event.GetString())
 
     class ConversationWrapper(Conversation):
@@ -355,11 +350,12 @@ class Controller:
             self.master_node = master_node
             self.recipient_id = recipient_node_id
             self.new_message = OwnMessage(self.master_node)
+            self.display_conversation()
 
         def __del__(self):
             self.parent.Show()
 
-        def display_conversation(self):
+        def display_conversation(self) -> None:
             messages = self.master_node.databases.conversations.get_all_messages_of_conversation(self.recipient_id)
 
             for message in messages:
@@ -367,13 +363,10 @@ class Controller:
                 received_timestamp = get_date_from_timestamp(message.get_time_received())
                 rcp_name = Node.derive_name(self.recipient_id)
 
-                # Variable implementation, might need a dictionary implementation.
-
-                message_sb_sizer = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, rcp_name, wx.HORIZONTAL))
+                message_sb_sizer = wx.StaticBoxSizer(wx.StaticBox(self, wx.ID_ANY, rcp_name), wx.HORIZONTAL)
 
                 message_content_static_text = wx.StaticText(message_sb_sizer.GetStaticBox(), wx.ID_ANY,
-                                                            content, wx.DefaultPosition, wx.TE_AUTO_URL,
-                                                            wx.DefaultSize, 0)
+                                                            content, wx.DefaultPosition, wx.DefaultSize, 0)
                 message_content_static_text.Wrap(-1)
 
                 message_sb_sizer.Add(message_content_static_text, 1, wx.ALIGN_CENTER_VERTICAL, 5)
@@ -387,10 +380,10 @@ class Controller:
 
                 self.messages_bSizer.Add(message_sb_sizer, 0, wx.ALL | wx.EXPAND, 5)
 
-        def update_new_message(self, event: wx.CommandEvent):
+        def update_new_message(self, event: wx.CommandEvent) -> None:
             self.new_message.set_message(event.GetString())
 
-        def send_message_to_current_node(self, event: wx.CommandEvent):
+        def send_message_to_current_node(self, event: wx.CommandEvent) -> None:
             node_info: dict = self.master_node.databases.nodes.get_node_info(self.recipient_id)
 
             if not node_info:

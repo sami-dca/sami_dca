@@ -25,6 +25,15 @@ class Structures:
         "sig": str
     }
 
+    base_message_structure = {
+        "content": str,
+        "meta": {
+            "time_sent": int,
+            "digest": str
+        },
+        "author": node_structure
+    }
+
     received_message_structure = {
         "content": str,
         "meta": {
@@ -40,7 +49,8 @@ class Structures:
             "time_sent": int,
             "time_received": int,
             "digest": str
-        }
+        },
+        "author": node_structure
     }
 
     # Requests section
@@ -107,6 +117,7 @@ class Structures:
             "simple_contact_structure": Structures.simple_contact_structure,
             "stored_contact_structure": Structures.stored_contact_structure,
             "aes_key_structure": Structures.aes_key_structure,
+            "base_message_structure": Structures.base_message_structure,
             "received_message_structure": Structures.received_message_structure,
             "stored_message_structure": Structures.stored_message_structure,
             "request_standard_structure": Structures.request_standard_structure,
