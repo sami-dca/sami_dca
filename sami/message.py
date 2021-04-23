@@ -9,7 +9,7 @@ from .node import Node
 from .config import Config
 from .encryption import Encryption
 from .utils import get_timestamp
-from .validation import is_valid_base_message, validate_export_structure
+from .validation import is_valid_stored_message, is_valid_received_message, validate_export_structure
 
 
 @dataclass
@@ -47,7 +47,7 @@ class Message:
         message_id = cls.get_id_from_values(message_data['meta']['time_sent'],
                                             message_data['meta']['digest'])
 
-        if not is_valid_base_message(message_data):
+        if not (is_valid_stored_message(message_data) or is_valid_received_message(message_data)):
             return
 
         aes = Encryption.construct_aes_object(aes_key, nonce)
@@ -71,7 +71,7 @@ class Message:
         :param dict message_data: A message, as a dict.
         :return: A new message object or None.
         """
-        if not is_valid_base_message(message_data):
+        if not (is_valid_stored_message(message_data) or is_valid_received_message(message_data)):
             return
 
         if 'author' in message_data.keys():

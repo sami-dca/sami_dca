@@ -181,6 +181,9 @@ def is_valid_received_message(message_data: dict) -> bool:
     if not validate_fields(message_data, Structures.received_message_structure):
         return False
 
+    if not is_valid_node(message_data["author"]):
+        return False
+
     return True
 
 
@@ -192,17 +195,6 @@ def is_valid_stored_message(message_data: dict) -> bool:
     :return bool: True if it is, False otherwise.
     """
     if not validate_fields(message_data, Structures.stored_message_structure):
-        return False
-
-    return True
-
-
-def is_valid_base_message(message_data: dict) -> bool:
-
-    if not validate_fields(message_data, Structures.base_message_structure):
-        return False
-
-    if not is_valid_node(message_data["author"]):
         return False
 
     return True
