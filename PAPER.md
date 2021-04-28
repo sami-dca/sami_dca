@@ -1,9 +1,7 @@
 # Introduction
 
-**Sami** is a decentralized communication application.
-\
-It currently allows for textual messages exchange.
-\
+**Sami** is a decentralized communication application.  
+It currently allows for textual messages exchange.  
 The network created by users is decentralized, meaning no one controls it.
 
 It is mainly inspired from [Ethereum Whisper](https://geth.ethereum.org/docs/whisper/how-to-whisper),
@@ -11,18 +9,14 @@ the [Scuttlebutt protocol](https://ssbc.github.io/scuttlebutt-protocol-guide/) a
 [Jami](https://www.jami.net).
 
 While the network is very resilient at medium and large scale, 
-there can be some unexpected errors and problems at a very small scale (only a few users).
-\
+there can be some unexpected errors and problems at a very small scale (only a few users).  
 Usually, the larger the network, the better.
 
 # Keys and identities
 
-The first thing a user needs to participate in the Sami network is an identity.
-\
-An identity is referred to as a ``node`` and is a RSA key pair (a public key and a private key). 
-\
-It typically represents a person or a bot.
-\
+The first thing a user needs to participate in the Sami network is an identity.  
+An identity is referred to as a ``node`` and is a RSA key pair (a public key and a private key).  
+It typically represents a person or a bot.  
 It is normal for a person to have several identities.
 
 Because identities are long and random, no coordination or permission is required to create a new one,
