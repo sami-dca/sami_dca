@@ -2,5 +2,6 @@ wxPython
 requests
 pycryptodome
 scikit-image
+sqlalchemy
 shapely
 numpy
