@@ -32,7 +32,7 @@ If a user loses their secret key or has it stolen, they will need to generate a
 new identity. Keys are ___only___ stored in the user's local files, and 
 therefore cannot be recovered by a third-party.
 
-The public key of any ``?ode`` is publicly available and transmitted in some 
+The public key of any ``Node`` is publicly available and transmitted in some 
 network protocols, as we'll see later in this document.
 
 ## Dark network
@@ -223,11 +223,11 @@ flooding the network.
 ## Local network
 
 Once the Sami ``Client`` is opened, and if it doesn't know enough ``Contacts``,
-it will broadcast over the network a *Broadcast Protocol* (*BCP*) request 
-containing its own ``Contact`` information, while listening for others.  
+it will broadcast over the network a *Broadcast Contact Protocol* (*BCP*) 
+``Request`` containing its own ``Contact`` information, while listening for others.  
 It will do so regularly (depending on the local configuration).
 
-When catching a *BCP* request, the ``Client`` will save the information if it
+When catching a *BCP* ``Request``, the ``Client`` will save the information if it
 doesn't know it already.
 
 # Protocols
@@ -238,8 +238,8 @@ All ``Requests`` have a common structure:
 - `Dictionary` `data` - The content of the `Request`
 - `Integer` `timestamp` - The timestamp of the time when the `Request` was built
 
-In the following requests' definition, we'll be explaining the structure of the 
-`data` field.
+In the following ``Requests``' definition, we'll be explaining the structure of 
+the `data` field.
 The `status` is the name of the section. 
 E.g., for *Node Publication Protocol - NPP*, `status = NPP`.
 
@@ -276,7 +276,7 @@ offline.
 This protocol is used when negotiating a new symmetric encryption key 
 (currently Advanced Encryption Standard - *AES*) for a new ``Conversation``.
 
-THe protocol is implemented in such a way that all members of a 
+The protocol is implemented in such a way that all members of a 
 ``Conversation`` are partly in charge of negotiating a common key.
 
 By default, we launch a *KEP* handshake with each ``Node`` we discover.
@@ -284,7 +284,7 @@ It allows the user to be able to speak with every node he knows.
 
 We never send the full key nor nonce over the network.
 
-If the protocol has been respected by all parties, all should have the same 
+If the protocol has been respected by all parties, they should have the same 
 key and nonce.
 
 ![KEP diagram](./doc/KEP.png)
@@ -300,7 +300,7 @@ key and nonce.
 
 ### Technical notes
 
-Thanks to the encrypted key part, we can know quickly if a key part 
+Thanks to the encrypted key part, we can quickly know if a key part 
 is addressed to us.  
 
 #### Key partitioning
@@ -324,8 +324,8 @@ This protocol is used when sending or retransmitting a ``Message``.
 
 ### Request structure
 
-- `Message` `message` - The message to propagate
-- `String` `conversation` - The ID of the ``Conversation`` this message if part of
+- `Message` `message` - The ``Message`` to propagate
+- `String` `conversation` - The ID of the ``Conversation`` this ``Message`` if part of
 
 ## Node Publication Protocol - "NPP"
 
@@ -349,7 +349,7 @@ This protocol is used when we want to share a ``Contact`` with a peer.
 
 ## Broadcast Contact Protocol - "BCP"
 
-This protocol is used for sharing contact information on a local network.
+This protocol is used for sharing ``Contact`` information on a local network.
 
 ![BCP diagram](./doc/BCP.png)
 
@@ -369,7 +369,7 @@ It is triggered regularly, reinforcing the distributed network each time.
 
 ## Discover Contacts Protocol - "DCP"
 
-Asks for a list of ``contacts`` to a specific ``contact``.
+Asks a peer for a list of ``Contacts``.
 
 ### Request structure
 
