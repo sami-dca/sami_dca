@@ -2,14 +2,12 @@
     <img src="https://gravatar.com/avatar/3c7bb98e5004a55cd6d0c990bfb6d0c9?s=512" />
 </p>
 
-[![PyPi](https://img.shields.io/pypi/v/sami-dca.svg?label=PyPi)](https://pypi.org/project/sami-dca/)
-[![Travis](https://img.shields.io/travis/com/sami-dca/sami_dca/?label=Travis%20build)](https://travis-ci.org/github/sami-dca/sami_dca)
-[![Discord](https://img.shields.io/discord/777126677795831828.svg?label=Discord)](https://discord.gg/Hcc6YTkpYV)
+![License](https://img.shields.io/github/license/sami-dca/sami_dca)
+[![Discord server](https://img.shields.io/discord/777126677795831828.svg?label=Discord)](https://discord.gg/Hcc6YTkpYV)
+![Code coverage](https://img.shields.io/codecov/c/github/sami-dca/sami_dca)
 
 Sami is a decentralized communication application, written in Python,
 and available for free on [GitHub](https://github.com/sami-dca/sami_dca).
-
-Website: https://sami-dca.web.app/
 
 For a detailed description of how the system works,
 please refer to the [Sami Paper](https://github.com/sami-dca/sami_dca/blob/master/PAPER.md)
@@ -18,33 +16,48 @@ please refer to the [Sami Paper](https://github.com/sami-dca/sami_dca/blob/maste
 
 ### Standard user
 
-Stable versions are available in the [releases section](https://github.com/sami-dca/sami_dca/releases).
+Stable and ready-to-use versions are available in the 
+[releases section](https://github.com/sami-dca/sami_dca/releases).
 
-### Development
+<hr />
 
-The source code for Sami is available in the GitHub repo's ``dev`` branch.
+To set up Sami, you will need Python 3.7 or above.
+You can download a copy from https://python.org
 
-To start working locally on the code, using git, run:
+*Note: if you're already using Python, we advise you use a virtual environment 
+for this next part, otherwise no worries !*
 
-    git clone --specific-branch --branch dev https://github.com/sami-dca/sami_dca
+Finally, to get it to work, we need to install the dependencies.
+For that, run the script ``setup_windows.bat``.
 
-**For this next part, using a Python virtual environment is strongly recommended.**
+After that, you should be able to run `sami.py`.
 
-Next, install the dependencies using
+If despite these information you encounter difficulties, hop on the [Discord
+server](https://discord.gg/Hcc6YTkpYV), we'd be happy to help !
 
-    pip install -r requirements.txt
-
-and
-
-    pip install -r requirements_dev.txt
-
-*Replace ``pip`` with ``pip3`` if you're using Linux*
+*PS: we are currently working on providing executables (e.g. `.exe`) to 
+simplify the installation process*
 
 ## Contributing
 
-If you wish to contribute to the project, 
-please review our [guidelines](https://github.com/sami-dca/sami_dca/blob/master/CONTRIBUTING.md). 
-\
-Thank you !
+If you wish to contribute to the project, please first review our 
+[guidelines](https://github.com/sami-dca/sami_dca/blob/master/CONTRIBUTING.md).
 
+Our team is available on the [Discord server](https://discord.gg/Hcc6YTkpYV)
+if we can help with your contributions.
 
+### Development
+
+To start working on the project, clone the repo with:
+
+    git clone https://github.com/sami-dca/sami_dca
+
+***For this next part, using a Python virtual environment is strongly recommended.***
+
+Next, install the usual dependencies using
+
+    pip install -r requirements.txt
+
+and the development dependencies with
+
+    pip install -r requirements_dev.txt
