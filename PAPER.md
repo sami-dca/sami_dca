@@ -408,27 +408,41 @@ Asks a peer for a list of ``Contacts``.
 
 # Database
 
-## `contacts`
+## Tables
+
+### `contacts`
 
 Holds information about the ``Contacts`` we know
 
+- `int` `id` - Primary identifier
 - `str` `address` - IP address or DNS name of the ``Contact``
 - `int` `port` - Network port on which the ``Client`` is listening
 - `int` `last_seen` - UNIX timestamp of the last time we interacted with this ``Contact``
 
-## `nodes`
+### `nodes`
 
 Holds information about the ``Nodes`` we know.
 
+- `int` `id` - Primary identifier
 - `int` `rsa_n` - RSA modulus used to reconstruct the public key
 - `int` `rsa_e` - RSA public exponent used to reconstruct the public key
 - `str` `hash` - Hash of `rsa_n` and `rsa_e`
 - `str` `sig` - Cryptographic signature of `hash`
 
-## `messages`
+### `raw_requests`
+
+Keeps track of all the ``Requests`` we received.
+
+- `int` `id` - Primary identifier
+- `str` `protocol` - Name of the protocol
+- `str` `data` - JSON-encoded content of the ``Request``
+- `int` `timestamp` - UNIX timestamp of the moment the ``Request`` was sent
+
+### `messages`
 
 Contains all the ``Messages`` that belong to the ``Conversations`` we're part of.
 
+- `int` `id` - Primary identifier
 - `str` `content` - Symmetrically encrypted content of the ``Message``
 - `int` `time_sent` - UNIX timestamp of the moment it was sent
 - `int` `time_received` - UNIX timestamp of the moment we received it
@@ -436,39 +450,35 @@ Contains all the ``Messages`` that belong to the ``Conversations`` we're part of
 - `int` `author_id` - Identifier of the author ``Node``
 - `int` `conversation_id` - Identifier of the conversation this ``Message`` is part of
 
-## `raw_requests`
-
-Keeps track of all the ``Requests`` we received.
-
-- `str` `protocol` - Name of the protocol
-- `str` `data` - JSON-encoded content of the ``Request``
-- `int` `timestamp` - UNIX timestamp of the moment the ``Request`` was sent
-
-## `keys`
+### `keys`
 
 Stores the asymmetrically encrypted symmetric encryption key. These keys are used to decrypt ``Conversations``.
 
+- `int` `id` - Primary identifier
 - `str` `key` - Asymmetrically encrypted symmetric key
 - `int` `nonce` - Nonce derived from the key
+- `int` `conversation_id` - Identifier of the ``Conversation`` this ``Key`` is linked to
 - `int` `timestamp` - UNIX timestamp of the moment the key was reconstructed from the negotiated parts
 
-## `key_parts`
+### `key_parts`
 
 Stores the key parts we sent and received as part of *KEP* negotiations.
 
+- `int` `id` - Primary identifier
 - `str` `key_part` - Asymmetrically encrypted symmetric key part
 - `int` `conversation_id` - Identifier of the ``Conversation`` this ``KeyPart`` is linked to
 - `int` `timestamp` - UNIX timestamp of the moment we received this key part
 
-## `conversations`
+### `conversations`
 
 Registers all the conversations we're part of.
 
-- `int` `key_id` - Identifier of the ``Key`` used to decrypt the ``Messages`` of this ``Conversation``
+- `int` `id` - Primary identifier
 
-## `conversations_memberships`
+### `conversations_memberships`
 
 Holds mappings defining which ``Nodes`` are members of which ``Conversations``.
 
+- `int` `id` - Primary identifier
 - `int` `node_id` - Identifier of a ``Node``
 - `int` `conversation_id` - Identifier of the ``Conversation`` `node_id` is part of
