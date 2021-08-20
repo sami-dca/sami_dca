@@ -16,9 +16,10 @@ Usually, the larger the network, the better.
 
 # Keys and identities
 
-The first thing a user needs to participate in the Sami network is an identity.  
-An identity is referred to as a ``Node`` and is an RSA key pair (a public key 
-and a private key).  
+The first and only thing a user needs to participate in the Sami network is an identity.
+
+An identity is referred to as a ``Node`` and is an asymmetric key pair 
+(a public key and a private key).  
 It typically represents a person or a bot.  
 It is normal for a person to have several identities.
 
@@ -30,7 +31,7 @@ identifier.
 
 If a user loses their secret key or has it stolen, they will need to generate a 
 new identity. Keys are ___only___ stored in the user's local files, and 
-therefore cannot be recovered by a third-party.
+therefore **cannot** be recovered by any third-party.
 
 The public key of any ``Node`` is publicly available and transmitted in some 
 network protocols, as we'll see later in this document.
@@ -47,6 +48,11 @@ cannot be linked.
 
 In this section, we'll have a look at a few common attacks, as well as 
 Sami-specific known attacks.
+
+The goal of documenting attacks is for current and future maintainers to 
+know where security and reliability can be improved in Sami.  
+We are aware that documenting attacks might give ideas to some, but we hope
+to interest security researchers and come up together with solutions.
 
 ## Sybil attacks
 
@@ -67,6 +73,11 @@ On the other hand, *contact takeover* can be a problem.
 This is because while a ``Node`` is a virtual identity, a ``Contact`` is a 
 physical identity.
 
+Note that technically, anybody with some computer skills could create 
+at most 65535 ``Contacts`` on one computer.  
+Multiply this by the number of computers an attacker could have at his disposal,
+and it's easy to understand that *contact takeovers* is pretty simple.
+
 Therefore, in the attacks we'll see further on, we'll talk about 
 *contact takeover* and not *node takeover*.
 
@@ -83,56 +94,61 @@ There are two possible ways of seeing the situation:
 
 In this case, a group of attackers modifies their client's configuration to one 
 that is insecure.  
-This will result in a different network from the usual users' - 
-what we call a fork.  
+This will result in a different network from the usual users' - a fork.  
 This is due to the fact that Sami clients are very rigid regarding other nodes' 
 configuration, and will discard any malformed requests.
 
 ### Attackers consensus
 
-If a group of seemingly normal users join a network but are controller by attackers, 
+If a group of seemingly normal users controlled by attackers were to join the network, 
 there is next to nothing they will be able to do, unless the network is very small, 
 in which case the dark network architecture can be endangered.
 
-To avoid this kind of situation, there is a built-in threshold of contacts one 
-must know before starting to send identifying requests.  
+To avoid this kind of situation, there is a built-in threshold of unique contacts ^1 
+one must know before starting to send identifying requests.  
 However, this preemptive measure will not be enough if 49 out of 50 clients are 
-controlled by a bad actor !
+controlled by bad actors !
 
 A simple measure against this type of attack is simply to have a group of 
 legitimate users on the network.  
 They don't even need to add up to 50% of the network or more ; for any 
 additional user, it becomes exponentially harder to identify each one.
 
+1. two contacts are considered unique if they have a different public 
+address.
+   The client will try to translate DNS names to IP addresses.
+   Local network contacts are all considered unique.
+
 ## Flooding attacks
 
 Flooding attacks consist in flooding the network with requests.  
 At the moment, no solution is implemented, but is being actively worked on.
 
-The easy way out would be to implement proof-of-work, and while it is very 
+The easy way out would be to implement proof-of-work, and while it is
 efficient pre-quantum, it has terrible effects on power consumption, 
 and massively contributes to climate change (cf Bitcoin).
+
+Another option would be to implement a per-``Contact`` measure,
+which would ignore ``Requests`` sent by a ``Contact`` when spamming.
 
 ## Deny attacks
 
 A deny attack consists, for an attacker, to not forward any or part of the 
 requests he receives.  
-It is pretty hard to find out whether a client denies requests, 
-and the effects of this attack can be various.
-
-No solution is yet implemented.
+While there are statistical ways of finding that (e.g. statistical association),
+none is yet implemented.
 
 However, a simple counter-measure is simply to have a significant part of 
 legitimate users on the P2P network.
 
 # Terms
 
-## *Note on formatting*
+### *Note on formatting*
 
 In the structure definition, the format used is :
 - `Type` `value_name` - A quick description of the value
 
-Several times, "timestamps" are mentioned. They are logged as UNIX seconds ;
+Several times, "timestamps" are mentioned. They are formatted as UNIX seconds ;
 [more on this subject](https://www.unixtimestamp.com/).
 
 ## Client
@@ -143,9 +159,7 @@ It is a relay on the network, and is accessible via its ``Contact`` information.
 
 ## Node
 
-### Node
-
-A ``Node`` is person on the network, identified by an RSA public key.
+A ``Node`` is person on the network, identified by a public key.
 
 Its structure is defined as:
 
@@ -160,20 +174,18 @@ unlike ``Contacts`` communication.
 ### Master node
 
 A ``MasterNode`` is our own identity.  
-Unlike the ``Node``, we have its RSA private key.
+Unlike the ``Node``, we have its asymmetric private key.
 
 ## Contact
 
 You can see a ``Contact`` as a "link" to a ``Client`` on the network.  
-It is defined by an address (IP or DNS name) and a port:
+It is defined by an address (IP or DNS name) and a port.
 
-- `String` `address` - A DNS name or an IP address
-- `Integer` `port` - The port on which the author's `client` is listening
-
-The network design prevents a ``Contact`` information to be linked to 
+The network's design prevents a ``Contact`` information to be linked to 
 a ``Node`` information.
 
-If the recipient client is running, a communication with a contact is instantaneous.
+If the recipient ``Client`` is running, a communication with 
+a ``Contact`` is instantaneous.
 
 ## Message
 
@@ -181,27 +193,46 @@ A ``Message`` is... a... message. I know, shocking !
 
 It is encrypted and signed by its author, and sent as part of a ``Conversation``.
 
-A ``Message`` is structured as follows:
-
-- `String` `content` - Actual message, encrypted with the negotiated AES key
-- `Integer` `time_sent` - The date of sending
-- `String` `digest` - Cryptographic digest of the message's hash
-- `String` `author` - The ID of the author ``Node``
-- `String` `conversation` - The ID of the ``Conversation`` the ``Message`` is part of
-
 ## Conversation
 
 A ``Conversation`` is a set of ``Messages`` distributed to a list of ``Nodes``.  
 
-The ID is deterministically computed based on its members, making it common.
+To exchange encrypted messages, all the members of a ``Conversation``
+must have negotiated a common ``SymmetricKey``.
 
-To exchange encrypted messages (and be able to decrypt them), all the members 
-must have negotiated a common AES key via the *Keys Exchange Protocol* (*KEP*).
+Its identifier is deterministically computed based on its members, 
+making it common.
 
 Paranoia note: an attacker could create a rainbow table of all the existing 
 ``Conversations`` IDs based on the ``Nodes`` he knows, and could figure out the 
 members of any ``Conversation`` (given that he knows all the ``Nodes`` part 
 of it).
+
+## SymmetricKey
+
+*Note to the reader: symmetric encryption means using the same key 
+for encrypting and decrypting data.*
+
+A ``SymmetricKey``, is a symmetric cipher used to encrypt ``Messages``
+of any given ``Conversation``.
+
+They are negotiated via the *Keys Exchange Protocol* (*KEP*)
+
+Currently, we use the *Advanced Encryption Standard* (*AES*), as it is 
+*military-grade* (woo! buzzword!) with 256-bits keys.
+It provides very good security for the pre-quantum era.
+
+## AsymmetricKey
+
+*Note to the reader: symmetric encryption means using different keys 
+for encrypting and decrypting data. The public key can encrypt, 
+and the private key can decrypt*
+
+An ``AsymmetricKey`` is an asymmetric cipher used to encrypt ``SymmetricKeys``
+in the database, as well as to cryptographically sign data in some protocols.
+
+We currently use the *Rivest-Shamir-Adleman* (*RSA*) cryptosystem, 
+with 4096-bits keys. It provides very good security for the pre-quantum era.
 
 # Discovery
 
@@ -269,12 +300,12 @@ offline.
 
 #### Request structure
 
-- `List[Request]` - The list of `Requests` found in the specified interval
+- `List[Request]` `requests` - The list of `Requests` found in the specified interval
 
 ## Keys Exchange Protocol - "KEP"
 
-This protocol is used when negotiating a new symmetric encryption key 
-(currently Advanced Encryption Standard - *AES*) for a new ``Conversation``.
+This protocol is used when negotiating a new ``SymmetricKey`` 
+for a new ``Conversation``.
 
 The protocol is implemented in such a way that all members of a 
 ``Conversation`` are partly in charge of negotiating a common key.
@@ -335,7 +366,7 @@ This protocol is used for sending a ``Node`` identity over the network.
 
 ### Request structure
 
-- `List[Node]` - The list of ``Nodes`` we know (including ours).
+- `List[Node]` `nodes` - The list of ``Nodes`` we know (including ours).
 
 ## Contact Sharing Protocol - "CSP"
 
@@ -345,7 +376,7 @@ This protocol is used when we want to share a ``Contact`` with a peer.
 
 ### Request structure
 
-- `List[Contact]` - The list of ``Contacts`` we know.
+- `List[Contact]` `contacts` - The list of ``Contacts`` we know.
 
 ## Broadcast Contact Protocol - "BCP"
 
@@ -377,5 +408,67 @@ Asks a peer for a list of ``Contacts``.
 
 # Database
 
-***TODO: write a parser for `models.py` and add the output here.
-See `sql_structure.md` for more information.***
+## `contacts`
+
+Holds information about the ``Contacts`` we know
+
+- `str` `address` - IP address or DNS name of the ``Contact``
+- `int` `port` - Network port on which the ``Client`` is listening
+- `int` `last_seen` - UNIX timestamp of the last time we interacted with this ``Contact``
+
+## `nodes`
+
+Holds information about the ``Nodes`` we know.
+
+- `int` `rsa_n` - RSA modulus used to reconstruct the public key
+- `int` `rsa_e` - RSA public exponent used to reconstruct the public key
+- `str` `hash` - Hash of `rsa_n` and `rsa_e`
+- `str` `sig` - Cryptographic signature of `hash`
+
+## `messages`
+
+Contains all the ``Messages`` that belong to the ``Conversations`` we're part of.
+
+- `str` `content` - Symmetrically encrypted content of the ``Message``
+- `int` `time_sent` - UNIX timestamp of the moment it was sent
+- `int` `time_received` - UNIX timestamp of the moment we received it
+- `str` `digest` - Cryptographic digest of the content
+- `int` `author_id` - Identifier of the author ``Node``
+- `int` `conversation_id` - Identifier of the conversation this ``Message`` is part of
+
+## `raw_requests`
+
+Keeps track of all the ``Requests`` we received.
+
+- `str` `protocol` - Name of the protocol
+- `str` `data` - JSON-encoded content of the ``Request``
+- `int` `timestamp` - UNIX timestamp of the moment the ``Request`` was sent
+
+## `keys`
+
+Stores the asymmetrically encrypted symmetric encryption key. These keys are used to decrypt ``Conversations``.
+
+- `str` `key` - Asymmetrically encrypted symmetric key
+- `int` `nonce` - Nonce derived from the key
+- `int` `timestamp` - UNIX timestamp of the moment the key was reconstructed from the negotiated parts
+
+## `key_parts`
+
+Stores the key parts we sent and received as part of *KEP* negotiations.
+
+- `str` `key_part` - Asymmetrically encrypted symmetric key part
+- `int` `conversation_id` - Identifier of the ``Conversation`` this ``KeyPart`` is linked to
+- `int` `timestamp` - UNIX timestamp of the moment we received this key part
+
+## `conversations`
+
+Registers all the conversations we're part of.
+
+- `int` `key_id` - Identifier of the ``Key`` used to decrypt the ``Messages`` of this ``Conversation``
+
+## `conversations_memberships`
+
+Holds mappings defining which ``Nodes`` are members of which ``Conversations``.
+
+- `int` `node_id` - Identifier of a ``Node``
+- `int` `conversation_id` - Identifier of the ``Conversation`` `node_id` is part of
