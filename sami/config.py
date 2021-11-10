@@ -1,150 +1,101 @@
-# -*- coding: UTF8 -*-
-
-from typing import List
+from pathlib import Path
+from typing import List, Type
 
 from Crypto.Cipher import AES
 
+# ---------------------------------------------------
+# ----- GENERAL PARAMETERS, FEEL FREE TO MODIFY -----
+# ---------------------------------------------------
 
-class Config:
+# Minimum number of contacts/nodes we should know before sending our
+# identity (along with theirs). The higher the better, but it must be
+# set in accordance with the network's size.
+min_peers: int = 0
 
-    # ---------------------------------------------------
-    # ----- GENERAL PARAMETERS, FEEL FREE TO MODIFY -----
-    # ---------------------------------------------------
+# Lifespan of a request in seconds.
+# How long we should keep a request in the raw_requests database.
+# Default is two months.
+# Note: seconds * minutes * hours * days * months
+max_request_lifespan: int = 60 * 60 * 24 * 31 * 2
 
-    # The maximum number of contacts we want to know.
-    max_contacts: int = 50
+# Network port used by the app.
+sami_port: int = 62362
 
-    # Minimum number of contacts/nodes we should know before sending our identity (along with theirs).
-    # The higher the better, but it must be set in accordance with the network's size.
-    min_peers: int = 0
+# Port used by the autodiscover.
+broadcast_port: int = 62365
 
-    # List of Beacons. Please refer to the documentation for more information on this concept.
-    # An entry is made of an address (IP or DNS) and a port, separated by a colon (:).
-    # Example : ["192.168.0.100:12345", "beacon.domain.org"]
-    beacons: List[str] = []
+# When connecting to a contact, timeout in seconds.
+contact_connect_timeout: int = 10
 
-    # If the AES key exchange is not established within this delay, abort it.
-    # In seconds ; default is one week.
-    # Note: seconds * minutes * hours * days
-    kep_decay: int = 60 * 60 * 24 * 7
+# Number of contacts we should know before stopping the autodiscover
+# broadcast.
+broadcast_limit: int = 15
 
-    # Lifespan of a request in seconds.
-    # How long we should keep a request in the raw_requests database.
-    # Default is two months.
-    # Note: seconds * minutes * hours * days * months
-    max_request_lifespan: int = 60 * 60 * 24 * 31 * 2
+# Local directory where the database files will be stored.
+databases_directory: Path = Path('./db/').absolute()
 
-    # Network port used by the app.
-    sami_port: int = 62362
+# Logging configuration file path
+logging_conf_file: Path = Path('./sami/logging.conf').absolute()
 
-    # Port used by the autodiscover.
-    broadcast_port: int = 62365
+# Log file path, in which logs will be output.
+# Relative path only (because absolute causes issues on Windows)
+log_file: Path = Path('./sami.log')
 
-    # When connecting to a contact, timeout in seconds.
-    contact_connect_timeout: int = 10
+# A range in which we will pick a random available port.
+default_port_range: List[int] = list(range(1024, 65536))
 
-    # Number of contacts we should know before stopping the autodiscover broadcast.
-    broadcast_limit: int = 15
+# Type (used for type hinting) of identifiers
+Identifier: Type = str
 
-    # Local directory where the database files will be stored.
-    # Can be relative or absolute.
-    databases_directory: str = "db/"
+# -------------------------------------
+# ----- BE CAREFUL WHEN MODIFYING -----
+# -------------------------------------
 
-    # Verbose mode.
-    # Activating it will print a lot of additional information in the log.
-    # While it can be useful for debugging purposes, be careful as it will probably include some private information,
-    # such as IP addresses, ports, statuses, settings, etc.
-    verbose: bool = True
+# Below parameters are not supposed to be modified, unless a very specific
+# configuration are needed. If these are set too low, you might get
+# classified as spammers by peers !
 
-    # Note: below log parameters are not retroactive (they do not modify previous logs).
+# How often should we broadcast our contact information, in seconds.
+# If set too low, you might get classified as a spammer !
+# Default is 10 minutes
+broadcast_schedule: int = 60 * 10
 
-    # Whether public and private IPs should appear in the logs.
-    # If you have to share your logs with a third-party (e.g. to report a bug)
-    # you should turn this to False.
-    log_ip_addresses: bool = True
+# How often should we ask for new nodes, in seconds.
+# If set too low, you might get classified as a spammer !
+# Default is 30 minutes
+nodes_discovery_schedule: int = 60 * 30
 
-    # Whether validation errors should be logged.
-    log_validation: bool = True
+# How often should we ask for new nodes, in seconds.
+# If set too low, you might get classified as a spammer !
+# Default is 15 minutes
+contact_discovery_schedule: int = 60 * 15
 
-    # Whether database operations should be logged.
-    log_database_operations: bool = False
+# How long, in seconds, we will let processes run in the background
+# before killing them.
+# Must be a strictly positive number.
+# Default is 5
+mp_timeout: int or float = 5
 
-    # Whether all network operations should be logged.
-    log_full_network: bool = True
+# ---------------------------------------------
+# ----- DO NOT MODIFY ANYTHING UNDER THIS -----
+# ---------------------------------------------
 
-    # Whether utilities should log their result
-    log_utils: bool = False
+# These are core parameters.
+# Modifying them will result in your client being unusable, or
+# unrecognized by other peers.
 
-    # -------------------------------------
-    # ----- BE CAREFUL WHEN MODIFYING -----
-    # -------------------------------------
+# RSA keys length, in bits.
+rsa_keys_length: int = 4096
 
-    # Below parameters are not supposed to be modified, unless a very specific configuration are needed.
-    # If these are set too low, you might get classified as spammers by peers !
+# Length of the AES object in bytes. Therefore, multiply by 8 to get
+# the AES protocol used. e.g., 32 * 8 = 256 ; we use AES256.
+aes_keys_length: int = 32
 
-    # How often should we broadcast our contact information, in seconds.
-    # If set too low, you might get classified as a spammer !
-    # Default is 10 minutes
-    broadcast_schedule: int = 60 * 10
+# AES mode. Default is EAX.
+aes_mode: int = AES.MODE_EAX
 
-    # How often should we ask for new nodes, in seconds.
-    # If set too low, you might get classified as a spammer !
-    # Default is 30 minutes
-    nodes_discovery_schedule: int = 60 * 30
+# Network buffer.
+network_buffer_size: int = 4096
 
-    # How often should we ask for new nodes, in seconds.
-    # If set too low, you might get classified as a spammer !
-    # Default is 15 minutes
-    contact_discovery_schedule: int = 60 * 15
-
-    # How long, in seconds, we will let processes run in the background before killing them.
-    # Must be a strictly positive number.
-    # Default is 5
-    mp_timeout: int or float = 5
-
-    # ---------------------------------------------
-    # ----- DO NOT MODIFY ANYTHING UNDER THIS -----
-    # ---------------------------------------------
-
-    # These are core parameters.
-    # Modifying them will result in your client being unusable, or unrecognized by other peers.
-
-    # Length an hexadecimal ID should have.
-    id_len: int = 16
-
-    # RSA keys length, in bits.
-    rsa_keys_length: int = 4096
-
-    # Length of the AES object in bytes. Therefore, multiply by 8 to get the AES protocol used.
-    # e.g. 32 * 8 = 256 ; we use AES256.
-    aes_keys_length: int = 32
-
-    # AES mode. Default is EAX.
-    aes_mode: int = AES.MODE_EAX
-
-    # Network buffer.
-    network_buffer_size: int = 4096
-
-    # Maximum connections at once.
-    network_max_conn: int = 5
-
-    # Proof-of-Work difficulty
-    pow_difficulty: int = 2
-
-    # A list of protocols for which we want to ignore new requests if only the timestamp changes.
-    avoid_duplicates: List[str] = ['NPP', 'CSP']
-
-    # A list of protocols for which we want to store raw requests.
-    # Mainly used to avoid sending trash when somebody addresses us a `WUP_INI`.
-    store_requests: set = {'KEP', 'MPP', 'NPP', 'CSP'}
-
-    # Status of the AES key in the database when it has not been fully negotiated.
-    # To change this value safely, you will need to reset the conversation database.
-    status_1: str = "IN-PROGRESS"
-
-    # Status of the AES key in the database once it has been fully negotiated.
-    # To change this value safely, you will need to reset the conversation database.
-    status_2: str = "DONE"
-
-    # Delimiter between a contact's IP and port.
-    contact_delimiter: str = ":"
+# Proof-of-Work difficulty
+pow_difficulty: int = 2

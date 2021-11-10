@@ -1,6 +1,10 @@
 # Introduction
 
-**Sami** is a decentralized communication app.  
+**Sami** is the name of a decentralized communication app.  
+
+It is an open-source project developed by Lilian Boulard, 
+and publicly available for free on GitHub.
+
 It currently allows for textual messages exchange.  
 The network created by users is decentralized, meaning no one controls it.
 
@@ -16,7 +20,8 @@ Usually, the larger the network, the better.
 
 # Keys and identities
 
-The first and only thing a user needs to participate in the Sami network is an identity.
+The first and only thing a user needs to participate in the Sami network 
+is an identity.
 
 An identity is referred to as a ``Node`` and is an asymmetric key pair 
 (a public key and a private key).  
@@ -52,7 +57,7 @@ Sami-specific known attacks.
 The goal of documenting attacks is for current and future maintainers to 
 know where security and reliability can be improved in Sami.  
 We are aware that documenting attacks might give ideas to some, but we hope
-to interest security researchers and come up together with solutions.
+to interest security researchers to come up together with solutions.
 
 ## Sybil attacks
 
@@ -74,9 +79,10 @@ This is because while a ``Node`` is a virtual identity, a ``Contact`` is a
 physical identity.
 
 Note that technically, anybody with some computer skills could create 
-at most 65535 ``Contacts`` on one computer.  
+at most 65535 ``Contacts`` on one network interface.  
 Multiply this by the number of computers an attacker could have at his disposal,
-and it's easy to understand that *contact takeovers* is pretty simple.
+and the number of network interfaces each can have, and it's easy to 
+understand that *contact takeovers* is pretty simple.
 
 Therefore, in the attacks we'll see further on, we'll talk about 
 *contact takeover* and not *node takeover*.
@@ -179,7 +185,12 @@ Unlike the ``Node``, we have its asymmetric private key.
 ## Contact
 
 You can see a ``Contact`` as a "link" to a ``Client`` on the network.  
-It is defined by an address (IP or DNS name) and a port.
+Several ``Contacts`` can link to a single client: one ``Contact`` is 
+created by network interface.
+
+If the ``Contact``'s address is a DNS name, it will be stored as-is, 
+and the IP address will be resolved each time we interact with it, 
+making it dynamic.
 
 The network's design prevents a ``Contact`` information to be linked to 
 a ``Node`` information.
@@ -240,7 +251,7 @@ After a user has generated its identity, it needs to find some peers.
 To connect to somebody, you need to know its ``Contact`` information.  
 The list of discovered ``Contacts`` will appear in the ``Client``'s user interface.
 
-There a several ways of discovering a ``Contacts``:
+There a several ways of discovering a ``Contact``:
 
 ## Beacons
 
@@ -279,170 +290,130 @@ In the diagrams:
   otherwise said, the events that triggers the process
 - Boxes in **bold** designate final actions
 
-## What's Up Protocol - "WUP"
-
-This protocol is used to gather all the ``Requests`` we missed while we were 
-offline.
-
-### INI
-
-![WUP_INI diagram](./doc/WUP_INI.png)
-
-#### Request structure
-
-- `Integer` `beginning` - A timestamp specifying the beginning of the interval
-- `Integer` `end` - A timestamp specifying the end of the interval
+## Broadcast Contact Protocol - "BCP"
+This protocol is used for sharing ``Contact`` information with peers
+on a local network.  
+![BCP diagram](./doc/BCP.png)
+### Request structure
 - `Contact` `author` - Our own ``Contact`` information
 
-### REP
+## Contact Sharing Protocol - "CSP"
+This protocol is used when we want to share ``Contacts`` with a peer.  
+![CSP diagram](./doc/CSP.png)
+### Request structure
+- `List[Contact]` `contacts` - The list of ``Contacts`` we know.
 
-![WUP_REP diagram](./doc/WUP_REP.png)
+## Discover Contacts Protocol - "DCP"
+Asks a peer for a list of ``Contacts``.
+### Request structure
+- `Contact` `author` - Our own ``Contact`` information
 
-#### Request structure
-
-- `List[Request]` `requests` - The list of `Requests` found in the specified interval
+## Discover Nodes Protocol - "DNP"
+Asks a ``Contact`` for a list of ``Nodes``.
+It is triggered regularly, reinforcing the distributed network each time.
+### Request structure
+- `Contact` `author` - Our own ``Contact`` information
 
 ## Keys Exchange Protocol - "KEP"
-
 This protocol is used when negotiating a new ``SymmetricKey`` 
 for a new ``Conversation``.
-
 The protocol is implemented in such a way that all members of a 
-``Conversation`` are partly in charge of negotiating a common key.
-
+``Conversation`` are partly in charge of negotiating a common key.  
 By default, we launch a *KEP* handshake with each ``Node`` we discover.
-It allows the user to be able to speak with every node he knows.
-
-We never send the full key nor nonce over the network.
-
+It allows the user to be able to speak with every ``Node`` he knows.  
+We never send the full key nor the nonce over the network.  
 If the protocol has been respected by all parties, they should have the same 
-key and nonce.
-
+key and nonce.  
 ![KEP diagram](./doc/KEP.png)
-
 ### Request structure
-
 - `String` `part` - The key part, encrypted with the target member's 
                      public key
-- `String` `hash` - The serialized hash of the encrypted key part
+- `String` `hash` - The hexadecimal digest of the clear key part
 - `String` `sig` - The cryptographic signature of `hash`
 - `Node` `author` - The ``Node`` information of the author of this key part
 - `List[Node]` `members` - The list of ``Nodes`` member of this conversation
-
 ### Technical notes
-
-Thanks to the encrypted key part, we can quickly know if a key part 
-is addressed to us.  
-
+#### Hash
+The ``hash`` is computed from the clear key part because if it was on its
+encrypted counterpart, anybody could claim the request to be theirs.
+#### Determine target
+We can know whether the key is addressed to us 
+by trying to decrypt the key part.
+#### Members
+``members`` is a list of ``Nodes``, which is heavy, but assures that everyone 
+knows each other.
 #### Key partitioning
-
 If `N / M` doesn't return a round integer - for example `N = 32` 
 (the key is 32 bytes long) and `M = 5` (there are 5 members in the 
 ``Conversation``), `32 / 5 = 6.4` - we follow this process:
-
 1. Let `r` be the remainder: `r = 32 % 5 = 2` and `f` be the floor division 
    result: `f = 32 // 5 = 6`
 2. Let `K` be the list of the ``Node`` identifiers
-3. Sort `K` in ascending order, concatenate the keys, and hash the result
+3. Sort `K` in ascending order, concatenate them, and hash the result
 4. We then get the member identifier which is the closest to this value: he
    is the one designated for creating the key part left. 
 5. If we are the designated member, we create a key of length `r + f`
    (`2 + 6 = 8`), otherwise we create a key of length `f`
 
 ## Message Propagation Protocol - "MPP".
-
-This protocol is used when sending or retransmitting a ``Message``.  
-
+This protocol is used for transmitting a ``Message``.
 ### Request structure
-
 - `Message` `message` - The ``Message`` to propagate
-- `String` `conversation` - The ID of the ``Conversation`` this ``Message`` if part of
+- `String` `conversation` - The ID of the ``Conversation`` this ``Message`` 
+  is part of
 
 ## Node Publication Protocol - "NPP"
-
-This protocol is used for sending a ``Node`` identity over the network.
-
+This protocol is used for sending ``Nodes`` over the network.  
 ![NPP diagram](./doc/NPP.png)
-
 ### Request structure
-
 - `List[Node]` `nodes` - The list of ``Nodes`` we know (including ours).
 
-## Contact Sharing Protocol - "CSP"
-
-This protocol is used when we want to share a ``Contact`` with a peer.
-
-![CSP diagram](./doc/CSP.png)
-
-### Request structure
-
-- `List[Contact]` `contacts` - The list of ``Contacts`` we know.
-
-## Broadcast Contact Protocol - "BCP"
-
-This protocol is used for sharing ``Contact`` information on a local network.
-
-![BCP diagram](./doc/BCP.png)
-
-### Request structure
-
+## What's Up Protocol - "WUP"
+This protocol is used to gather all the ``Requests`` we missed while we were 
+offline.
+### INI
+![WUP_INI diagram](./doc/WUP_INI.png)
+#### Request structure
+- `Integer` `beginning` - A timestamp specifying the beginning of the interval
+- `Integer` `end` - A timestamp specifying the end of the interval
 - `Contact` `author` - Our own ``Contact`` information
 
-## Discover Nodes Protocol - "DNP"
-
-Asks a ``Contact`` for a list of ``Nodes``.
-
-It is triggered regularly, reinforcing the distributed network each time.
-
-### Request structure
-
-- `Contact` `author` - Our own ``Contact`` information
-
-## Discover Contacts Protocol - "DCP"
-
-Asks a peer for a list of ``Contacts``.
-
-### Request structure
-
-- `Contact` `author` - Our own ``Contact`` information
-
-# Database
+### REP
+![WUP_REP diagram](./doc/WUP_REP.png)
+#### Request structure
+- `List[Request]` `requests` - The list of `Requests` found in the specified interval
 
 ## Tables
 
 ### `contacts`
-
 Holds information about the ``Contacts`` we know
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Unique contact identifier
 - `str` `address` - IP address or DNS name of the ``Contact``
 - `int` `port` - Network port on which the ``Client`` is listening
 - `int` `last_seen` - UNIX timestamp of the last time we interacted with this ``Contact``
 
 ### `nodes`
-
 Holds information about the ``Nodes`` we know.
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Unique node identifier
 - `int` `rsa_n` - RSA modulus used to reconstruct the public key
 - `int` `rsa_e` - RSA public exponent used to reconstruct the public key
 - `str` `hash` - Hash of `rsa_n` and `rsa_e`
 - `str` `sig` - Cryptographic signature of `hash`
 
 ### `raw_requests`
-
 Keeps track of all the ``Requests`` we received.
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Unique request identifier
 - `str` `protocol` - Name of the protocol
 - `str` `data` - JSON-encoded content of the ``Request``
 - `int` `timestamp` - UNIX timestamp of the moment the ``Request`` was sent
 
 ### `messages`
-
 Contains all the ``Messages`` that belong to the ``Conversations`` we're part of.
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Message unique identifier
 - `str` `content` - Symmetrically encrypted content of the ``Message``
 - `int` `time_sent` - UNIX timestamp of the moment it was sent
 - `int` `time_received` - UNIX timestamp of the moment we received it
@@ -451,34 +422,29 @@ Contains all the ``Messages`` that belong to the ``Conversations`` we're part of
 - `int` `conversation_id` - Identifier of the conversation this ``Message`` is part of
 
 ### `keys`
-
 Stores the asymmetrically encrypted symmetric encryption key. These keys are used to decrypt ``Conversations``.
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Unique key identifier
 - `str` `key` - Asymmetrically encrypted symmetric key
 - `int` `nonce` - Nonce derived from the key
 - `int` `conversation_id` - Identifier of the ``Conversation`` this ``Key`` is linked to
 - `int` `timestamp` - UNIX timestamp of the moment the key was reconstructed from the negotiated parts
 
 ### `key_parts`
-
 Stores the key parts we sent and received as part of *KEP* negotiations.
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Unique key part identifier
 - `str` `key_part` - Asymmetrically encrypted symmetric key part
 - `int` `conversation_id` - Identifier of the ``Conversation`` this ``KeyPart`` is linked to
-- `int` `timestamp` - UNIX timestamp of the moment we received this key part
 
 ### `conversations`
-
 Registers all the conversations we're part of.
-
 - `int` `id` - Primary identifier
+- `str` `uid` - Unique conversation identifier
 
 ### `conversations_memberships`
-
 Holds mappings defining which ``Nodes`` are members of which ``Conversations``.
-
 - `int` `id` - Primary identifier
 - `int` `node_id` - Identifier of a ``Node``
 - `int` `conversation_id` - Identifier of the ``Conversation`` `node_id` is part of
+

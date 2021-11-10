@@ -236,7 +236,7 @@ class ReceivedMessages ( wx.Frame ):
 ## Class Conversation
 ###########################################################################
 
-class Conversation ( wx.Frame ):
+class Conversations (wx.Frame):
 
 	def __init__( self, parent ):
 		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, title = u"Conversation - node1", pos = wx.DefaultPosition, size = wx.Size( 624,320 ), style = wx.DEFAULT_FRAME_STYLE|wx.TAB_TRAVERSAL )
@@ -277,7 +277,7 @@ class Conversation ( wx.Frame ):
 
 		# Connect Events
 		self.new_message_textCtrl.Bind( wx.EVT_TEXT, self.update_new_message )
-		self.send_message_button.Bind( wx.EVT_BUTTON, self.send_message_to_current_node )
+		self.send_message_button.Bind(wx.EVT_BUTTON, self.send_message)
 
 	def __del__( self ):
 		pass
@@ -287,7 +287,7 @@ class Conversation ( wx.Frame ):
 	def update_new_message( self, event ):
 		event.Skip()
 
-	def send_message_to_current_node( self, event ):
+	def send_message(self, event):
 		event.Skip()
 
 
