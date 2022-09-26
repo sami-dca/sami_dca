@@ -5,10 +5,9 @@ import socket
 import ipaddress as ip
 
 from collections import namedtuple
+from urllib.request import urlopen
 from dns.name import Name as DNSName
 from typing import Set, List, Dict, Optional, Union
-
-from urllib.request import urlopen
 
 from ..network.af import supported_af
 from ..config import default_port_range
@@ -173,8 +172,13 @@ def in_same_subnet(address1: ip.IPv4Interface,
     return network.network_address < address < network.broadcast_address
 
 
-def host_dns_name(dns_name: DNSName) -> Union[ip.IPv4Address, ip.IPv6Address]:
+def host_dns_name(dns_name: DNSName) -> Optional[Union[ip.IPv4Address, ip.IPv6Address]]:
     """
     Given a DNS name, resolves an IP address.
     """
-    return get_address_object(socket.gethostbyname(str(dns_name)))
+    try:
+        address = socket.gethostbyname(str(dns_name))
+    except socket.gaierror:
+        logger.error(f'Could not resolve host {dns_name!r}')
+        return
+    return get_address_object(address)

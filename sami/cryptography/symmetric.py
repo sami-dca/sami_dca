@@ -8,14 +8,14 @@ from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
 from ..nodes import Node
-from ..utils import get_id
-from ..config import Identifier
 from .hashing import hash_object
 from ..nodes.own import MasterNode
 from ..messages import Conversation
 from ..structures import KEPStructure
 from ..config import aes_keys_length, aes_mode
+from ..config import Identifier, identifier_base
 from ..database.base.models import KeyDBO, KeyPartDBO
+from ..utils import get_id, switch_base, hamming_distance
 from ..database.private import KeysDatabase, KeyPartsDatabase
 from .serialization import serialize_bytes, deserialize_string, \
     encode_string, decode_bytes
@@ -54,7 +54,23 @@ class KeyPart:
             """
             Designate a member for creating the filling key part.
             """
-            pass  # TODO
+            binary_target = switch_base(value, identifier_base, 2)
+            distances = {
+                possibility: hamming_distance(
+                    binary_target,
+                    switch_base(possibility, identifier_base, 2),
+                )
+                for possibility in possibilities
+            }
+            sorted_distances = dict(sorted(
+                distances,
+                key=lambda pair: pair[1],
+                reverse=False,
+            ))
+            # Even though there might be two keys with the same distance,
+            # sorting is deterministic, so we will get the same choice
+            # regardless.
+            return list(sorted_distances.keys())[0]
 
         remainder = aes_keys_length % len(conversation.members)
         floor = aes_keys_length // len(conversation.members)

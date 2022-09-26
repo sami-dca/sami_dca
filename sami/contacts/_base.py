@@ -29,10 +29,7 @@ class Contact:
 
         self._original_address = address
 
-        if isinstance(address, dns.name.Name):
-            address = host_dns_name(address)
-
-        self.address = address
+        self.update_address()
         self.port = port
         self.last_seen = last_seen
         self.id = self._compute_id()
@@ -47,7 +44,6 @@ class Contact:
 
     @classmethod
     def from_data(cls, contact_data: ContactStructure) -> Optional[Contact]:
-
         port = contact_data.port
         address = get_address_object(contact_data.address)
         if address is None:
@@ -81,6 +77,17 @@ class Contact:
             port=self.port,
             last_seen=self.last_seen,
         )
+
+    def update_address(self) -> None:
+        """
+        Updates the address by resolving the DNS name again.
+        If the Contact is not stored as a DNS name, does nothing
+        (uses the same address).
+        """
+        if isinstance(self._original_address, dns.name.Name):
+            self.address = host_dns_name(self._original_address)
+        else:
+            self.address = self._original_address
 
     def store(self) -> None:
         db: ContactsDatabase = ContactsDatabase()

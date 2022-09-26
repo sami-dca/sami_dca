@@ -2,9 +2,8 @@
     <img src="https://gravatar.com/avatar/3c7bb98e5004a55cd6d0c990bfb6d0c9?s=512" />
 </p>
 
-![Python version: 3.7 & above](https://img.shields.io/badge/python-3.7+-brightgreen?style=for-the-badge)
+![Python version: 3.10](https://img.shields.io/badge/python-3.10-brightgreen?style=for-the-badge)
 ![License: MIT](https://img.shields.io/github/license/sami-dca/sami_dca?style=for-the-badge)
-[![Discord server: https://discord.gg/Hcc6YTkpYV](https://img.shields.io/discord/777126677795831828.svg?label=Discord&style=for-the-badge&color=blue)](https://discord.gg/Hcc6YTkpYV)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=for-the-badge)](https://github.com/psf/black)
 
 **Sami** is a decentralized communication application, written in Python,

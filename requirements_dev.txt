@@ -4,3 +4,4 @@ codecov
 sphinx
 numpydoc
 pyinstaller
+pre-commit

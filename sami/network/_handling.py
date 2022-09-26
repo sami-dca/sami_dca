@@ -10,7 +10,6 @@ from ..nodes.own import MasterNode
 from .requests.mapping.all import status_mapping
 from ..cryptography.serialization import decode_bytes
 from ..messages import EncryptedMessage, Conversation
-from ..utils.decorators import filter_kwargs_subtractive
 from ..cryptography.symmetric import SymmetricKey, KeyPart
 from ..database.common import RawRequestsDatabase,  ContactsDatabase
 from ..database.private import KeyPartsDatabase, MessagesDatabase, \
@@ -41,7 +40,7 @@ class RequestsHandler(Singleton):
         if self._broadcast:
             Networks().map(lambda net: net.broadcast(request))
 
-    def handle(self, raw_request: bytes, from_address: str) -> None:
+    def __call__(self, raw_request: bytes, from_address: str) -> None:
         """
         Takes the raw requests as bytes, and manipulates it to finally route it
         """
@@ -237,7 +236,7 @@ class RequestsHandler(Singleton):
 
         if sender_key_part.is_known():
             # Somehow, we already know this key part.
-            # If should have been filtered out as the request should have been
+            # It should have been filtered out as the request should have been
             # the same.
             # Perhaps it's an id collision
             return
@@ -269,7 +268,6 @@ class RequestsHandler(Singleton):
             return
         ContactsDatabase().store(contact.to_dbo())
 
-    @filter_kwargs_subtractive('broadcast')
     def invalid_request(self, request: Request) -> None:
         logger.warning(f'Captured request calling unknown protocol: '
                        f'{request.status!r}.')

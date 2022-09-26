@@ -22,9 +22,11 @@ class NetworkThread(BaseThread):
         self.networks: Networks = Networks()
         # Populate the networks
         for nic in get_network_interfaces():
-            self.networks.register_network(Network(
-                parent=self.networks,
-                own_contact=OwnContact.from_interface(nic))
+            self.networks.register_network(
+                Network(
+                    parent=self.networks,
+                    own_contact=OwnContact.from_interface(nic),
+                )
             )
 
 
@@ -50,7 +52,7 @@ class RequestHandlingThread(NetworkThread):
             except queue.Empty:
                 time.sleep(2)
             else:
-                handler.handle(raw_req, from_address)
+                handler(raw_req, from_address)
 
 
 class SenderThread(NetworkThread):

@@ -42,4 +42,3 @@ class KeyPartsDatabase(PrivateDatabaseTemplate):
                 .one_or_none()
             if q is not None:
                 session.delete(q)
-

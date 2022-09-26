@@ -383,7 +383,7 @@ offline.
 #### Request structure
 - `List[Request]` `requests` - The list of `Requests` found in the specified interval
 
-## Tables
+## Database tables
 
 ### `contacts`
 Holds information about the ``Contacts`` we know

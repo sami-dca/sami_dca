@@ -79,7 +79,7 @@ class SingletonMeta(type):
             if cls not in cls.__instances:
                 instance = super().__call__(*args, **kwargs)
                 # Calling the callback if set.
-                if init_callback:
+                if init_callback is not None:
                     init_callback(instance)
                 cls.__instances[cls] = instance
         return cls.__instances[cls]

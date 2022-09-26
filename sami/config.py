@@ -1,5 +1,13 @@
+"""
+Config
+======
+
+Application's default config file.
+"""
+
 from pathlib import Path
 from typing import List, Type
+from datetime import datetime as dt
 
 from Crypto.Cipher import AES
 
@@ -8,7 +16,7 @@ from Crypto.Cipher import AES
 # ---------------------------------------------------
 
 # Minimum number of contacts/nodes we should know before sending our
-# identity (along with theirs). The higher the better, but it must be
+# identity (along with theirs). The higher, the better, but it must be
 # set in accordance with the network's size.
 min_peers: int = 0
 
@@ -76,9 +84,26 @@ contact_discovery_schedule: int = 60 * 15
 # Default is 5
 mp_timeout: int or float = 5
 
-# ---------------------------------------------
-# ----- DO NOT MODIFY ANYTHING UNDER THIS -----
-# ---------------------------------------------
+# Network buffer.
+network_buffer_size: int = 4096
+
+# ------------------------------------
+# ----- MODIFY AT YOUR OWN RISKS -----
+# ------------------------------------
+
+# Characters that can be used for custom bases. Order matters.
+# MODIFYING THIS VARIABLE WILL RESULT IN YOUR APPLICATION NOT WORKING PROPERLY
+valid_base_characters: str = (
+    '0123456789'
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    'abcdefghijklmnopqrstuvwxyz'
+    '!"#$%&\'()*+,-./:;<=>?[\\]^_`{|}~'
+)
+max_base: int = len(valid_base_characters)
+
+# Identifier base, specifying in which base the identifiers we work with
+# should be in.
+identifier_base: int = max_base
 
 # These are core parameters.
 # Modifying them will result in your client being unusable, or
@@ -94,8 +119,8 @@ aes_keys_length: int = 32
 # AES mode. Default is EAX.
 aes_mode: int = AES.MODE_EAX
 
-# Network buffer.
-network_buffer_size: int = 4096
-
 # Proof-of-Work difficulty
 pow_difficulty: int = 2
+
+# Sami epoch, i.e.
+sami_start: int = round(dt.timestamp(dt(year=2020, month=1, day=1)), None)

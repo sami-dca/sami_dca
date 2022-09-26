@@ -21,7 +21,7 @@ bullet_point_template = "- `{type}` `{name}` - {desc}\n"
 
 # Parse the models
 
-output = '## Tables\n\n'
+output = '## Database tables\n\n'
 for model in all_models:
     doc = ClassDoc(model)
 

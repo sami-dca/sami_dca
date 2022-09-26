@@ -18,7 +18,6 @@ def set_engine(instance):
     Function to be passed as an init callback to the singleton instance
     (with `apply_init_callback_to_singleton`) inheriting `Database`.
     """
-
     databases_directory.mkdir(parents=True, exist_ok=True)
     db_path = Path(__file__).parent.parent.parent / \
         databases_directory / f'{instance.name}.db'

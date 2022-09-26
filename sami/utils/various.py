@@ -1,13 +1,12 @@
 import json
 import time
-import datetime
 
-from typing import List, Dict, Any, Optional, Union
+from datetime import datetime
+from typing import List, Any, Union
 
 from Crypto.Hash import SHA256
 
-from ..config import Identifier
-from ..cryptography.hashing import hash_object
+from ..config import Identifier, sami_start, max_base, valid_base_characters
 
 
 def encode_json(dictionary: dict) -> str:
@@ -26,58 +25,17 @@ def decode_json(json_string: str) -> dict:
 
 def get_time() -> int:
     """
-    Returns the actual time as a UNIX timestamp.
+    Returns the current time as a SAMI timestamp (seconds since the epoch,
+    minus the UNIX timestamp of the Sami's birth).
     """
-    # TODO: use SAMI timestamp (UNIX timestamp minus release date)
-    #  time - 1577833200  (first january 2020)
-    return round(time.time(), None)
+    return round(time.time(), None) - sami_start
 
 
 def get_date_from_timestamp(timestamp: int) -> str:
     """
     Returns a readable date from a UNIX timestamp.
     """
-    return datetime.datetime.utcfromtimestamp(timestamp).strftime("%X %x")
-
-
-def object_transfer(src, dst,
-                    additional_exclude_arguments: Optional[List[str]] = None):
-    """
-    Utility function used to translate attributes from an object
-    instance to a different object.
-
-    FIXME: deprecated, remove this
-    """
-
-    VarsType = Dict[str, Any]
-
-    def filter_dunders(d: VarsType) -> VarsType:
-        """
-        Takes a dict of attributes and filters out dunders
-        """
-        return {
-            k: v
-            for k, v in d.items()
-            if not any([k.startswith('_'), k.endswith('_')])
-        }
-
-    def remove_attributes(d: VarsType,
-                          excluded_attrs: List[str]) -> VarsType:
-        return {
-            k: v
-            for k, v in d.items()
-            if k not in excluded_attrs
-        }
-
-    exclude_arguments = ['id']
-    if additional_exclude_arguments:
-        exclude_arguments.extend(additional_exclude_arguments)
-
-    src_attributes: dict = vars(src)
-    src_attributes = filter_dunders(src_attributes)
-    src_attributes = remove_attributes(src_attributes, exclude_arguments)
-
-    return dst(**src_attributes)
+    return datetime.utcfromtimestamp(timestamp).strftime("%X %x")
 
 
 def is_int(value: Any) -> bool:
@@ -96,15 +54,6 @@ def is_float(value: Any) -> bool:
         return False
     else:
         return True
-
-
-_valid_characters: str = (
-    '0123456789'
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    'abcdefghijklmnopqrstuvwxyz'
-    '!"#$%&\'()*+,-./:;<=>?[\\]^_`{|}~'
-)
-max_base = len(_valid_characters) + 1
 
 
 def switch_base(value: Union[int, str], from_base: int,
@@ -130,12 +79,12 @@ def switch_base(value: Union[int, str], from_base: int,
 
     # Convert the value to decimal
     # FIXME: using int only works for a limited base range
-    value = int(value, from_base)
+    value = int(str(value), from_base)
 
     final_value_parts: List[str] = []
     while value != 0:
         remainder = value % to_base
-        remainder_translation = _valid_characters[remainder]
+        remainder_translation = valid_base_characters[remainder]
         final_value_parts.append(remainder_translation)
         value //= to_base
 
@@ -165,3 +114,15 @@ def uncompress_id(compressed_id: str) -> Identifier:
         from_base=max_base,
         to_base=16,
     )
+
+
+def hamming_distance(first_string: str, second_string: str) -> int:
+    """
+    From https://en.wikipedia.org/wiki/Hamming_distance
+    """
+    usable_range = range(min([len(first_string), len(second_string)]))
+    distance = 0
+    for i in usable_range:
+        if first_string[i] != second_string[i]:
+            distance += 1
+    return distance

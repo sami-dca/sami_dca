@@ -13,7 +13,7 @@ import ipaddress
 
 import threading as th
 from queue import Queue
-from typing import Tuple, List, Generator, Callable, Optional, Union
+from typing import Tuple, List, Generator, Callable, Optional, Union, Any
 
 from ..design import Singleton
 from ..messages import OwnMessage
@@ -152,7 +152,7 @@ class Network:
         Takes a Contact and verifies whether this network instance
         can connect to it.
         It doesn't verify the contact availability on the network,
-        only if it theoretically possible to connect to it, based on
+        only if it is theoretically possible to connect to it, based on
         network rules and protocols.
         """
         if self.is_loopback:
@@ -217,7 +217,7 @@ class Network:
 
     def listen_for_requests(self) -> None:
         """
-        Setup a server and listens on a port.
+        Sets up a server and listens on a port.
         It requires a TCP connection to receive information.
         """
         with socket.socket() as server_socket:
@@ -297,7 +297,7 @@ class Networks(Singleton):
 
     TODO: make the networks "refreshable"
      Notes on that matter:
-     - Consider a network changes its address
+     - Consider a network can change its address
     """
 
     networks: List[Network] = []
@@ -308,7 +308,13 @@ class Networks(Singleton):
     send_queue = Queue()
 
     def what_is_up(self):
-        pass
+        """
+        Selects a random beacon or contact, tries to connect to it and sends a
+        WUP_INI request.
+        This method blocks until we receive a WUP_REP, timing out and asking
+        another node if necessary.
+        Once this method is finished, we should be updated.
+        """
 
     def get_primary(self) -> Optional[Network]:
         """
@@ -337,7 +343,7 @@ class Networks(Singleton):
             None
         )
 
-    def map(self, func: Callable) -> None:
+    def map(self, func: Callable[[Network], Any]) -> List[Any]:
         """
         Takes a function and applies it on all network interfaces.
         `func` will receive a `Network` instance as its only argument.
@@ -347,7 +353,7 @@ class Networks(Singleton):
         >>> networks.map(lambda net: net.broadcast(...))
         ```
         """
-        map(func, self.iter())
+        return [func(net) for net in self.iter()]
 
     def iter(self) -> Generator[Network, None, None]:
         """

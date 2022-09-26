@@ -5,4 +5,6 @@ a [Google Material](https://material.io/design/introduction) overlay for [Kivy](
 
 # References
 
-[KivyMD](https://kivymd.readthedocs.io/en/latest/)
+- [KivyMD](https://kivymd.readthedocs.io/en/latest/)
+- [Google Material](https://material.io/design/introduction)
+- [Kivy](https://kivy.org/)

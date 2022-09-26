@@ -10,7 +10,8 @@ import random
 from shapely.affinity import rotate as rt
 from skimage.transform import rotate
 from shapely.geometry import Polygon
-from PIL import Image, ImageDraw
+from PIL.Image import Image, fromarray, new as new_image
+from PIL.ImageDraw import ImageDraw, Draw
 from typing import List, Tuple
 
 
@@ -56,7 +57,7 @@ def stroke_poly(img: Image, draw: ImageDraw, points, color: Tuple[int, ...], wid
     return draw, img
 
 
-def stackarr(img: Image, times: int, func: callable, v: int) -> callable:
+def stackarr(img: np.array, times: int, func: callable, v: int) -> callable:
     mir = []
     on = False
     for _ in range(times):
@@ -101,9 +102,14 @@ def get_random_points(img: Image, sides: int = 4) -> list:
     return points
 
 
-def create_pattern(seed: int, colors: List[str], back_color: str = None, line: Tuple[str, int] = ("36382E", 3),
-                   wanted_size: int = 256, x_times: int = 10, y_times: int = 10, break_down: dict = None,
-                   shapes_count: int = 10, angles: list = np.arange(0, 180, 45)) -> Image:
+def create_pattern(seed: int, colors: List[str], back_color: str = None,
+                   line: Tuple[str, int] = ("36382E", 3),
+                   wanted_size: int = 256,
+                   x_times: int = 10, y_times: int = 10,
+                   break_down: dict = None,
+                   shapes_count: int = 10,
+                   angles: list = np.arange(0, 180, 45)
+                   ) -> Image:
 
     """
     Creates an image following a process.
@@ -160,9 +166,9 @@ def create_pattern(seed: int, colors: List[str], back_color: str = None, line: T
     start = (int(wanted_size / x_times), int(wanted_size / y_times))
 
     # Create the new Image object.
-    img = Image.new("RGB", start, back_color)
+    img = new_image("RGB", start, back_color)
     # and the new ImageDraw object.
-    draw = ImageDraw.Draw(img)
+    draw = Draw(img)
 
     for _ in range(shapes_count):
         # Chooses a random integer between 0 and 99 included.
@@ -170,8 +176,8 @@ def create_pattern(seed: int, colors: List[str], back_color: str = None, line: T
 
         # Creates three ranges: polygons, rectangles, and circles.
         # polygons[0] = 0 and circles[-1] = 99.
-        # By selecting rnd_type above, we will land in one of these three ranges,
-        # defining the shape we are going to use.
+        # By selecting rnd_type above, we will land in one of these three
+        # ranges, defining the shape we are going to use.
         polygons = list(range(0, int(100 * break_down["polygons"])))
         rectangles = [x + polygons[-1] + 1 for x in list(range(0, int(100 * break_down["rectangles"])))]
         circles = [x + rectangles[-1] + 1 for x in list(range(0, int(100 * break_down["circles"])))]
@@ -180,7 +186,7 @@ def create_pattern(seed: int, colors: List[str], back_color: str = None, line: T
             polygon = Polygon(get_random_points(img, random.randint(4, 10)))
             points = polygon.convex_hull.exterior.coords
             draw, img = stroke_poly(img, draw, points, line_colour, line_width*2)
-            draw.polygon(points, fill=random.choice(colors))  # , outline=(0,0,0))
+            draw.polygon(points, fill=random.choice(colors))
         elif rnd_type in rectangles:
             polygon = Polygon(get_poly_from_two_rectangle_points(*get_random_points(img, 2)[:2]))
             polygon = rt(polygon, random.randint(10, 100))
@@ -207,8 +213,19 @@ def create_pattern(seed: int, colors: List[str], back_color: str = None, line: T
     img = stackarr(img, x_times, np.hstack, rand_h)
     img = stackarr(img, y_times, np.vstack, rand_v)
 
-    img = rotate(img.astype(np.float32), random.choice(angles), mode="wrap", resize=False)
+    img = rotate(img.astype(np.float32),
+                 random.choice(angles), mode="wrap", resize=False)
 
-    img = Image.fromarray(img.astype(np.uint8))
+    img = fromarray(img.astype(np.uint8))
     
     return img
+
+
+if __name__ == "__main__":
+    for i in range(2):
+        create_pattern(
+            seed=i,
+            colors=["8d1f73", "150511", "d643b3", "FFFFFF"],
+            wanted_size=600,
+            shapes_count=3
+        ).show()

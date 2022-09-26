@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from ...config import Identifier
 from ..base.models import ContactDBO
+from ...utils.network import host_dns_name
 from .._template.common import CommonDatabaseTemplate
 
 
@@ -15,8 +16,11 @@ class ContactsDatabase(CommonDatabaseTemplate):
         A single interface can have multiple contacts if it hosts multiple
         Sami instances on different ports.
         """
+        contacts_dbo = self.get_all()
+
         # TODO
         # Resolve DNS names
+        host_dns_name()
         # Compare IP addresses
 
     def store(self, contact: ContactDBO) -> None:

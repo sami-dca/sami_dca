@@ -1,5 +1,5 @@
 # Allow importing miscellaneous utils directly from the top-package
-# e.g., ``from .utils import get_timestamp`` instead of
+# e.g., ``from .utils import get_time`` instead of
 # ``from .utils.various import get_timestamp``.
 from .various import *
 # For more specific utilities, e.g. network utilities, you will need to do
