@@ -3,29 +3,41 @@ Resources for UDP Peer-To-Peer:
 https://resources.infosecinstitute.com/topic/udp-hole-punching/
 https://github.com/dwoz/python-nat-hole-punching
 https://youtu.be/IbzGL_tjmv4
+
+Also, UPnP
 """
 
 from __future__ import annotations
 
+import ipaddress
+import logging as _logging
 import random
 import socket
-import ipaddress
-
 import threading as th
 from queue import Queue
-from typing import Tuple, List, Generator, Callable, Optional, Union, Any
+from typing import Any, Callable, Generator, List, Optional, Tuple, Union
 
-from ..design import Singleton
+import upnpy
+from upnpy.exceptions import IGDError
+
+from ..config import (
+    broadcast_limit,
+    broadcast_port,
+    contact_connect_timeout,
+    min_peers,
+    network_buffer_size,
+    sami_port,
+    upnp_lease,
+)
+from ..contacts import Beacon, Contact, OwnContact, beacons
+from ..database.common import ContactsDatabase, RawRequestsDatabase
+from ..design import Singleton, apply_init_callback_to_singleton
 from ..messages import OwnMessage
-from .requests import Request, BCP, DNP, MPP, WUP_INI
-from ..contacts import Contact, OwnContact, Beacon, beacons
-from ..utils.network import in_same_subnet, get_primary_ip_address
-from ..database.common import RawRequestsDatabase, ContactsDatabase
-from ..config import network_buffer_size, broadcast_port, sami_port, \
-    broadcast_limit, contact_connect_timeout, min_peers
+from ..utils import get_time, iter_to_dict
+from ..utils.network import get_primary_ip_address, in_same_subnet
+from .requests import BCP, DNP, MPP, WUP_INI, Request
 
-import logging as _logging
-logger = _logging.getLogger('network')
+logger = _logging.getLogger("network")
 
 
 class Network:
@@ -46,16 +58,16 @@ class Network:
         self._stop_event = th.Event()
 
         # Define the threads which will listen for requests on the network.
-        # These threads listen for requests and puts them in a queue, therefore
+        # These threads listen for requests and put them in a queue, therefore
         # they do not perform any important processing and can be terminated
-        # anytime, explaining why they are daemons.
+        # anytime, which is why they are daemons.
         self.listen_requests_thread = th.Thread(
-            name=f'{self.address}_requests',
+            name=f"{self.address}_requests",
             target=self.listen_for_requests,
             daemon=True,
         )
         self.listen_broadcast_thread = th.Thread(
-            name=f'{self.address}_broadcast',
+            name=f"{self.address}_broadcast",
             target=self.listen_for_autodiscover_packets,
             daemon=True,
         )
@@ -67,10 +79,6 @@ class Network:
     def is_primary(self) -> bool:
         return self.address == ipaddress.ip_address(get_primary_ip_address())
 
-    @property
-    def is_loopback(self) -> bool:
-        return self.address.is_loopback
-
     def what_is_up(self) -> None:
         """
         Selects a node and asks for all requests since the last we received.
@@ -80,7 +88,7 @@ class Network:
          timeout and send to another
         """
         # Note: we don't pass the request to the send queue because this
-        #  method is only called by jobs.
+        #  method is only called by the job scheduler.
         if ContactsDatabase().nunique() < min_peers:
             # We don't know enough unique contacts
             return
@@ -100,7 +108,7 @@ class Network:
         Discovers nodes by requesting a peer.
         """
         # Note: we don't pass the request to the send queue because this
-        #  method is only called by jobs.
+        #  method is only called by the job scheduler.
         req = DNP.new(self.own_contact)
         for contact in self.find_valid_contact():
             if self._send_request(req, contact):
@@ -111,13 +119,13 @@ class Network:
         Discovers contacts by requesting a peer.
         """
         # Note: we don't pass the request to the send queue because this
-        #  method is only called by jobs.
+        #  method is only called by the job scheduler.
         req = DNP.new(self.own_contact)
         for contact in self.find_valid_contact():
             if self._send_request(req, contact):
                 return
 
-    def iter_known_contacts(self) -> Generator[Union[Beacon, Contact], None, None]:
+    def iter_known_contacts(self) -> Generator[Union[Beacon, Contact], None, None]:  # noqa
         """
         Generator used for choosing a contact to send Requests to.
         Yields beacons first, then contacts.
@@ -155,7 +163,7 @@ class Network:
         only if it is theoretically possible to connect to it, based on
         network rules and protocols.
         """
-        if self.is_loopback:
+        if self.address.is_loopback:
             return False
         if contact.address.is_global:
             if not self.is_primary:
@@ -165,8 +173,7 @@ class Network:
                 return False
         elif contact.address.is_loopback:
             # We're not supposed to have a loopback as a Contact
-            self.contacts_database.remove(contact.id)
-            return False
+            raise ValueError(f"Got loopback address: {contact.address!r}")
         elif contact.address.is_reserved:
             return False
         elif contact.address.is_multicast:
@@ -182,8 +189,7 @@ class Network:
             if self.can_connect_to(contact):
                 yield contact
 
-    def _receive_all(self,
-                     sock: socket.socket) -> Tuple[bytes, Tuple[str, int]]:
+    def _receive_all(self, sock: socket.socket) -> Tuple[bytes, Tuple[str, int]]:  # noqa
         """
         Receives all parts of a network-sent message.
         Takes a socket object and returns a tuple with
@@ -207,8 +213,7 @@ class Network:
         FIXME: Currently allows for all kinds of request, but in practice,
          we want to accept BCP exclusively
         """
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM,
-                           socket.IPPROTO_UDP) as s:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:  # noqa
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.bind(("", broadcast_port))
             while not self._stop_event.is_set():
@@ -243,8 +248,8 @@ class Network:
         for contact in contacts:
             self.parent.send_queue.put((self, request, contact))
 
-        logger.info(f'Broadcast request {request.id!r} '
-                    f'to {len(contacts)} contacts')
+        logger.info(f"Broadcast request {request.id!r} "
+                    f"to {len(contacts)} contacts")
 
     def broadcast_request_lan(self, bcp_request: BCP) -> None:
         """
@@ -255,7 +260,7 @@ class Network:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.sendto(
                 data=bcp_request.to_bytes(),
-                address=('<broadcast>', broadcast_port),
+                address=("<broadcast>", broadcast_port),
             )
 
     def _send_request(self, request: Request, contact: Contact) -> bool:
@@ -275,21 +280,34 @@ class Network:
                 while total_sent < len(req):
                     sent = client_sock.send(req[total_sent:])
                     if sent == 0:
-                        raise RuntimeError('Socket connection broken')
+                        raise RuntimeError("Socket connection broken")
                     total_sent += sent
-            except (socket.timeout, ConnectionRefusedError,
-                    ConnectionResetError, OSError):
-                logger.info(f'Could not send request {request.id!r} '
-                            f'to {address}:{port}')
+            except (
+                socket.timeout,
+                ConnectionRefusedError,
+                ConnectionResetError,
+                OSError,
+            ):
+                logger.info(
+                    f"Could not send request {request.id!r} "
+                    f"to {address}:{port}"
+                )
             except Exception as e:
-                logger.error(f'Unhandled {type(e)} exception caught: {e!r}')
+                logger.error(f"Unhandled {type(e)} exception caught: {e!r}")
             else:
-                logger.info(f'Sent {request.status!r} request {request.id!r} '
-                            f'to {address}:{port}')
+                logger.info(
+                    f"Sent {request.status!r} request {request.id!r} "
+                    f"to {address}:{port}"
+                )
                 return True
         return False
 
 
+def init_networks(instance):
+    instance.refresh_upnp(force=True)
+
+
+@apply_init_callback_to_singleton(init_networks)
 class Networks(Singleton):
 
     """
@@ -307,13 +325,67 @@ class Networks(Singleton):
     # Requests in this queue will be sent by an independent thread
     send_queue = Queue()
 
+    # UPnP controller
+    upnp = upnpy.UPnP()
+    _last_upnp_lease_refresh: int
+    # This event is set when no public port could be opened with UPnP
+    no_upnp = th.Event()
+    no_upnp.set()  # It is set by default
+
+    def refresh_upnp(self, /, force: bool = False) -> None:
+        """
+        Update the UPnP port mapping on the router if appropriate.
+        """
+        if force:
+            self._last_upnp_lease_refresh = get_time() - (upnp_lease + 1)
+
+        lease_time_left = get_time() - self._last_upnp_lease_refresh
+        # If more than 90% of the lease time is left, we don't update.
+        if not lease_time_left < (0.1 * upnp_lease):
+            return
+
+        try:
+            router = self.upnp.get_igd()
+        except IGDError:
+            # No Internet Gateway Device on this network.
+            self.no_upnp.set()
+            return
+
+        services = router.get_services()
+
+        could_open: bool = False
+        for service in services:
+            actions = iter_to_dict(
+                service.get_actions(),
+                key=lambda action: action.name,
+            )
+            if "AddPortMapping" in actions:
+                for suitable_service in actions["AddPortMapping"]:
+                    suitable_service.AddPortMapping(
+                        NewRemoteHost="",
+                        NewExternalPort=80,  # FIXME
+                        NewProtocol="TCP",
+                        NewInternalPort=2108,  # FIXME
+                        NewInternalClient="192.168.1.3",  # FIXME
+                        NewEnabled=1,
+                        NewPortMappingDescription="Sami DCA.",
+                        NewLeaseDuration=upnp_lease,
+                    )
+                    self._last_upnp_lease_refresh = get_time()
+                    could_open = True
+
+        if could_open:
+            self.no_upnp.clear()
+        else:
+            self.no_upnp.set()
+
     def what_is_up(self):
         """
         Selects a random beacon or contact, tries to connect to it and sends a
         WUP_INI request.
         This method blocks until we receive a WUP_REP, timing out and asking
         another node if necessary.
-        Once this method is finished, we should be updated.
+        Once this method is finished, we should be up-to-date on sent requests.
         """
 
     def get_primary(self) -> Optional[Network]:
@@ -338,9 +410,9 @@ class Networks(Singleton):
         return next(
             filter(
                 lambda net: in_same_subnet(net.address, contact.address),
-                self.iter()
+                self.iter(),
             ),
-            None
+            None,
         )
 
     def map(self, func: Callable[[Network], Any]) -> List[Any]:

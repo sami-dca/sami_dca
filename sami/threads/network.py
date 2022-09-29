@@ -1,18 +1,19 @@
-import time
+import logging as _logging
 import queue
+import time
+from abc import ABC
 
-from ._base import BaseThread
-from ..network.requests import Request
 from ..contacts import Contact, OwnContact
+from ..network import Network, Networks, RequestsHandler
+from ..network.requests import Request
 from ..nodes.own import is_private_key_loaded
 from ..utils.network import get_network_interfaces
-from ..network import Network, Networks, RequestsHandler
+from ._base import BaseThread
 
-import logging as _logging
-logger = _logging.getLogger('threads')
+logger = _logging.getLogger("threads")
 
 
-class NetworkThread(BaseThread):
+class NetworkThread(ABC, BaseThread):
     """
     Thread handling network interactions.
     """
@@ -31,24 +32,24 @@ class NetworkThread(BaseThread):
 
 
 class RequestHandlingThread(NetworkThread):
-
     def run(self):
         # Wait until the private key is loaded in
-        while not is_private_key_loaded() \
-                and not self.global_app_stop_event.is_set() \
-                and not self._stop_event.is_set():
+        while (
+            not is_private_key_loaded()
+            and not self.global_app_stop_event.is_set()
+            and not self._stop_event.is_set()
+        ):
             time.sleep(2)
 
         if self.global_app_stop_event.is_set() or self._stop_event.is_set():
             return
 
-        logger.info('Beginning requests handling')
+        logger.info("Beginning requests handling")
         # Main loop, we'll handle the raw requests in the queue
         handler: RequestsHandler = RequestsHandler()
-        while not self.global_app_stop_event.is_set() \
-                and not self._stop_event.is_set():
+        while not self.global_app_stop_event.is_set() and not self._stop_event.is_set():  # noqa
             try:
-                raw_req, from_address = self.networks.handle_queue.get(block=False)
+                raw_req, from_address = self.networks.handle_queue.get(block=False)  # noqa
             except queue.Empty:
                 time.sleep(2)
             else:
@@ -56,13 +57,11 @@ class RequestHandlingThread(NetworkThread):
 
 
 class SenderThread(NetworkThread):
-
     def run(self):
         # Main loop, we'll send the requests in the queue
-        while not self.global_app_stop_event.is_set() \
-                and not self._stop_event.is_set():
+        while not self.global_app_stop_event.is_set() and not self._stop_event.is_set():  # noqa
             try:
-                network, request, contact = self.networks.send_queue.get(block=False)
+                network, request, contact = self.networks.send_queue.get(block=False)  # noqa
                 network: Network
                 request: Request
                 contact: Contact

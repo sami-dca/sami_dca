@@ -9,3 +9,4 @@ dnspython
 pydantic
 kivy
 kivymd
+upnpy

@@ -1,24 +1,33 @@
-from typing import List
-from json.decoder import JSONDecodeError
-
-from ..nodes import Node
-from ..contacts import Contact
-from ._network import Networks
-from ..design import Singleton
-from ..utils import decode_json
-from ..nodes.own import MasterNode
-from .requests.mapping.all import status_mapping
-from ..cryptography.serialization import decode_bytes
-from ..messages import EncryptedMessage, Conversation
-from ..cryptography.symmetric import SymmetricKey, KeyPart
-from ..database.common import RawRequestsDatabase,  ContactsDatabase
-from ..database.private import KeyPartsDatabase, MessagesDatabase, \
-    NodesDatabase
-from ..network.requests import Request, BCP, KEP, CSP, NPP, DNP, MPP, DCP, \
-    WUP_REP, WUP_INI
-
 import logging as _logging
-logger = _logging.getLogger('network.handling')
+from json.decoder import JSONDecodeError
+from typing import List
+
+from ..contacts import Contact
+from ..cryptography.serialization import decode_bytes
+from ..cryptography.symmetric import KeyPart, SymmetricKey
+from ..database.common import ContactsDatabase, RawRequestsDatabase
+from ..database.private import KeyPartsDatabase, MessagesDatabase, NodesDatabase
+from ..design import Singleton
+from ..messages import Conversation, EncryptedMessage
+from ..network.requests import (
+    BCP,
+    CSP,
+    DCP,
+    DNP,
+    KEP,
+    MPP,
+    NPP,
+    WUP_INI,
+    WUP_REP,
+    Request,
+)
+from ..nodes import Node
+from ..nodes.own import MasterNode
+from ..utils import decode_json
+from ._network import Networks
+from .requests.mapping.all import status_mapping
+
+logger = _logging.getLogger("network.handling")
 
 
 class RequestsHandler(Singleton):
@@ -50,7 +59,7 @@ class RequestsHandler(Singleton):
         except JSONDecodeError:
             return
 
-        status: str = dict_request['status']
+        status: str = dict_request["status"]
 
         # Cast the dictionary to an appropriate dataclass.
         # This verifies the structure, but not the info inside.
@@ -116,7 +125,7 @@ class RequestsHandler(Singleton):
         self._broadcast = True
 
     def bcp(self, request: BCP) -> None:
-        contact = Contact.from_data(request.data['author'])
+        contact = Contact.from_data(request.data["author"])
         if contact is None:
             # Contact information invalid
             return
@@ -174,7 +183,6 @@ class RequestsHandler(Singleton):
             # Invalid message
             return
 
-        # We'll now try to decrypt it
         message_dec = message_enc.to_clear()
         if message_dec is None:
             # Couldn't decrypt
@@ -248,11 +256,9 @@ class RequestsHandler(Singleton):
             our_key_part = KeyPart.new(conv)
             our_key_part.store()
             for member in conv_members:
-                self.broadcast(KEP.new(
-                    key_part=our_key_part,
-                    to=member,
-                    conversation=conv
-                ))
+                self.broadcast(
+                    KEP.new(key_part=our_key_part, to=member, conversation=conv)  # noqa
+                )
 
         key_parts = KeyPartsDatabase().get_parts(conv.id)
         key = SymmetricKey.from_parts(key_parts)
@@ -269,5 +275,7 @@ class RequestsHandler(Singleton):
         ContactsDatabase().store(contact.to_dbo())
 
     def invalid_request(self, request: Request) -> None:
-        logger.warning(f'Captured request calling unknown protocol: '
-                       f'{request.status!r}.')
+        logger.warning(
+            f"Captured request calling unknown protocol: "
+            f"{request.status!r}."
+        )

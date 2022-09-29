@@ -1,34 +1,37 @@
 from __future__ import annotations
 
-import dns
 import ipaddress as ip
-
+import logging as _logging
 from typing import Optional, Union
 
+import dns
+
 from ..config import Identifier
-from ..utils import get_time, get_id
-from ..structures import ContactStructure
+from ..cryptography.hashing import hash_object
 from ..database.base.models import ContactDBO
 from ..database.common import ContactsDatabase
-from ..cryptography.hashing import hash_object
-from ..utils.network import host_dns_name, get_address_object
+from ..structures import ContactStructure
+from ..utils import get_id, get_time
+from ..utils.network import get_address_object, host_dns_name
 
-import logging as _logging
-logger = _logging.getLogger('objects')
+logger = _logging.getLogger("objects")
 
 
 class Contact:
-
-    def __init__(self,
-                 address: Union[ip.IPv4Address,
-                                ip.IPv6Address,
-                                ip.IPv4Interface,
-                                ip.IPv6Interface,
-                                dns.name.Name],
-                 port: int, last_seen: int):
+    def __init__(
+        self,
+        address: Union[
+            ip.IPv4Address,
+            ip.IPv6Address,
+            ip.IPv4Interface,
+            ip.IPv6Interface,
+            dns.name.Name,
+        ],
+        port: int,
+        last_seen: int,
+    ):
 
         self._original_address = address
-
         self.update_address()
         self.port = port
         self.last_seen = last_seen

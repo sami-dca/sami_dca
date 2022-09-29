@@ -5,9 +5,9 @@ Config
 Application's default config file.
 """
 
+from datetime import datetime as dt
 from pathlib import Path
 from typing import List, Type
-from datetime import datetime as dt
 
 from Crypto.Cipher import AES
 
@@ -40,14 +40,14 @@ contact_connect_timeout: int = 10
 broadcast_limit: int = 15
 
 # Local directory where the database files will be stored.
-databases_directory: Path = Path('./db/').absolute()
+databases_directory: Path = Path("./db/").absolute()
 
 # Logging configuration file path
-logging_conf_file: Path = Path('./sami/logging.conf').absolute()
+logging_conf_file: Path = Path("./sami/logging.conf").absolute()
 
 # Log file path, in which logs will be output.
 # Relative path only (because absolute causes issues on Windows)
-log_file: Path = Path('./sami.log')
+log_file: Path = Path("./sami.log")
 
 # A range in which we will pick a random available port.
 default_port_range: List[int] = list(range(1024, 65536))
@@ -94,12 +94,15 @@ network_buffer_size: int = 4096
 # Characters that can be used for custom bases. Order matters.
 # MODIFYING THIS VARIABLE WILL RESULT IN YOUR APPLICATION NOT WORKING PROPERLY
 valid_base_characters: str = (
-    '0123456789'
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    'abcdefghijklmnopqrstuvwxyz'
-    '!"#$%&\'()*+,-./:;<=>?[\\]^_`{|}~'
+    "0123456789"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "!\"#$%&'()*+,-./:;<=>?[\\]^_`{|}~"
 )
 max_base: int = len(valid_base_characters)
+
+# UPnP default lease time, in seconds.
+upnp_lease: int = 60 * 60 * 24
 
 # Identifier base, specifying in which base the identifiers we work with
 # should be in.

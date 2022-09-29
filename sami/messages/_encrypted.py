@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from ..config import Identifier
-from ._base import ReadOnlyMessage
-from ..utils import get_time, get_id
-from ._conversation import Conversation
-from ..structures import MessageStructure
-from ..database.private import KeysDatabase
-from ..database.base.models import MessageDBO
 from ..cryptography.hashing import hash_object
 from ..cryptography.symmetric import DecryptionKey
+from ..database.base.models import MessageDBO
+from ..database.private import KeysDatabase
+from ..structures import MessageStructure
+from ..utils import get_id, get_time
+from ._base import ReadOnlyMessage
+from ._conversation import Conversation
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..nodes import Node
     from ._clear import ClearMessage
@@ -30,9 +29,16 @@ class EncryptedMessage(ReadOnlyMessage):
     Note: has an id.
     """
 
-    def __init__(self, *, author: Node, content: str, digest: str,
-                 time_sent: int, time_received: int,
-                 conversation: Conversation):
+    def __init__(
+        self,
+        *,
+        author: Node,
+        content: str,
+        digest: str,
+        time_sent: int,
+        time_received: int,
+        conversation: Conversation,
+    ):
         super().__init__(
             author=author,
             content=content,
@@ -90,13 +96,14 @@ class EncryptedMessage(ReadOnlyMessage):
         if key_dbo is None:
             # We don't have the key to decrypt this message
             return
-        return DecryptionKey.from_dbo(key_dbo) \
-            .decrypt_symmetric(self.content, self.digest)
+        return DecryptionKey.from_dbo(key_dbo).decrypt_symmetric(
+            self.content, self.digest
+        )
 
     def _compute_id(self) -> Identifier:
         """
         Creates an identifier from the time sent and the digest.
         We use the time sent because it is a constant set by the author,
-        and the digest because it is a hash of the content.
+        and the digest because it is essentially a signature of the content.
         """
         return get_id(hash_object([self.time_sent, self.digest]))

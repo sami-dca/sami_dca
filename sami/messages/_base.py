@@ -1,16 +1,13 @@
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ..nodes import Node
-    from ._conversation import Conversation
-
 import logging as _logging
-logger = _logging.getLogger('objects')
+
+from ..nodes import Node
+from ._conversation import Conversation
+
+logger = _logging.getLogger("objects")
 
 
 class _Message:
-
-    def __init__(self, *, author: Node, content: str,
-                 conversation: Conversation):
+    def __init__(self, *, author: Node, content: str, conversation: Conversation):  # noqa
         self.author = author
         self.content = content
         self.conversation = conversation
@@ -23,5 +20,5 @@ class EditableMessage(_Message):
 
 class ReadOnlyMessage(_Message):
     def __setattr__(self, key, value):
-        logger.warning('Tried to modify a ReadOnlyMessage.')
+        logger.warning("Tried to modify a ReadOnlyMessage.")
         return

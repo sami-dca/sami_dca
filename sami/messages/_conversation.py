@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from ..utils import get_id
 from ..config import Identifier
 from ..cryptography.hashing import hash_object
 from ..database.base.models import ConversationDBO, KeyDBO
-from ..database.private import ConversationsDatabase, KeysDatabase, \
-    MessagesDatabase, ConversationsMembershipsDatabase
+from ..database.private import (
+    ConversationsDatabase,
+    ConversationsMembershipsDatabase,
+    KeysDatabase,
+    MessagesDatabase,
+)
+from ..utils import get_id
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..nodes import Node
     from ._clear import ClearMessage
@@ -49,7 +52,8 @@ class Conversation:
 
     def _get_messages(self) -> List[ClearMessage]:
         """
-        Returns the messages part of this conversation.
+        Returns the messages part of this conversation,
+        as extracted from the database.
         """
         messages = MessagesDatabase().get_messages(self.id)
         messages.sort(key=lambda msg: msg.time_received, reverse=True)
@@ -67,13 +71,16 @@ class Conversation:
             return
         ConversationsDatabase().store(self.to_dbo())
         ConversationsMembershipsDatabase().register_memberships(
-            list(map(lambda member: member.to_dbo(), self.members)), self.id)
+            list(map(lambda member: member.to_dbo(), self.members)), self.id
+        )
 
     def get_members(self) -> List[Node]:
-        return list(map(
-            lambda dbo: Node.from_dbo(dbo),
-            ConversationsDatabase().get_members(self.id),
-        ))
+        return list(
+            map(
+                lambda dbo: Node.from_dbo(dbo),
+                ConversationsDatabase().get_members(self.id),
+            )
+        )
 
     def to_dbo(self) -> ConversationDBO:
         return ConversationDBO(
@@ -81,6 +88,9 @@ class Conversation:
         )
 
     def _get_key_dbo(self) -> Optional[KeyDBO]:
+        """
+        Tries to get the conversation's key database object.
+        """
         return KeysDatabase().get_symmetric_key(self.id)
 
     def _compute_id(self) -> Identifier:

@@ -1,10 +1,10 @@
-from typing import List
+from typing import List as _List
 from typing import Union as _Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel as _BaseModel
 
 
-class Structure(BaseModel):
+class Structure(_BaseModel):
     def to_dict(self, *args, **kwargs):
         return self.dict(*args, **kwargs)
 
@@ -46,12 +46,13 @@ class RequestStructure(Structure):
 
 # Define protocols' `data`
 
+
 class BCPStructure(Structure):
     author: ContactStructure
 
 
 class CSPStructure(Structure):
-    contacts: List[ContactStructure]
+    contacts: _List[ContactStructure]
 
 
 class DCPStructure(Structure):
@@ -67,7 +68,7 @@ class KEPStructure(Structure):
     hash: str
     sig: str
     author: NodeStructure
-    members: List[NodeStructure]  # List of NodeStructure
+    members: _List[NodeStructure]
 
 
 class MPPStructure(Structure):
@@ -76,7 +77,7 @@ class MPPStructure(Structure):
 
 
 class NPPStructure(Structure):
-    nodes: List[NodeStructure]
+    nodes: _List[NodeStructure]
 
 
 class WUP_INIStructure(Structure):
@@ -86,7 +87,7 @@ class WUP_INIStructure(Structure):
 
 
 class WUP_REPStructure(Structure):
-    requests: List[RequestStructure]
+    requests: _List[RequestStructure]
 
 
 AnyProtocolStructure = _Union[
@@ -103,6 +104,7 @@ AnyProtocolStructure = _Union[
 
 
 # Define specific request structures
+
 
 class BCPRequestStructure(RequestStructure):
     data: BCPStructure

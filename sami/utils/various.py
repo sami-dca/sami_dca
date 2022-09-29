@@ -1,12 +1,12 @@
 import json
 import time
-
+from collections import defaultdict
 from datetime import datetime
-from typing import List, Any, Union
+from typing import Any, Callable, Dict, Iterable, List, Union
 
 from Crypto.Hash import SHA256
 
-from ..config import Identifier, sami_start, max_base, valid_base_characters
+from ..config import Identifier, max_base, sami_start, valid_base_characters
 
 
 def encode_json(dictionary: dict) -> str:
@@ -56,8 +56,9 @@ def is_float(value: Any) -> bool:
         return True
 
 
-def switch_base(value: Union[int, str], from_base: int,
-                to_base: int) -> Union[int, str]:
+def switch_base(
+    value: Union[int, str], from_base: int, to_base: int
+) -> Union[int, str]:
     """
     Takes a value, and converts it from one base to another.
     Raises ValueError if the value is not in bounds of its indicated base.
@@ -88,7 +89,7 @@ def switch_base(value: Union[int, str], from_base: int,
         final_value_parts.append(remainder_translation)
         value //= to_base
 
-    final_value = ''.join(reversed(final_value_parts))
+    final_value = "".join(reversed(final_value_parts))
 
     if to_base <= 10:
         return int(final_value)
@@ -126,3 +127,21 @@ def hamming_distance(first_string: str, second_string: str) -> int:
         if first_string[i] != second_string[i]:
             distance += 1
     return distance
+
+
+def iter_to_dict(iterable: Iterable, /, key: Callable) -> Dict[Any, List[Any]]:
+    """
+    Takes an iterable, such as a list, and returns a dictionary mapping
+    each value (the result of the function `key`) to an entry.
+
+    Examples
+    --------
+    >>> iter_to_dict(["this", "is", "a", "test"], key=lambda val: len(val))
+    {4: ["this", "test"], 2: ["is"], 1: ["a"]}
+    >>> iter_to_dict(["1", "test", "5", "yes"], key=str.isnumeric)
+    {True: ["1", "5"], False: ["test", "yes"]}
+    """
+    final = defaultdict(list)
+    for value in iterable:
+        final[key(value)].append(value)
+    return dict(final)
