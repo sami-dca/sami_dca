@@ -125,7 +125,9 @@ class Network:
             if self._send_request(req, contact):
                 return
 
-    def iter_known_contacts(self) -> Generator[Union[Beacon, Contact], None, None]:  # noqa
+    def iter_known_contacts(
+        self,
+    ) -> Generator[Union[Beacon, Contact], None, None]:  # noqa
         """
         Generator used for choosing a contact to send Requests to.
         Yields beacons first, then contacts.
@@ -189,7 +191,9 @@ class Network:
             if self.can_connect_to(contact):
                 yield contact
 
-    def _receive_all(self, sock: socket.socket) -> Tuple[bytes, Tuple[str, int]]:  # noqa
+    def _receive_all(
+        self, sock: socket.socket
+    ) -> Tuple[bytes, Tuple[str, int]]:
         """
         Receives all parts of a network-sent message.
         Takes a socket object and returns a tuple with
@@ -213,7 +217,9 @@ class Network:
         FIXME: Currently allows for all kinds of request, but in practice,
          we want to accept BCP exclusively
         """
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:  # noqa
+        with socket.socket(
+            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
+        ) as s:  # noqa
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.bind(("", broadcast_port))
             while not self._stop_event.is_set():
@@ -248,8 +254,7 @@ class Network:
         for contact in contacts:
             self.parent.send_queue.put((self, request, contact))
 
-        logger.info(f"Broadcast request {request.id!r} "
-                    f"to {len(contacts)} contacts")
+        logger.info(f"Broadcast request {request.id!r} " f"to {len(contacts)} contacts")
 
     def broadcast_request_lan(self, bcp_request: BCP) -> None:
         """
@@ -289,8 +294,7 @@ class Network:
                 OSError,
             ):
                 logger.info(
-                    f"Could not send request {request.id!r} "
-                    f"to {address}:{port}"
+                    f"Could not send request {request.id!r} " f"to {address}:{port}"
                 )
             except Exception as e:
                 logger.error(f"Unhandled {type(e)} exception caught: {e!r}")

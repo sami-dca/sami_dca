@@ -48,7 +48,9 @@ class ContactsDatabase(CommonDatabaseTemplate):
     def get_contact(self, uid: Identifier) -> Optional[ContactDBO]:
         with self._init_session() as session:
             contact = (
-                session.query(ContactDBO).where(ContactDBO.uid == uid).one_or_none()  # noqa
+                session.query(ContactDBO)
+                .where(ContactDBO.uid == uid)
+                .one_or_none()
             )
             session.expunge_all()
         return contact

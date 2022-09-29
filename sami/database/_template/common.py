@@ -1,7 +1,8 @@
-from ._base import _DatabaseTemplate
-from ..base.common import CommonDatabase
-
 from typing import TYPE_CHECKING
+
+from ..base.common import CommonDatabase
+from ._base import _DatabaseTemplate
+
 if TYPE_CHECKING:
     from ..base._database import Database as _Database
 

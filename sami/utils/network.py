@@ -80,7 +80,9 @@ def get_network_interfaces(
     return interfaces
 
 
-def get_interface_info(interface: str, filter_af: bool = True) -> List[namedtuple]:  # noqa
+def get_interface_info(
+    interface: str, filter_af: bool = True
+) -> List[namedtuple]:  # noqa
     """
     Queries the addresses attributed on a given interface.
     Returns a list of namedtuples (the addresses) containing the information
@@ -155,7 +157,9 @@ def get_primary_ip_address():
         return ip_address
 
 
-def in_same_subnet(address1: ip.IPv4Interface, address2: ip.IPv4Address) -> bool:  # noqa
+def in_same_subnet(
+    address1: ip.IPv4Interface, address2: ip.IPv4Address
+) -> bool:  # noqa
     """
     Checks whether `address2` is part of `address1`'s subnet.
     We expect a network mask with `address1`.

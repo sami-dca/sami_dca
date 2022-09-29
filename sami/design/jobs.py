@@ -3,14 +3,12 @@ This is a synchronous job system.
 """
 
 import threading as th
-
 from typing import List
 
 from sami.config import mp_timeout
 
 
 class Job:
-
     def __init__(self, action, sch: int):
         self.default_schedule = sch
         self.remaining_time = sch
@@ -31,7 +29,6 @@ class Job:
 
 
 class Jobs:
-
     def __init__(self, jobs: List[Job], stop_event: th.Event):
         self.jobs = jobs
         self.stop_event = stop_event
@@ -55,7 +52,11 @@ class Jobs:
         while not self.stop_event.wait(stop_delay):
             self.jobs.sort(key=lambda x: x.remaining_time)
             next_job = self.jobs[0]
-            to_wait = stop_delay if stop_delay < next_job.remaining_time else next_job.remaining_time
+            to_wait = (
+                stop_delay
+                if stop_delay < next_job.remaining_time
+                else next_job.remaining_time
+            )
             for job in self.jobs:
                 job -= to_wait
             if next_job.remaining_time <= 0:

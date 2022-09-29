@@ -10,7 +10,7 @@
 and available for free on [GitHub](https://github.com/sami-dca/sami_dca) !
 
 Similar to apps like *Whatsapp* and *Telegram*, it aims at providing an enjoyable
-messaging experience while heavily relying on strong cryptography and a 
+messaging experience while heavily relying on strong cryptography and a
 decentralized (peer-to-peer) model for maximum anonymity and security !
 
 For a detailed description of how the system works,
@@ -20,7 +20,7 @@ please refer to the **[Sami Paper](./PAPER.md)**
 
 ### Standard user
 
-Stable and ready-to-use versions are available in the 
+Stable and ready-to-use versions are available in the
 [releases page](https://github.com/sami-dca/sami_dca/releases).
 
 <hr />
@@ -28,10 +28,10 @@ Stable and ready-to-use versions are available in the
 Currently, to set up Sami, you will need Python 3.7 or above.
 You can download a copy from https://python.org
 
-*Note: if you're already using Python, we advise you use a virtual environment 
+*Note: if you're already using Python, we advise you use a virtual environment
 for this next part, otherwise no worries !*
 
-Finally, to get it to work, install the dependencies: on Windows, 
+Finally, to get it to work, install the dependencies: on Windows,
 run the script ``setup_windows.bat``.
 
 After that, you should be able to run `sami.py`.
@@ -39,12 +39,12 @@ After that, you should be able to run `sami.py`.
 If despite this information you encounter difficulties, hop on the [Discord
 server](https://discord.gg/Hcc6YTkpYV), we'd be happy to help !
 
-*PS: we are currently working on providing executables (e.g. `.exe`) to 
+*PS: we are currently working on providing executables (e.g. `.exe`) to
 simplify the installation process*
 
 ## Contributing
 
-If you wish to contribute to the project, please first review our 
+If you wish to contribute to the project, please first review our
 [guidelines](https://github.com/sami-dca/sami_dca/blob/master/CONTRIBUTING.md).
 
 Our team is available on the [Discord server](https://discord.gg/Hcc6YTkpYV)

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import List, Optional
 
-from .base import Request
-from ...utils import get_time
 from ...contacts import Contact, OwnContact
-from .mapping.wup_valid import status_mapping_wup_valid
 from ...structures import WUP_INIStructure, WUP_REPStructure
+from ...utils import get_time
+from .base import Request
+from .mapping.wup_valid import status_mapping_wup_valid
 
 
 class WUP_INI(Request):
@@ -34,11 +34,13 @@ class WUP_INI(Request):
 
     @classmethod
     def new(cls, last_timestamp: int, own_contact: OwnContact) -> WUP_INI:
-        return cls(WUP_INIStructure(
-            beginning=last_timestamp,
-            end=get_time() + 10,
-            author=own_contact.to_data(),
-        ))
+        return cls(
+            WUP_INIStructure(
+                beginning=last_timestamp,
+                end=get_time() + 10,
+                author=own_contact.to_data(),
+            )
+        )
 
 
 class WUP_REP(Request):
@@ -69,6 +71,6 @@ class WUP_REP(Request):
 
     @classmethod
     def new(cls, requests: List[Request]) -> WUP_REP:
-        return cls(WUP_REPStructure(
-            requests=[request.to_data() for request in requests]
-        ))
+        return cls(
+            WUP_REPStructure(requests=[request.to_data() for request in requests])
+        )

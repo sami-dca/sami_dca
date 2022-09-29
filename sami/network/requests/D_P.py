@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import Optional
 
-from abc import ABC
-from .base import Request
 from ...contacts import Contact, OwnContact
 from ...structures import DCPStructure, DNPStructure
+from .base import Request
 
 
 class Discover(Request, ABC):

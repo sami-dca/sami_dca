@@ -1,21 +1,25 @@
 from __future__ import annotations
 
+import logging as _logging
 from pathlib import Path
 from typing import Optional
 
+from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
-from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Signature import pkcs1_15
 
-from .hashing import hash_object
 from ..config import rsa_keys_length
 from ..database.base.models import KeyDBO
-from .serialization import deserialize_string, serialize_bytes, \
-    encode_string, decode_bytes
+from .hashing import hash_object
+from .serialization import (
+    decode_bytes,
+    deserialize_string,
+    encode_string,
+    serialize_bytes,
+)
 
-import logging as _logging
-logger = _logging.getLogger('cryptography')
+logger = _logging.getLogger("cryptography")
 
 
 class PublicKey:
@@ -35,7 +39,7 @@ class PublicKey:
         try:
             public_key = RSA.construct((n, e), consistency_check=True)
         except ValueError:
-            logger.error('Could not construct RSA public key.')
+            logger.error("Could not construct RSA public key.")
             return
         else:
             return public_key
@@ -57,8 +61,8 @@ class PublicKey:
         Takes this key and writes it to a file.
         Use Node.export_public_key.
         """
-        with file.open(mode='wb') as f:
-            f.write(self._rsa.export_key(format='DER'))
+        with file.open(mode="wb") as f:
+            f.write(self._rsa.export_key(format="DER"))
 
     def get_max_rsa_enc_msg_length(self, sha_len_bits: int = 256) -> int:
         """
@@ -82,14 +86,12 @@ class PublicKey:
         se_en_data = serialize_bytes(en_data)
         return se_en_data
 
-    def is_signature_valid(self, hash_object: SHA256.SHA256Hash,
-                           sig: str) -> bool:
+    def is_signature_valid(self, hash_object: SHA256.SHA256Hash, sig: str) -> bool:
         """
         Takes a signature and checks whether it is valid.
         """
         try:
-            pkcs1_15.new(self._rsa).verify(hash_object,
-                                           deserialize_string(sig))
+            pkcs1_15.new(self._rsa).verify(hash_object, deserialize_string(sig))
         except (ValueError, TypeError):
             return False
         return True
@@ -101,10 +103,12 @@ class PublicKey:
         """
         Returns a hash of the public key.
         """
-        return hash_object([
-            self._rsa.n,
-            self._rsa.e,
-        ])
+        return hash_object(
+            [
+                self._rsa.n,
+                self._rsa.e,
+            ]
+        )
 
 
 class PrivateKey(PublicKey):
@@ -128,12 +132,13 @@ class PrivateKey(PublicKey):
         return cls(key)
 
     @staticmethod
-    def get_key_from_components(n: int, e: int, d: int, p: int,
-                                q: int) -> Optional[RSA.RsaKey]:
+    def get_key_from_components(
+        n: int, e: int, d: int, p: int, q: int
+    ) -> Optional[RSA.RsaKey]:
         try:
             private_key = RSA.construct((n, e, d, p, q), consistency_check=True)
         except ValueError:
-            logger.error('Could not construct RSA private key.')
+            logger.error("Could not construct RSA private key.")
             return
         else:
             return private_key
@@ -147,8 +152,9 @@ class PrivateKey(PublicKey):
         )
 
     @classmethod
-    def from_components(cls, n: int, e: int, d: int, p: int,
-                        q: int) -> Optional[PublicKey]:
+    def from_components(
+        cls, n: int, e: int, d: int, p: int, q: int
+    ) -> Optional[PublicKey]:
         private_key = PrivateKey.get_key_from_components(n, e, d, p, q)
         if private_key is None:
             return
@@ -156,8 +162,9 @@ class PrivateKey(PublicKey):
             return cls(private_key)
 
     @classmethod
-    def from_file(cls, file: Path,
-                  passphrase: Optional[str] = None) -> Optional[PrivateKey]:
+    def from_file(
+        cls, file: Path, passphrase: Optional[str] = None
+    ) -> Optional[PrivateKey]:
         with file.open(mode="rb") as k:
             try:
                 private_key = RSA.import_key(k.read(), passphrase=passphrase)
@@ -172,8 +179,8 @@ class PrivateKey(PublicKey):
         """
         See PublicKey._to_file
         """
-        with file.open(mode='wb') as f:
-            f.write(self._rsa.export_key(format='DER', passphrase=passphrase))
+        with file.open(mode="wb") as f:
+            f.write(self._rsa.export_key(format="DER", passphrase=passphrase))
 
     def get_public_key(self) -> PublicKey:
         return PublicKey.from_components(
@@ -200,10 +207,12 @@ class PrivateKey(PublicKey):
         """
         Returns a hash of the private key.
         """
-        return hash_object([
-            self._rsa.n,
-            self._rsa.e,
-            self._rsa.d,
-            self._rsa.p,
-            self._rsa.q,
-        ])
+        return hash_object(
+            [
+                self._rsa.n,
+                self._rsa.e,
+                self._rsa.d,
+                self._rsa.p,
+                self._rsa.q,
+            ]
+        )

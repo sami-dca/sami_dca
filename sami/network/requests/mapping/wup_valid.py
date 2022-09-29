@@ -9,8 +9,7 @@ from collections import defaultdict
 
 from ..BCP import BCP
 from ..CSP import CSP
-from ..D_P import DCP
-from ..D_P import DNP
+from ..D_P import DCP, DNP
 from ..KEP import KEP
 from ..MPP import MPP
 from ..NPP import NPP
@@ -18,12 +17,12 @@ from ..NPP import NPP
 status_mapping_wup_valid = defaultdict(
     lambda: None,
     {
-        'BCP': BCP,
-        'CSP': CSP,
-        'DCP': DCP,
-        'DNP': DNP,
-        'KEP': KEP,
-        'MPP': MPP,
-        'NPP': NPP,
-    }
+        "BCP": BCP,
+        "CSP": CSP,
+        "DCP": DCP,
+        "DNP": DNP,
+        "KEP": KEP,
+        "MPP": MPP,
+        "NPP": NPP,
+    },
 )

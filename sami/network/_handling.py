@@ -276,6 +276,5 @@ class RequestsHandler(Singleton):
 
     def invalid_request(self, request: Request) -> None:
         logger.warning(
-            f"Captured request calling unknown protocol: "
-            f"{request.status!r}."
+            f"Captured request calling unknown protocol: " f"{request.status!r}."
         )

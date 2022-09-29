@@ -1,33 +1,33 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
 import numpy as np
-
-from typing import Tuple, List, Optional
-
 from Crypto.Cipher import AES
 
-from ...utils import get_id
-from ...config import Identifier
-from ..hashing import hash_object
-from ...nodes.own import MasterNode
+from ...config import Identifier, aes_keys_length, aes_mode
 from ...database.base.models import KeyDBO
 from ...database.private import KeysDatabase
-from ...config import aes_keys_length, aes_mode
-from ..serialization import serialize_bytes, deserialize_string, \
-    encode_string, decode_bytes
+from ...nodes.own import MasterNode
+from ...utils import get_id
+from ..hashing import hash_object
+from ..serialization import (
+    decode_bytes,
+    deserialize_string,
+    encode_string,
+    serialize_bytes,
+)
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ._key_part import KeyPart
 
 import logging as _logging
-logger = _logging.getLogger('cryptography')
+
+logger = _logging.getLogger("cryptography")
 
 
 class SymmetricKey:
-
-    def __init__(self, key: bytes, nonce: bytes,
-                 conversation_id: Identifier):
+    def __init__(self, key: bytes, nonce: bytes, conversation_id: Identifier):
         self._key = key
         self._aes = AES.new(
             key=self._key,
@@ -40,7 +40,7 @@ class SymmetricKey:
 
     @staticmethod
     def derive_nonce_from_bytes(key: bytes) -> bytes:
-        return hash_object(key).digest()[:aes_keys_length // 2]
+        return hash_object(key).digest()[: aes_keys_length // 2]
 
     @classmethod
     def from_id(cls, identifier: Identifier) -> Optional[SymmetricKey]:
@@ -64,10 +64,11 @@ class SymmetricKey:
         parts = np.asarray(parts)
         parts_values = np.apply_along_axis(lambda x: x.id, axis=0, arr=parts)
         order = np.argsort(parts_values)
-        key_parts_ordered = np.apply_along_axis(lambda x: x._key_part,
-                                                axis=0, arr=parts[order])
+        key_parts_ordered = np.apply_along_axis(
+            lambda x: x._key_part, axis=0, arr=parts[order]
+        )
         # Concatenate parts
-        new_key: bytes = b''.join(key_parts_ordered.to_list())
+        new_key: bytes = b"".join(key_parts_ordered.to_list())
         assert len(new_key) == aes_keys_length
 
         conv_id = parts[0].conversation_id
@@ -98,8 +99,12 @@ class SymmetricKey:
 
     def to_dbo(self) -> KeyDBO:
         master_node: MasterNode = MasterNode()
-        se_en_key = master_node.private_key.encrypt_asymmetric(serialize_bytes(self._key))
-        se_en_nonce = master_node.private_key.encrypt_asymmetric(serialize_bytes(self._nonce))
+        se_en_key = master_node.private_key.encrypt_asymmetric(
+            serialize_bytes(self._key)
+        )
+        se_en_nonce = master_node.private_key.encrypt_asymmetric(
+            serialize_bytes(self._nonce)
+        )
 
         return KeyDBO(
             uid=self.id,
@@ -112,10 +117,14 @@ class SymmetricKey:
         KeysDatabase().store(self.to_dbo())
 
     def _compute_id(self) -> Identifier:
-        return get_id(hash_object([
-            self._key,
-            self._nonce,
-        ]))
+        return get_id(
+            hash_object(
+                [
+                    self._key,
+                    self._nonce,
+                ]
+            )
+        )
 
 
 class EncryptionKey(SymmetricKey):

@@ -1,27 +1,29 @@
 from __future__ import annotations
 
+import logging as _logging
+from typing import List, Optional, Tuple
+
 import numpy as np
-
-from typing import Tuple, List, Optional
-
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from ..nodes import Node
-from .hashing import hash_object
-from ..nodes.own import MasterNode
-from ..messages import Conversation
-from ..structures import KEPStructure
-from ..config import aes_keys_length, aes_mode
-from ..config import Identifier, identifier_base
+from ..config import Identifier, aes_keys_length, aes_mode, identifier_base
 from ..database.base.models import KeyDBO, KeyPartDBO
-from ..utils import get_id, switch_base, hamming_distance
-from ..database.private import KeysDatabase, KeyPartsDatabase
-from .serialization import serialize_bytes, deserialize_string, \
-    encode_string, decode_bytes
+from ..database.private import KeyPartsDatabase, KeysDatabase
+from ..messages import Conversation
+from ..nodes import Node
+from ..nodes.own import MasterNode
+from ..structures import KEPStructure
+from ..utils import get_id, hamming_distance, switch_base
+from .hashing import hash_object
+from .serialization import (
+    decode_bytes,
+    deserialize_string,
+    encode_string,
+    serialize_bytes,
+)
 
-import logging as _logging
-logger = _logging.getLogger('cryptography')
+logger = _logging.getLogger("cryptography")
 
 
 class KeyPart:
@@ -50,7 +52,10 @@ class KeyPart:
         Adopts the appropriate length depending on the number of members in the
         conversation.
         """
-        def get_designated(value: Identifier, possibilities: List[Identifier]) -> Identifier:
+
+        def get_designated(
+            value: Identifier, possibilities: List[Identifier]
+        ) -> Identifier:
             """
             Designate a member for creating the filling key part.
             """
@@ -62,11 +67,13 @@ class KeyPart:
                 )
                 for possibility in possibilities
             }
-            sorted_distances = dict(sorted(
-                distances,
-                key=lambda pair: pair[1],
-                reverse=False,
-            ))
+            sorted_distances = dict(
+                sorted(
+                    distances,
+                    key=lambda pair: pair[1],
+                    reverse=False,
+                )
+            )
             # Even though there might be two keys with the same distance,
             # sorting is deterministic, so we will get the same choice
             # regardless.
@@ -109,10 +116,7 @@ class KeyPart:
         part_hash = key_part_data.hash
         part_sig = key_part_data.sig
 
-        members = [
-            Node.from_data(member)
-            for member in key_part_data.members
-        ]
+        members = [Node.from_data(member) for member in key_part_data.members]
         if any([member is None for member in members]):
             # At least one of the specified nodes is invalid
             return
@@ -175,7 +179,6 @@ class KeyPart:
 
 
 class SymmetricKey:
-
     def __init__(self, key: bytes, nonce: bytes, conversation_id: Identifier):
         self._key = key
         self._aes = AES.new(
@@ -189,7 +192,7 @@ class SymmetricKey:
 
     @staticmethod
     def derive_nonce_from_bytes(key: bytes) -> bytes:
-        return hash_object(key).digest()[:aes_keys_length // 2]
+        return hash_object(key).digest()[: aes_keys_length // 2]
 
     @classmethod
     def from_id(cls, identifier: Identifier) -> Optional[SymmetricKey]:
@@ -210,10 +213,11 @@ class SymmetricKey:
         parts = np.asarray(parts)
         parts_values = np.apply_along_axis(lambda x: x.id, axis=0, arr=parts)
         order = np.argsort(parts_values)
-        key_parts_ordered = np.apply_along_axis(lambda x: x._key_part,
-                                                axis=0, arr=parts[order])
+        key_parts_ordered = np.apply_along_axis(
+            lambda x: x._key_part, axis=0, arr=parts[order]
+        )
         # Concatenate parts
-        new_key: bytes = b''.join(key_parts_ordered.to_list())
+        new_key: bytes = b"".join(key_parts_ordered.to_list())
         assert len(new_key) == aes_keys_length
 
         # TODO: assert all the parts have the same conversation_id
@@ -241,8 +245,12 @@ class SymmetricKey:
 
     def to_dbo(self) -> KeyDBO:
         master_node: MasterNode = MasterNode()
-        se_en_key = master_node.private_key.encrypt_asymmetric(serialize_bytes(self._key))
-        se_en_nonce = master_node.private_key.encrypt_asymmetric(serialize_bytes(self._nonce))
+        se_en_key = master_node.private_key.encrypt_asymmetric(
+            serialize_bytes(self._key)
+        )
+        se_en_nonce = master_node.private_key.encrypt_asymmetric(
+            serialize_bytes(self._nonce)
+        )
 
         return KeyDBO(
             uid=self.id,
@@ -255,10 +263,14 @@ class SymmetricKey:
         KeysDatabase().store(self.to_dbo())
 
     def _compute_id(self) -> Identifier:
-        return get_id(hash_object([
-            self._key,
-            self._nonce,
-        ]))
+        return get_id(
+            hash_object(
+                [
+                    self._key,
+                    self._nonce,
+                ]
+            )
+        )
 
 
 class EncryptionKey(SymmetricKey):

@@ -7,8 +7,8 @@ throughout the Sami project.
 
 This document is aimed at maintainers and contributors.
 
-Especially if you are a new contributor, this document will be vital for 
-understanding how everything in Sami is implemented.  
+Especially if you are a new contributor, this document will be vital for
+understanding how everything in Sami is implemented.
 We also advise you read the project's contributing guidelines.
 
 # TODO

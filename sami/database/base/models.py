@@ -4,8 +4,8 @@ Note: docstrings are written with the numpy format.
 See file `./_models_parser.py` for more information.
 """
 
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, ForeignKey
 
 CommonBase = declarative_base()
 PrivateBase = declarative_base()
@@ -156,8 +156,8 @@ class MessageDBO(PrivateBase):
     time_sent: int = Column(Integer)
     time_received: int = Column(Integer)
     digest: str = Column(String)
-    author_id = Column(ForeignKey('nodes.uid', ondelete='CASCADE'))
-    conversation_id: str = Column(ForeignKey('conversations.uid', ondelete='CASCADE'))
+    author_id = Column(ForeignKey("nodes.uid", ondelete="CASCADE"))
+    conversation_id: str = Column(ForeignKey("conversations.uid", ondelete="CASCADE"))
 
 
 class KeyDBO(PrivateBase):
@@ -189,13 +189,13 @@ class KeyDBO(PrivateBase):
 
     """
 
-    __tablename__ = 'keys'
+    __tablename__ = "keys"
 
     id: int = Column(Integer, primary_key=True)
     uid: str = Column(String)
     key: str = Column(String)
     nonce: str = Column(String)
-    conversation_id: str = Column(ForeignKey('conversations.uid', ondelete='CASCADE'))
+    conversation_id: str = Column(ForeignKey("conversations.uid", ondelete="CASCADE"))
     timestamp: int = Column(Integer)
 
 
@@ -220,12 +220,12 @@ class KeyPartDBO(PrivateBase):
 
     """
 
-    __tablename__ = 'key_parts'
+    __tablename__ = "key_parts"
 
     id: int = Column(Integer, primary_key=True)
     uid: str = Column(String)
     key_part: str = Column(String)
-    conversation_id: str = Column(ForeignKey('conversations.uid', ondelete='CASCADE'))
+    conversation_id: str = Column(ForeignKey("conversations.uid", ondelete="CASCADE"))
 
 
 class ConversationDBO(PrivateBase):
@@ -271,8 +271,8 @@ class ConversationMembershipDBO(PrivateBase):
     __tablename__ = "conversations_memberships"
 
     id: int = Column(Integer, primary_key=True)
-    node_id: str = Column(ForeignKey('nodes.uid', ondelete='CASCADE'))
-    conversation_id: str = Column(ForeignKey('conversations.uid', ondelete='CASCADE'))
+    node_id: str = Column(ForeignKey("nodes.uid", ondelete="CASCADE"))
+    conversation_id: str = Column(ForeignKey("conversations.uid", ondelete="CASCADE"))
 
 
 all_models = [

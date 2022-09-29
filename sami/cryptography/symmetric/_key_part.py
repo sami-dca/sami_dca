@@ -1,27 +1,25 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from Crypto.Random import get_random_bytes
 
-from ...nodes import Node
-from ...utils import get_id
-from ...config import Identifier
-from ..hashing import hash_object
-from ...nodes.own import MasterNode
-from ...config import aes_keys_length
-from ...structures import KEPStructure
+from ...config import Identifier, aes_keys_length
 from ...database.base.models import KeyPartDBO
 from ...database.private import KeyPartsDatabase
-from ..serialization import serialize_bytes, deserialize_string, \
-    encode_string
+from ...nodes import Node
+from ...nodes.own import MasterNode
+from ...structures import KEPStructure
+from ...utils import get_id
+from ..hashing import hash_object
+from ..serialization import deserialize_string, encode_string, serialize_bytes
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ...messages import Conversation
 
 import logging as _logging
-logger = _logging.getLogger('cryptography')
+
+logger = _logging.getLogger("cryptography")
 
 
 class KeyPart:
@@ -53,8 +51,10 @@ class KeyPart:
         Adopts the appropriate length depending on the number of members in the
         conversation.
         """
-        def get_designated(value: Identifier,
-                           possibilities: List[Identifier]) -> Identifier:
+
+        def get_designated(
+            value: Identifier, possibilities: List[Identifier]
+        ) -> Identifier:
             """
             Designate a member for creating the filling key part.
             TODO
@@ -95,14 +95,12 @@ class KeyPart:
         If decryption fails, we return None.
         """
         from ...messages import Conversation
+
         enc_key_part = key_part_data.key_part
         part_hash = key_part_data.hash
         part_sig = key_part_data.sig
 
-        members = [
-            Node.from_data(member)
-            for member in key_part_data.members
-        ]
+        members = [Node.from_data(member) for member in key_part_data.members]
         if any([member is None for member in members]):
             # At least one of the specified nodes is invalid
             return

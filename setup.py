@@ -10,7 +10,7 @@ def read(file_name: str) -> str:
 
 def get_requirements(file_name: str) -> list:
     requirements_file = os.path.join(os.path.dirname(__file__), file_name)
-    with open(requirements_file, 'r') as f:
+    with open(requirements_file, "r") as f:
         requirements = [r.strip() for r in f.readlines()]
     return requirements
 
@@ -35,8 +35,6 @@ setup(
         "Development Status :: 1 - Planning",
         "License :: OSI Approved :: MIT License",
     ],
-    packages=[
-        "sami"
-    ],
-    include_package_data=False
+    packages=["sami"],
+    include_package_data=False,
 )

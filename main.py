@@ -10,14 +10,14 @@ from sami.config import logging_conf_file, log_file
 from sami.threads import JobsThread, RequestHandlingThread, SenderThread
 
 # Load logging config
-fileConfig(logging_conf_file, defaults={'log_file_name': str(log_file)})
+fileConfig(logging_conf_file, defaults={"log_file_name": str(log_file)})
 logger = getLogger()
 
 
 def main():
     global_app_stop_event: th.Event = GlobalStopEvent()
 
-    logger.info('Launching')
+    logger.info("Launching")
 
     # The main thread will be the UI's
     controller = sami.Controller()
@@ -54,10 +54,11 @@ def update():
     # Updates the client using Git.
     try:
         import git
+
         g = git.cmd.Git(os.getcwd())
         g.pull()
     except ImportError:
-        logger.warning('Could not check for software updates.')
+        logger.warning("Could not check for software updates.")
 
 
 if __name__ == "__main__":

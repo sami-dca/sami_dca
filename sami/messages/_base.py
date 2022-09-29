@@ -7,7 +7,9 @@ logger = _logging.getLogger("objects")
 
 
 class _Message:
-    def __init__(self, *, author: Node, content: str, conversation: Conversation):  # noqa
+    def __init__(
+        self, *, author: Node, content: str, conversation: Conversation
+    ):
         self.author = author
         self.content = content
         self.conversation = conversation

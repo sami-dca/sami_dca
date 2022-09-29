@@ -1,2 +1,2 @@
-from .network import Networks
 from .controller import Controller
+from .network import Networks

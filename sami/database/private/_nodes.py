@@ -1,13 +1,13 @@
-from sqlalchemy import exists
 from typing import List, Optional
 
+from sqlalchemy import exists
+
 from ...config import Identifier
-from ..base.models import NodeDBO
 from .._template.common import CommonDatabaseTemplate
+from ..base.models import NodeDBO
 
 
 class NodesDatabase(CommonDatabaseTemplate):
-
     def is_known(self, uid: Identifier) -> bool:
         with self._init_session() as session:
             return session.query(exists().where(NodeDBO.uid == uid)).scalar()

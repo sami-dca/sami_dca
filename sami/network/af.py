@@ -4,9 +4,8 @@ Address families.
 
 import socket
 
-
 af_map = {
-    'AF_INET': socket.AF_INET,
+    "AF_INET": socket.AF_INET,
     # 'AF_INET6': socket.AF_INET6,
 }
 

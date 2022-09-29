@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import ipaddress as ip
-
-from typing import Optional, List
 from collections import namedtuple
+from typing import List, Optional
 
-from ._base import Contact
-from ..utils import get_time
 from ..config import sami_port
+from ..utils import get_time
 from ..utils.network import get_interface_info, is_supported_af
+from ._base import Contact
 
 
 class OwnContact(Contact):
-
     @classmethod
     def from_interface(cls, interface: str) -> Optional[OwnContact]:
         """
@@ -23,8 +21,7 @@ class OwnContact(Contact):
         return cls.from_address_list(addresses)
 
     @classmethod
-    def from_address_list(cls,
-                          addresses: List[namedtuple]) -> Optional[OwnContact]:
+    def from_address_list(cls, addresses: List[namedtuple]) -> Optional[OwnContact]:
         for address in addresses:
             if is_supported_af(address.family):
                 return cls.from_address(address)

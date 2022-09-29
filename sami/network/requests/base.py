@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import typing
-
-from typing import Optional
 from abc import ABC, abstractmethod
+from typing import Optional
 
-from ...database.base.models import RequestDBO
 from ...cryptography.hashing import hash_object
-from ...database.common import RawRequestsDatabase
-from ...utils import get_time, decode_json, get_id
 from ...cryptography.serialization import encode_string
-from ...structures import AnyRequestStructure, AnyProtocolStructure
+from ...database.base.models import RequestDBO
+from ...database.common import RawRequestsDatabase
+from ...structures import AnyProtocolStructure, AnyRequestStructure
+from ...utils import decode_json, get_id, get_time
 
 
 class Request(ABC):
@@ -90,11 +89,13 @@ class Request(ABC):
 
     @classmethod
     def from_dbo(cls, dbo: RequestDBO) -> Request:
-        return cls.from_data(cls.request_struct(
-            status=dbo.protocol,
-            data=cls.inner_struct(decode_json(dbo.data)),
-            timestamp=dbo.timestamp,
-        ))
+        return cls.from_data(
+            cls.request_struct(
+                status=dbo.protocol,
+                data=cls.inner_struct(decode_json(dbo.data)),
+                timestamp=dbo.timestamp,
+            )
+        )
 
     def is_known(self) -> bool:
         raw_request_database = RawRequestsDatabase()
@@ -107,10 +108,14 @@ class Request(ABC):
 
     def _compute_id(self) -> str:
         # Note: do not include the timestamp in the hash
-        return get_id(hash_object([
-            self.status,
-            self.data.to_json(),
-        ]))
+        return get_id(
+            hash_object(
+                [
+                    self.status,
+                    self.data.to_json(),
+                ]
+            )
+        )
 
     def to_data(self) -> AnyRequestStructure:
         return self.request_struct(
@@ -131,7 +136,5 @@ class Request(ABC):
 
     def to_dbo(self) -> RequestDBO:
         return RequestDBO(
-            protocol=self.status,
-            data=self.data.to_json(),
-            timestamp=self.timestamp
+            protocol=self.status, data=self.data.to_json(), timestamp=self.timestamp
         )

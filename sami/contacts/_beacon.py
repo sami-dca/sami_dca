@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+#from ..utils import get_time
+#from ..utils.network import get_address_object
 from ._base import Contact
-from ..utils import get_time
-from ..utils.network import get_address_object
 
 
 class Beacon(Contact):

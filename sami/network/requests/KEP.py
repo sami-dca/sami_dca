@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .base import Request
-from ...nodes import Node
-from ...nodes.own import MasterNode
-from ...messages import Conversation
-from ...structures import KEPStructure
-from ...cryptography.symmetric import KeyPart
 from ...cryptography.hashing import hash_object
 from ...cryptography.serialization import serialize_bytes
+from ...cryptography.symmetric import KeyPart
+from ...messages import Conversation
+from ...nodes import Node
+from ...nodes.own import MasterNode
+from ...structures import KEPStructure
+from .base import Request
 
 
 class KEP(Request):
@@ -35,8 +35,7 @@ class KEP(Request):
         return data
 
     @classmethod
-    def new(cls, key_part: KeyPart, to: Node,
-            conversation: Conversation) -> KEP:
+    def new(cls, key_part: KeyPart, to: Node, conversation: Conversation) -> KEP:
         master_node: MasterNode = MasterNode()
 
         key_part_str = serialize_bytes(key_part._key_part)
@@ -50,10 +49,12 @@ class KEP(Request):
             master_node.sig,
         )
 
-        return cls(KEPStructure(
-            key_part=se_en_half_aes_key,
-            hash=h_str,
-            sig=se_sig,
-            author=own_node.to_data(),
-            members=[node.to_data() for node in conversation.get_members()]
-        ))
+        return cls(
+            KEPStructure(
+                key_part=se_en_half_aes_key,
+                hash=h_str,
+                sig=se_sig,
+                author=own_node.to_data(),
+                members=[node.to_data() for node in conversation.get_members()],
+            )
+        )

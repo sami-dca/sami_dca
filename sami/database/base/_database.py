@@ -1,16 +1,15 @@
+import logging as _logging
 import sqlite3
-
 from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
-from .models import all_models
 from ...config import databases_directory
+from .models import all_models
 
-import logging as _logging
-logger = _logging.getLogger('database')
+logger = _logging.getLogger("database")
 
 
 def set_engine(instance):
@@ -19,9 +18,12 @@ def set_engine(instance):
     (with `apply_init_callback_to_singleton`) inheriting `Database`.
     """
     databases_directory.mkdir(parents=True, exist_ok=True)
-    db_path = Path(__file__).parent.parent.parent / \
-        databases_directory / f'{instance.name}.db'
-    instance.engine = create_engine(f'sqlite:///{db_path!s}')
+    db_path = (
+        Path(__file__).parent.parent.parent
+        / databases_directory
+        / f"{instance.name}.db"
+    )
+    instance.engine = create_engine(f"sqlite:///{db_path!s}")
     instance.session = sessionmaker(bind=instance.engine)
     instance.init_db()
 
@@ -34,7 +36,7 @@ class Database:
     base = None  # Inherited must override
 
     def init_db(self):
-        logger.info('Initiating database')
+        logger.info("Initiating database")
 
         try:
             # Getting the count of each table,
@@ -68,14 +70,14 @@ class Database:
         Create default tables (will be empty)
         """
         self.base.metadata.create_all(bind=self.engine)
-        logger.info('Created all tables')
+        logger.info("Created all tables")
 
     def delete_tables(self) -> None:
         """
         Delete all the tables and their content
         """
         self.base.metadata.drop_all(bind=self.engine)
-        logger.info('Deleted all tables')
+        logger.info("Deleted all tables")
 
     def insert_values(self):
         """

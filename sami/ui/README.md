@@ -1,6 +1,6 @@
 # User Interface
 
-Sami's user interface (UI) is based on [KivyMD](https://github.com/kivymd/KivyMD), 
+Sami's user interface (UI) is based on [KivyMD](https://github.com/kivymd/KivyMD),
 a [Google Material](https://material.io/design/introduction) overlay for [Kivy](https://kivy.org/).
 
 # References

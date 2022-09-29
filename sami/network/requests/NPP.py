@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import List, Optional
 
 from ...nodes import Node
-from .base import Request
 from ...structures import NPPStructure
+from .base import Request
 
 
 class NPP(Request):
@@ -23,6 +23,6 @@ class NPP(Request):
 
     @classmethod
     def new(cls, nodes: List[Node]) -> NPP:
-        return cls(cls.inner_struct(
-            nodes=list(map(lambda node: node.to_data(), nodes))
-        ))
+        return cls(
+            cls.inner_struct(nodes=list(map(lambda node: node.to_data(), nodes)))
+        )

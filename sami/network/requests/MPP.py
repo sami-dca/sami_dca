@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .base import Request
-from ...structures import MPPStructure
 from ...messages import EncryptedMessage
+from ...structures import MPPStructure
+from .base import Request
 
 
 class MPP(Request):
@@ -19,7 +19,9 @@ class MPP(Request):
 
     @classmethod
     def new(cls, encrypted_message: EncryptedMessage) -> MPP:
-        return cls(MPPStructure(
-            message=encrypted_message.to_data(),
-            conversation=encrypted_message.conversation.id,
-        ))
+        return cls(
+            MPPStructure(
+                message=encrypted_message.to_data(),
+                conversation=encrypted_message.conversation.id,
+            )
+        )

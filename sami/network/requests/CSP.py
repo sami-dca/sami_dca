@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional, List
+from typing import List, Optional
 
-from .base import Request
 from ...contacts import Contact
-from ...structures import CSPStructure, ContactStructure
+from ...structures import CSPStructure
+from .base import Request
 
 
 class CSP(Request):
@@ -23,9 +23,4 @@ class CSP(Request):
 
     @classmethod
     def new(cls, contacts: List[Contact]) -> CSP:
-        return cls(CSPStructure(
-            contacts=[
-                contact.to_data()
-                for contact in contacts
-            ]
-        ))
+        return cls(CSPStructure(contacts=[contact.to_data() for contact in contacts]))

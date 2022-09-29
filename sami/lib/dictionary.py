@@ -660,7 +660,7 @@ dictionary = {
         "zebu",
         "zonkey",
         "zorse",
-    ]
+    ],
 }
 
 

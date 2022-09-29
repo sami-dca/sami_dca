@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .base import Request
-from ...structures import BCPStructure
 from ...contacts import Contact, OwnContact
+from ...structures import BCPStructure
+from .base import Request
 
 
 class BCP(Request):

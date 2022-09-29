@@ -47,9 +47,13 @@ class RequestHandlingThread(NetworkThread):
         logger.info("Beginning requests handling")
         # Main loop, we'll handle the raw requests in the queue
         handler: RequestsHandler = RequestsHandler()
-        while not self.global_app_stop_event.is_set() and not self._stop_event.is_set():  # noqa
+        while (
+            not self.global_app_stop_event.is_set() and not self._stop_event.is_set()
+        ):  # noqa
             try:
-                raw_req, from_address = self.networks.handle_queue.get(block=False)  # noqa
+                raw_req, from_address = self.networks.handle_queue.get(
+                    block=False
+                )  # noqa
             except queue.Empty:
                 time.sleep(2)
             else:
@@ -59,9 +63,13 @@ class RequestHandlingThread(NetworkThread):
 class SenderThread(NetworkThread):
     def run(self):
         # Main loop, we'll send the requests in the queue
-        while not self.global_app_stop_event.is_set() and not self._stop_event.is_set():  # noqa
+        while (
+            not self.global_app_stop_event.is_set() and not self._stop_event.is_set()
+        ):  # noqa
             try:
-                network, request, contact = self.networks.send_queue.get(block=False)  # noqa
+                network, request, contact = self.networks.send_queue.get(
+                    block=False
+                )  # noqa
                 network: Network
                 request: Request
                 contact: Contact

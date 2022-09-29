@@ -1,13 +1,13 @@
 from typing import Optional
+
 from sqlalchemy import exists
 
 from ...config import Identifier
-from ..base.models import KeyDBO
 from .._template.private import PrivateDatabaseTemplate
+from ..base.models import KeyDBO
 
 
 class KeysDatabase(PrivateDatabaseTemplate):
-
     def store(self, key: KeyDBO) -> None:
         with self._init_session() as session:
             session.add(key)
@@ -18,8 +18,6 @@ class KeysDatabase(PrivateDatabaseTemplate):
 
     def get_symmetric_key(self, key_id: Identifier) -> Optional[KeyDBO]:
         with self._init_session() as session:
-            key = session.query(KeyDBO)\
-                .where(KeyDBO.uid == key_id)\
-                .one_or_none()
+            key = session.query(KeyDBO).where(KeyDBO.uid == key_id).one_or_none()
             session.expunge_all()
         return key

@@ -1,13 +1,12 @@
+import logging as _logging
 import pickle
-
 from typing import Any
 
 from Crypto.Hash import SHA256
 
 from ..config import pow_difficulty
 
-import logging as _logging
-logger = _logging.getLogger('cryptography')
+logger = _logging.getLogger("cryptography")
 
 
 def hash_object(obj: Any) -> SHA256.SHA256Hash:
@@ -35,6 +34,8 @@ def compute_pow(request):
         if hx[0:difficulty] == "0" * difficulty:
             break
     else:
-        raise logger.error(f'Could not compute proof-of-work in {iterations} '
-                           f'iterations (difficulty={difficulty})')
+        raise logger.error(
+            f"Could not compute proof-of-work in {iterations} "
+            f"iterations (difficulty={difficulty})"
+        )
     return request

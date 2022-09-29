@@ -5,10 +5,11 @@ The processed document is output in the local file `models.md`.
 """
 
 from pathlib import Path
+
 from models import all_models
 from numpydoc.docscrape import ClassDoc
 
-output_file = Path(__file__).parent / 'models.md'
+output_file = Path(__file__).parent / "models.md"
 
 # Define templates
 
@@ -21,21 +22,19 @@ bullet_point_template = "- `{type}` `{name}` - {desc}\n"
 
 # Parse the models
 
-output = '## Database tables\n\n'
+output = "## Database tables\n\n"
 for model in all_models:
     doc = ClassDoc(model)
 
-    cols = ''
-    for parameter in doc['Attributes']:
+    cols = ""
+    for parameter in doc["Attributes"]:
         cols += bullet_point_template.format(
-            type=parameter.type,
-            name=parameter.name,
-            desc=' '.join(parameter.desc)
+            type=parameter.type, name=parameter.name, desc=" ".join(parameter.desc)
         )
 
     output += table_doc_template.format(
         table=model.__tablename__,
-        desc=' '.join(doc['Summary']),
+        desc=" ".join(doc["Summary"]),
         cols=cols,
     )
 

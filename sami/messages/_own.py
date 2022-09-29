@@ -1,18 +1,20 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from ..cryptography.symmetric import EncryptionKey
+from ..database.private import KeysDatabase
+from ..nodes.own import MasterNode
 from ..utils import get_time
 from ._base import EditableMessage
-from ..nodes.own import MasterNode
 from ._encrypted import EncryptedMessage
-from ..database.private import KeysDatabase
-from ..cryptography.symmetric import EncryptionKey
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ._conversation import Conversation
 
 import logging as _logging
-logger = _logging.getLogger('objects')
+
+logger = _logging.getLogger("objects")
 
 
 class OwnMessage(EditableMessage):
@@ -33,15 +35,17 @@ class OwnMessage(EditableMessage):
     def __init__(self, *, conversation: Conversation):
         super().__init__(
             author=MasterNode().id,
-            content='',
+            content="",
             conversation=conversation.id,
         )
 
     def to_encrypted(self) -> EncryptedMessage:
         key_dbo = KeysDatabase().get_symmetric_key(self.conversation.id)
         if key_dbo is None:
-            msg = ("Tried to encrypt a message part "
-                   "of a conversation we're not part of ?")
+            msg = (
+                "Tried to encrypt a message part "
+                "of a conversation we're not part of ?"
+            )
             logger.critical(msg)
             raise ValueError(msg)
         key = EncryptionKey.from_dbo(key_dbo)
