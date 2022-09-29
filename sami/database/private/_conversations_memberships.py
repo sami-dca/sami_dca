@@ -7,7 +7,9 @@ from ._nodes import NodesDatabase
 
 
 class ConversationsMembershipsDatabase(PrivateDatabaseTemplate):
-    def register_memberships(self, nodes: List[NodeDBO], conv_id: Identifier) -> None:  # noqa
+    def register_memberships(
+        self, nodes: List[NodeDBO], conv_id: Identifier
+    ) -> None:
         """
         Register that `nodes` are members of a specific `conversation`.
         """
