@@ -28,10 +28,6 @@ Use your best judgment, and feel free to propose changes to this document in a p
 We have two main channels to answer all your questions:
 
 - The [Sami FAQ](./FAQ.md)
-- The [Sami Discord server](https://discord.gg/Hcc6YTkpYV)
-
-> Even though Discord is a chat service,
-> it can sometimes take several hours for community members to respond - please be patient !
 
 # What should I know before I get started ?
 

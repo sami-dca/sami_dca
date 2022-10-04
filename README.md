@@ -36,9 +36,6 @@ run the script ``setup_windows.bat``.
 
 After that, you should be able to run `sami.py`.
 
-If despite this information you encounter difficulties, hop on the [Discord
-server](https://discord.gg/Hcc6YTkpYV), we'd be happy to help !
-
 *PS: we are currently working on providing executables (e.g. `.exe`) to
 simplify the installation process*
 
@@ -46,9 +43,6 @@ simplify the installation process*
 
 If you wish to contribute to the project, please first review our
 [guidelines](https://github.com/sami-dca/sami_dca/blob/master/CONTRIBUTING.md).
-
-Our team is available on the [Discord server](https://discord.gg/Hcc6YTkpYV)
-if we can help with your contributions.
 
 ### Development
 
