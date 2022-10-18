@@ -4,7 +4,7 @@ import ipaddress as ip
 from collections import namedtuple
 from typing import List, Optional
 
-from ..config import sami_port
+from ..config import settings
 from ..utils import get_time
 from ..utils.network import get_interface_info, is_supported_af
 from ._base import Contact
@@ -34,6 +34,6 @@ class OwnContact(Contact):
 
         return cls(
             address=ip.IPv4Interface(address.address),
-            port=sami_port,
+            port=settings.sami_port,
             last_seen=get_time(),
         )

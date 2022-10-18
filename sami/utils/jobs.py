@@ -5,7 +5,7 @@ This is a synchronous job system.
 import threading as th
 from typing import List
 
-from sami.config import mp_timeout
+from ..config import settings
 
 
 class Job:
@@ -48,7 +48,7 @@ class Jobs:
         FIXME: there might be redundancies, check the logic is in order
         """
         self._run_all()
-        stop_delay = mp_timeout
+        stop_delay = settings.mp_timeout
         while not self.stop_event.wait(stop_delay):
             self.jobs.sort(key=lambda x: x.remaining_time)
             next_job = self.jobs[0]

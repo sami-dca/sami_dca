@@ -2,6 +2,11 @@ from typing import List as _List
 from typing import Union as _Union
 
 from pydantic import BaseModel as _BaseModel
+from pydantic import conint as _conint
+from pydantic import conlist as _conlist
+from pydantic import constr as _constr
+
+from ..config import settings
 
 
 class Structure(_BaseModel):
@@ -10,6 +15,17 @@ class Structure(_BaseModel):
 
     def to_json(self, *args, **kwargs):
         return self.json(*args, **kwargs)
+
+
+class NodeImageStructure(Structure):
+    seed: _conint(ge=0, le=9999, strict=True)
+    colors: _conlist(
+        item_type=_constr(to_lower=True, regex=r"[a-f0-9]{6}", strict=True),  # noqa
+        min_items=3,
+        max_items=9,
+        unique_items=True,
+    )
+    shapes_count: _conint(ge=1, le=19, strict=True)
 
 
 class NodeStructure(Structure):
@@ -21,7 +37,7 @@ class NodeStructure(Structure):
 
 class ContactStructure(Structure):
     address: str
-    port: int
+    port: _conint(ge=1, le=65535, strict=True)
 
 
 class SymmetricKeyStructure(Structure):
@@ -32,7 +48,7 @@ class SymmetricKeyStructure(Structure):
 
 class MessageStructure(Structure):
     content: str
-    time_sent: int
+    time_sent: _conint(gt=settings.sami_start)
     digest: str
     author: NodeStructure
     conversation: str
@@ -41,7 +57,7 @@ class MessageStructure(Structure):
 class RequestStructure(Structure):
     status: str
     data: dict
-    timestamp: int
+    timestamp: _conint(gt=settings.sami_start)
 
 
 # Define protocols' `data`

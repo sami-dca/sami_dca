@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from Crypto.Random import get_random_bytes
 
-from ...config import Identifier, aes_keys_length
+from ...config import Identifier, settings
 from ...database.base.models import KeyPartDBO
 from ...database.private import KeyPartsDatabase
 from ...nodes import Node
@@ -61,8 +61,8 @@ class KeyPart:
             """
             return possibilities[0]
 
-        remainder = aes_keys_length % len(conversation.members)
-        floor = aes_keys_length // len(conversation.members)
+        remainder = settings.aes_keys_length % len(conversation.members)
+        floor = settings.aes_keys_length // len(conversation.members)
 
         identifiers = [node.id for node in conversation.members]
         identifiers.sort()

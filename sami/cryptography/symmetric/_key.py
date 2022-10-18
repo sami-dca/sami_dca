@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 import numpy as np
 from Crypto.Cipher import AES
 
-from ...config import Identifier, aes_keys_length, aes_mode
+from ...config import Identifier, settings
 from ...database.base.models import KeyDBO
 from ...database.private import KeysDatabase
 from ...nodes.own import MasterNode
@@ -32,7 +32,7 @@ class SymmetricKey:
         self._aes = AES.new(
             key=self._key,
             nonce=nonce,
-            mode=aes_mode,
+            mode=settings.aes_mode,
         )
         self._nonce = nonce
         self.conversation_id = conversation_id
@@ -40,7 +40,7 @@ class SymmetricKey:
 
     @staticmethod
     def derive_nonce_from_bytes(key: bytes) -> bytes:
-        return hash_object(key).digest()[: aes_keys_length // 2]
+        return hash_object(key).digest()[: settings.aes_keys_length // 2]
 
     @classmethod
     def from_id(cls, identifier: Identifier) -> Optional[SymmetricKey]:
@@ -56,7 +56,7 @@ class SymmetricKey:
         Returns None if one or more part is missing.
         """
         key_length = sum([len(part) for part in parts])
-        if key_length != aes_keys_length:
+        if key_length != settings.aes_keys_length:
             # Missing key parts, or invalid part
             return
         # Sort the parts based on the id
@@ -69,7 +69,7 @@ class SymmetricKey:
         )
         # Concatenate parts
         new_key: bytes = b"".join(key_parts_ordered.to_list())
-        assert len(new_key) == aes_keys_length
+        assert len(new_key) == settings.aes_keys_length
 
         conv_id = parts[0].conversation_id
         if not all([part.conversation_id == conv_id for part in parts]):

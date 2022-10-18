@@ -10,7 +10,7 @@ from urllib.request import urlopen
 import psutil
 from dns.name import Name as DNSName
 
-from ..config import default_port_range
+from ..config import settings
 from ..network.af import supported_af
 
 logger = _logging.getLogger("utils")
@@ -114,7 +114,7 @@ def get_available_port() -> Optional[int]:
     From a list of ports, return any available port.
     Return None if we couldn't find one.
     """
-    rng = default_port_range.copy()
+    rng = settings.default_port_range.copy()
     random.shuffle(rng)
     for p in rng:
         if not is_port_in_use(p):

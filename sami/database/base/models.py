@@ -69,6 +69,16 @@ class NodeDBO(PrivateBase):
     sig : str
         Cryptographic signature of `hash`
 
+    img_seed : int
+        Seed used to generate the pattern.
+
+    img_colors : str
+        Colon-separated values of hexadecimal colors,
+        used by the pattern generator.
+
+    img_shapes_count : int
+        Number of different shapes to generate in the node's pattern.
+
     """
 
     __tablename__ = "nodes"
@@ -79,6 +89,9 @@ class NodeDBO(PrivateBase):
     rsa_e: int = Column(Integer)
     hash: str = Column(String)
     sig: str = Column(String)
+    img_seed: int = Column(Integer)
+    img_colors: str = Column(String)
+    img_shapes_count: int = Column(Integer)
 
 
 class RequestDBO(CommonBase):

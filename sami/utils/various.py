@@ -1,12 +1,13 @@
 import json
 import time
+import traceback
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Callable, Dict, Iterable, List, Union
 
 from Crypto.Hash import SHA256
 
-from ..config import Identifier, max_base, sami_start, valid_base_characters
+from ..config import Identifier, settings
 
 
 def encode_json(dictionary: dict) -> str:
@@ -28,7 +29,7 @@ def get_time() -> int:
     Returns the current time as a SAMI timestamp (seconds since the epoch,
     minus the UNIX timestamp of the Sami's birth).
     """
-    return round(time.time(), None) - sami_start
+    return round(time.time(), None) - settings.sami_start
 
 
 def get_date_from_timestamp(timestamp: int) -> str:
@@ -36,24 +37,6 @@ def get_date_from_timestamp(timestamp: int) -> str:
     Returns a readable date from a UNIX timestamp.
     """
     return datetime.utcfromtimestamp(timestamp).strftime("%X %x")
-
-
-def is_int(value: Any) -> bool:
-    try:
-        int(value)
-    except (ValueError, TypeError):
-        return False
-    else:
-        return True
-
-
-def is_float(value: Any) -> bool:
-    try:
-        float(value)
-    except (ValueError, TypeError):
-        return False
-    else:
-        return True
 
 
 def switch_base(
@@ -75,8 +58,8 @@ def switch_base(
     :raises ValueError: If the value is not in bounds of its indicated base.
     :raises AssertionError: If either `from_base` or `to_base` is unsupported.
     """
-    assert 2 <= from_base <= max_base
-    assert 2 <= to_base <= max_base
+    assert 2 <= from_base <= settings.max_base
+    assert 2 <= to_base <= settings.max_base
 
     # Convert the value to decimal
     # FIXME: using int only works for a limited base range
@@ -85,7 +68,7 @@ def switch_base(
     final_value_parts: List[str] = []
     while value != 0:
         remainder = value % to_base
-        remainder_translation = valid_base_characters[remainder]
+        remainder_translation = settings.valid_base_characters[remainder]
         final_value_parts.append(remainder_translation)
         value //= to_base
 
@@ -105,14 +88,14 @@ def compress_id(identifier: Identifier) -> str:
     return switch_base(
         value=identifier,
         from_base=16,
-        to_base=max_base,
+        to_base=settings.max_base,
     )
 
 
 def uncompress_id(compressed_id: str) -> Identifier:
     return switch_base(
         value=compressed_id,
-        from_base=max_base,
+        from_base=settings.max_base,
         to_base=16,
     )
 
@@ -145,3 +128,7 @@ def iter_to_dict(iterable: Iterable, /, key: Callable) -> Dict[Any, List[Any]]:
     for value in iterable:
         final[key(value)].append(value)
     return dict(final)
+
+
+def format_err(err: Exception):
+    return f"{''.join(traceback.format_tb(err.__traceback__))}\n{str(err)}"

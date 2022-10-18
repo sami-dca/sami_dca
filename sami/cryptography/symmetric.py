@@ -7,7 +7,7 @@ import numpy as np
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 
-from ..config import Identifier, aes_keys_length, aes_mode, identifier_base
+from ..config import Identifier, settings
 from ..database.base.models import KeyDBO, KeyPartDBO
 from ..database.private import KeyPartsDatabase, KeysDatabase
 from ..messages import Conversation
@@ -59,11 +59,11 @@ class KeyPart:
             """
             Designate a member for creating the filling key part.
             """
-            binary_target = switch_base(value, identifier_base, 2)
+            binary_target = switch_base(value, settings.identifier_base, 2)
             distances = {
                 possibility: hamming_distance(
                     binary_target,
-                    switch_base(possibility, identifier_base, 2),
+                    switch_base(possibility, settings.identifier_base, 2),
                 )
                 for possibility in possibilities
             }
@@ -79,8 +79,8 @@ class KeyPart:
             # regardless.
             return list(sorted_distances.keys())[0]
 
-        remainder = aes_keys_length % len(conversation.members)
-        floor = aes_keys_length // len(conversation.members)
+        remainder = settings.aes_keys_length % len(conversation.members)
+        floor = settings.aes_keys_length // len(conversation.members)
 
         identifiers = [node.id for node in conversation.members]
         identifiers.sort()
@@ -184,7 +184,7 @@ class SymmetricKey:
         self._aes = AES.new(
             key=self._key,
             nonce=nonce,
-            mode=aes_mode,
+            mode=settings.aes_mode,
         )
         self._nonce = nonce
         self.conversation_id = conversation_id
@@ -192,7 +192,7 @@ class SymmetricKey:
 
     @staticmethod
     def derive_nonce_from_bytes(key: bytes) -> bytes:
-        return hash_object(key).digest()[: aes_keys_length // 2]
+        return hash_object(key).digest()[: settings.aes_keys_length // 2]
 
     @classmethod
     def from_id(cls, identifier: Identifier) -> Optional[SymmetricKey]:
@@ -218,7 +218,7 @@ class SymmetricKey:
         )
         # Concatenate parts
         new_key: bytes = b"".join(key_parts_ordered.to_list())
-        assert len(new_key) == aes_keys_length
+        assert len(new_key) == settings.aes_keys_length
 
         # TODO: assert all the parts have the same conversation_id
 

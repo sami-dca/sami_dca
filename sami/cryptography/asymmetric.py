@@ -9,7 +9,7 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
 
-from ..config import rsa_keys_length
+from ..config import settings
 from ..database.base.models import KeyDBO
 from .hashing import hash_object
 from .serialization import (
@@ -128,7 +128,7 @@ class PrivateKey(PublicKey):
 
     @classmethod
     def new(cls) -> PrivateKey:
-        key = RSA.generate(rsa_keys_length)
+        key = RSA.generate(settings.rsa_keys_length)
         return cls(key)
 
     @staticmethod

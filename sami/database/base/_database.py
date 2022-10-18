@@ -6,34 +6,29 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
-from ...config import databases_directory
+from ...config import settings
 from .models import all_models
 
 logger = _logging.getLogger("database")
 
 
-def set_engine(instance):
-    """
-    Function to be passed as an init callback to the singleton instance
-    (with `apply_init_callback_to_singleton`) inheriting `Database`.
-    """
-    databases_directory.mkdir(parents=True, exist_ok=True)
-    db_path = (
-        Path(__file__).parent.parent.parent
-        / databases_directory
-        / f"{instance.name}.db"
-    )
-    instance.engine = create_engine(f"sqlite:///{db_path!s}")
-    instance.session = sessionmaker(bind=instance.engine)
-    instance.init_db()
-
-
 class Database:
-
-    _instance = None
+    # _instance = None
     engine = None
     session = None
     base = None  # Inherited must override
+    name: str  # Inherited must override
+
+    def init(self):
+        settings.databases_directory.mkdir(parents=True, exist_ok=True)
+        db_path = (
+            Path(__file__).parent.parent.parent
+            / settings.databases_directory
+            / f"{self.name}.db"
+        )
+        self.engine = create_engine(f"sqlite:///{db_path!s}")
+        self.session = sessionmaker(bind=self.engine)
+        self.init_db()
 
     def init_db(self):
         logger.info("Initiating database")

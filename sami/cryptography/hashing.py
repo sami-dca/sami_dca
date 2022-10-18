@@ -4,7 +4,7 @@ from typing import Any
 
 from Crypto.Hash import SHA256
 
-from ..config import pow_difficulty
+from ..config import settings
 
 logger = _logging.getLogger("cryptography")
 
@@ -21,7 +21,7 @@ def compute_pow(request):
     Takes a request and returns the same with an additional nonce.
     This nonce is computed with a Proof-of-Work algorithm.
     """
-    difficulty = pow_difficulty
+    difficulty = settings.pow_difficulty
     limit = 10 * (difficulty + 1)
     iterations = 10 * limit
     # We limit the PoW iterations.

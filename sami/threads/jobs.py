@@ -1,10 +1,6 @@
-from ..config import (
-    broadcast_schedule,
-    contact_discovery_schedule,
-    nodes_discovery_schedule,
-)
-from ..design import Job, Jobs
+from ..config import settings
 from ..network import Networks
+from ..utils import Job, Jobs
 from ._base import BaseThread
 
 
@@ -21,15 +17,15 @@ class JobsThread(BaseThread):
             jobs=[
                 Job(
                     action=lambda: networks.map(lambda net: net.broadcast_autodiscover),
-                    sch=broadcast_schedule,
+                    sch=settings.broadcast_schedule,
                 ),
                 Job(
                     action=lambda: networks.map(lambda net: net.request_nodes),
-                    sch=nodes_discovery_schedule,
+                    sch=settings.nodes_discovery_schedule,
                 ),
                 Job(
                     action=lambda: networks.map(lambda net: net.request_contacts),
-                    sch=contact_discovery_schedule,
+                    sch=settings.contact_discovery_schedule,
                 ),
             ],
             stop_event=self.global_app_stop_event,

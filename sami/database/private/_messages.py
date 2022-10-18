@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import exists
 
@@ -26,3 +26,7 @@ class MessagesDatabase(PrivateDatabaseTemplate):
             )
             session.expunge_all()
         return messages
+
+    def get_last_message(self, conversation_uid: Identifier) -> Optional[MessageDBO]:
+        # FIXME
+        return self.get_messages(conversation_uid)[-1]

@@ -13,7 +13,7 @@ from ._base import BaseThread
 logger = _logging.getLogger("threads")
 
 
-class NetworkThread(ABC, BaseThread):
+class NetworkThread(BaseThread, ABC):
     """
     Thread handling network interactions.
     """

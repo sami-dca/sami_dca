@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy import exists
 
-from ...config import Identifier, max_request_lifespan
+from ...config import Identifier, settings
 from ...utils import get_time
 from .._template.common import CommonDatabaseTemplate
 from ..base.models import RequestDBO
@@ -32,7 +32,7 @@ class RawRequestsDatabase(CommonDatabaseTemplate):
             session.expunge_all()
         return q
 
-    def purge_old(self, lifespan: int = max_request_lifespan) -> None:
+    def purge_old(self, lifespan: int = settings.max_request_lifespan) -> None:
         now = get_time()
         threshold = now - lifespan
         with self._init_session() as session:

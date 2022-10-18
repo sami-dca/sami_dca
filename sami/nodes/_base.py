@@ -16,11 +16,6 @@ logger = _logging.getLogger("objects")
 
 
 class Node:
-
-    """
-    The Node is essentially an interface for a RSA public key.
-    """
-
     def __init__(self, public_key: PublicKey, sig: str):
         # Initialize attributes.
         self.public_key = public_key
@@ -32,7 +27,7 @@ class Node:
 
     @classmethod
     def from_id(cls, node_id: Identifier) -> Optional[Node]:
-        from ..database import NodesDatabase
+        from ..database.private import NodesDatabase
 
         node_dbo = NodesDatabase().get_node(node_id)
         if node_dbo is None:
@@ -52,7 +47,8 @@ class Node:
     @classmethod
     def from_dbo(cls, dbo: NodeDBO) -> Node:
         return cls(
-            public_key=PublicKey.from_components(dbo.rsa_n, dbo.rsa_e), sig=dbo.sig
+            public_key=PublicKey.from_components(dbo.rsa_n, dbo.rsa_e),
+            sig=dbo.sig,
         )
 
     def to_dbo(self) -> NodeDBO:

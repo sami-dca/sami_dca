@@ -20,18 +20,10 @@ from typing import Any, Callable, Generator, List, Optional, Tuple, Union
 import upnpy
 from upnpy.exceptions import IGDError
 
-from ..config import (
-    broadcast_limit,
-    broadcast_port,
-    contact_connect_timeout,
-    min_peers,
-    network_buffer_size,
-    sami_port,
-    upnp_lease,
-)
+from ..config import settings
 from ..contacts import Beacon, Contact, OwnContact, beacons
 from ..database.common import ContactsDatabase, RawRequestsDatabase
-from ..design import Singleton, apply_init_callback_to_singleton
+from ..design import Singleton
 from ..messages import OwnMessage
 from ..utils import get_time, iter_to_dict
 from ..utils.network import get_primary_ip_address, in_same_subnet
@@ -89,7 +81,7 @@ class Network:
         """
         # Note: we don't pass the request to the send queue because this
         #  method is only called by the job scheduler.
-        if ContactsDatabase().nunique() < min_peers:
+        if ContactsDatabase().nunique() < settings.min_peers:
             # We don't know enough unique contacts
             return
 
@@ -191,9 +183,7 @@ class Network:
             if self.can_connect_to(contact):
                 yield contact
 
-    def _receive_all(
-        self, sock: socket.socket
-    ) -> Tuple[bytes, Tuple[str, int]]:
+    def _receive_all(self, sock: socket.socket) -> Tuple[bytes, Tuple[str, int]]:
         """
         Receives all parts of a network-sent message.
         Takes a socket object and returns a tuple with
@@ -204,9 +194,9 @@ class Network:
         while True:
             # Could there be interlaced packets (two different
             # addresses gathered during successive loops) ?
-            part, add = sock.recvfrom(network_buffer_size)
+            part, add = sock.recvfrom(settings.network_buffer_size)
             data += part
-            if len(part) < network_buffer_size:
+            if len(part) < settings.network_buffer_size:
                 # Either 0 or end of data
                 break
         return data, add
@@ -221,7 +211,7 @@ class Network:
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
         ) as s:  # noqa
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            s.bind(("", broadcast_port))
+            s.bind(("", settings.broadcast_port))
             while not self._stop_event.is_set():
                 raw_request, (address, port) = self._receive_all(s)
                 self.parent.handle_queue.put((raw_request, address))
@@ -232,7 +222,7 @@ class Network:
         It requires a TCP connection to receive information.
         """
         with socket.socket() as server_socket:
-            server_socket.bind((self.address, sami_port))
+            server_socket.bind((self.address, settings.sami_port))
             server_socket.listen()
             while not self._stop_event.is_set():
                 connection, address = server_socket.accept()
@@ -241,7 +231,7 @@ class Network:
                 connection.close()
 
     def broadcast_autodiscover(self) -> None:
-        if self.contacts_database.nunique() > broadcast_limit:
+        if self.contacts_database.nunique() > settings.broadcast_limit:
             return
         request = BCP.new(own_contact=self.own_contact)
         self.broadcast_request_lan(request)
@@ -254,7 +244,7 @@ class Network:
         for contact in contacts:
             self.parent.send_queue.put((self, request, contact))
 
-        logger.info(f"Broadcast request {request.id!r} " f"to {len(contacts)} contacts")
+        logger.info(f"Broadcast request {request.id!r} to {len(contacts)} contacts")
 
     def broadcast_request_lan(self, bcp_request: BCP) -> None:
         """
@@ -265,7 +255,7 @@ class Network:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.sendto(
                 data=bcp_request.to_bytes(),
-                address=("<broadcast>", broadcast_port),
+                address=("<broadcast>", settings.broadcast_port),
             )
 
     def _send_request(self, request: Request, contact: Contact) -> bool:
@@ -277,7 +267,7 @@ class Network:
         port = contact.port
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_sock:
-            client_sock.settimeout(contact_connect_timeout)
+            client_sock.settimeout(settings.contact_connect_timeout)
             req = request.to_bytes()
             try:
                 client_sock.connect((address, port))
@@ -294,7 +284,7 @@ class Network:
                 OSError,
             ):
                 logger.info(
-                    f"Could not send request {request.id!r} " f"to {address}:{port}"
+                    f"Could not send request {request.id!r} to {address}:{port}"
                 )
             except Exception as e:
                 logger.error(f"Unhandled {type(e)} exception caught: {e!r}")
@@ -307,11 +297,6 @@ class Network:
         return False
 
 
-def init_networks(instance):
-    instance.refresh_upnp(force=True)
-
-
-@apply_init_callback_to_singleton(init_networks)
 class Networks(Singleton):
 
     """
@@ -336,16 +321,19 @@ class Networks(Singleton):
     no_upnp = th.Event()
     no_upnp.set()  # It is set by default
 
+    def init(self):
+        self.refresh_upnp(force=True)
+
     def refresh_upnp(self, /, force: bool = False) -> None:
         """
         Update the UPnP port mapping on the router if appropriate.
         """
         if force:
-            self._last_upnp_lease_refresh = get_time() - (upnp_lease + 1)
+            self._last_upnp_lease_refresh = get_time() - (settings.upnp_lease + 1)
 
         lease_time_left = get_time() - self._last_upnp_lease_refresh
         # If more than 90% of the lease time is left, we don't update.
-        if not lease_time_left < (0.1 * upnp_lease):
+        if not lease_time_left < (0.1 * settings.upnp_lease):
             return
 
         try:
@@ -373,7 +361,7 @@ class Networks(Singleton):
                         NewInternalClient="192.168.1.3",  # FIXME
                         NewEnabled=1,
                         NewPortMappingDescription="Sami DCA.",
-                        NewLeaseDuration=upnp_lease,
+                        NewLeaseDuration=settings.upnp_lease,
                     )
                     self._last_upnp_lease_refresh = get_time()
                     could_open = True
