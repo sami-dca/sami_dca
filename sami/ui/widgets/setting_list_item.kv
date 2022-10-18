@@ -1,0 +1,45 @@
+<SettingListItemStatic@MDBoxLayout>:
+    orientation: "vertical"
+    padding: [0, 0, 0, 0]
+    Label:
+        text: root.setting_name
+        theme_text_color: 'Custom'
+        size: self.texture_size
+        size_hint_x: None
+        font_size: 15
+        color: app.theme_cls.opposite_bg_normal
+        bold: True
+    MDLabel:
+        text: root.friend_msg
+        height: self.texture_size[1]
+        theme_text_color: 'Custom'
+        size_hint_y: None
+        bold: True
+        font_size: 13
+        color: [.5, .5, .5, 1]
+        shorten: True
+        markup: True
+        shorten_from: 'right'
+
+
+<SettingListItem>:
+    md_bg_color: 0, 0, 0, 0
+    elevation: 0
+    size_hint_y: None
+    padding: [10, 0, 10, 0]
+    spacing: 10
+    height: 60
+
+    MDBoxLayout:
+        orientation: "horizontal"
+        SettingListItemStatic:
+            setting_name: min_peers
+        MDCheckbox:
+            id: min_peers
+
+    MDBoxLayout:
+        orientation: "horizontal"
+        SettingListItemStatic:
+            setting_name: sami_port
+        MDCard:
+            id: sami_port

@@ -33,7 +33,6 @@ def convert_hex_to_rgb(hx: str) -> Tuple[int, ...]:
         respectively to the Red-Green-Blue (RGB) values.
 
     """
-    # Removes the "#" from the hexadecimal value.
     h = hx.lstrip("#")
     return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
 
@@ -117,7 +116,6 @@ def create_pattern(
     shapes_count: int = 10,
     angles: list = np.arange(0, 180, 45),
 ) -> Image:
-
     """
     Creates an image following a process.
     Returns the Image object.
@@ -131,7 +129,7 @@ def create_pattern(
     colors: List[str]
         A list of hexadecimal values, corresponding to colours.
     back_color: str
-        Background color, as an hexadecimal value.
+        Background color, as a hexadecimal value.
     line: Tuple[str, int]
         A tuple of two elements:
             - str: Hexadecimal color of the line. e.g "#123456".
@@ -243,10 +241,11 @@ def create_pattern(
 
 
 if __name__ == "__main__":
-    for i in range(2):
-        create_pattern(
-            seed=i,
-            colors=["8d1f73", "150511", "d643b3", "FFFFFF"],
-            wanted_size=600,
-            shapes_count=3,
-        ).show()
+    seed = random.randint(0, 9999)
+    create_pattern(
+        seed=seed,
+        wanted_size=512,
+        colors=["8d1f73", "150511", "d643b3", "FFFFFF"],
+        shapes_count=10,
+    ).show()
+    print(seed)

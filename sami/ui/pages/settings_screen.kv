@@ -1,0 +1,32 @@
+<SettingsScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        md_bg_color: app.theme_cls.bg_normal
+        MDTopAppBar:
+            title: "Settings"
+            height: 50
+            left_action_items: [['arrow-left', lambda _: app.back_to_conversations()]]
+            margin: 0
+
+        ScrollView:
+            do_scroll_y: True
+            effect_cls: 'ScrollEffect'
+            bar_width: 0
+
+            MDBoxLayout:
+                adaptive_height: True
+                orientation: 'vertical'
+                md_bg_color: app.theme_cls.primary_color
+                spacing: 20
+
+                MDBoxLayout:
+                    orientation: 'vertical'
+                    md_bg_color: app.theme_cls.bg_normal
+                    size_hint_y: None
+                    adaptive_height: True
+                    radius: [20, 20, 0, 0]
+                    padding: [0, 0, 0, 40]
+
+                    MDList:
+                        id: settings_list
+                        spacing: 10

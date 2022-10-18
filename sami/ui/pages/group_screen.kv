@@ -1,0 +1,21 @@
+<GroupScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        md_bg_color: app.theme_cls.bg_normal
+        TopBar:
+            title: "Groups"
+
+        ScrollView:
+            do_scroll_y: True
+            effect_cls: 'ScrollEffect'
+            bar_width: 0
+            MDBoxLayout:
+                adaptive_height: True
+                orientation: 'vertical'
+                md_bg_color: app.theme_cls.bg_normal
+                id: group_list
+
+    MDBoxLayout:
+        size_hint_y: None
+        NavBar:
+            two: [1, 1, 1, 1]

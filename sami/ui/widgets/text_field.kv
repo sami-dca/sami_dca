@@ -1,0 +1,21 @@
+<TextFieldWithTwoIcons@MDCard>:
+    md_bg_color: .9, .9, .9, .9
+    elevation: 0
+    height: 40
+    size_hint_y: None
+    radius: [15, ]
+    padding: [5, 5, 5, 5]
+    hint_text: "Type a message"
+    TextInput:
+        id: content
+        multiline: False
+        font_size: 12
+        cursor_color: .5, .5, .5, 1
+        line_color_normal: 0, 0, 0, 0
+        line_color_focus: 0, 0, 0, 0
+        color_mode: "custom"
+        pos_hint: {'center_y': .5}
+        current_hint_text_color: .5, .5, .5, 1
+        height: 30
+        background_color: 0, 0, 0, 0
+        hint_text: root.hint_text

@@ -1,0 +1,72 @@
+<ChatScreen>:
+    MDBoxLayout:
+        orientation: "vertical"
+        md_bg_color: app.theme_cls.bg_normal
+        MDBoxLayout:
+            size_hint_y: None
+            height: 50
+            spacing: 5
+            md_bg_color: app.theme_cls.bg_normal
+            padding: [0, 0, 0, 0]
+            MDIconButton:
+                icon: 'arrow-left'
+                theme_text_color: 'Custom'
+                text_color: app.theme_cls.opposite_bg_normal
+                user_font_size: 18
+                size_hint: (None, None)
+                pos_hint: {'center_y': .5}
+                size: (30, 30)
+                padding: 0
+                pos_hint: {'center_y': .5}
+                on_press: app.back_to_conversations()
+            MDBoxLayout:
+                size_hint: (None, None)
+                size: (30, 30)
+                orientation: 'vertical'
+                pos_hint: {'center_y': .5}
+                Avatar:
+                    source: root.image
+                    size: (30, 30)
+                    size_hint: (None, None)
+            MDBoxLayout:
+                orientation: "vertical"
+                padding: [0, 10, 0, 10]
+                Label:
+                    text: root.text
+                    size: self.texture_size
+                    size_hint: (None, None)
+                    font_size: 17
+                    pos_hint: {'center_y': .5}
+                    color: app.theme_cls.opposite_bg_normal
+                    bold: True
+
+        ScrollView:
+            MDList:
+                id: msg_list
+                spacing: 5
+                padding: [0, 10, 0, 10]
+
+        MDBoxLayout:
+            padding: [10, 0, 0, 0]
+            spacing: 5
+            size_hint_y: None
+            height: 40
+            md_bg_color: app.theme_cls.bg_normal
+            TextFieldWithTwoIcons:
+                id: input
+            MDIconButton:
+                size_hint: (None, None)
+                icon: 'send'
+                on_press: app.send()
+                elevation: 0
+                user_font_size: 16
+                theme_text_color: 'Custom'
+                text_color: [1, 1, 1, 1]
+                md_bg_color: app.theme_cls.accent_color
+                canvas.before:
+                    PushMatrix
+                    Rotate:
+                        angle: 45
+                        origin: self.center
+                        canvas.after:
+                            PopMatrix

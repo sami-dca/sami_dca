@@ -1,0 +1,66 @@
+# Represents a single message in a conversation
+
+<ChatBubble>:
+    id: chat_bubble
+    md_bg_color: [0, 0, 0, 0]
+    size_hint_y: None
+    height: 60
+    adaptive_height: True
+    width: root.width
+    padding: [10, 0, 10, 0]
+    orientation: 'vertical'
+
+    MDBoxLayout:
+        height: message_content.height + timestamp.height + 10
+        width: message_content.width + spacer_1.width + spacer_2.width
+        size_hint: (None, None)
+        pos_hint: {'right': 1} if chat_bubble.sender == 'you' else {'left': 1}
+        radius: [10, 10, -5, 10] if self.pos_hint == {'right': 1} else [10, 10, 10, -5]
+        md_bg_color: app.theme_cls.bg_darkest if app.theme_cls.theme_style == 'Light' else app.theme_cls.bg_dark
+
+        Spacer:
+            id: spacer_1
+
+        MDBoxLayout:
+            orientation: 'vertical'
+            height: message_content.height + time_box.height + spacer_3.height
+            width: message_content.width
+
+            MDLabel:
+                id: message_content
+                text: root.msg
+                width: time_box.width if self.texture_size[0] < time_box.width else self.texture_size[0]
+                height: self.texture_size[1]
+                size_hint_y: None
+                text_size: (None, None)  # chat_bubble.width - 30 if self.width >= chat_bubble.width - 30 else (None, None)
+                halign: 'left'
+                color: app.theme_cls.opposite_bg_normal
+
+            MDBoxLayout:
+                id: time_box
+                size_hint_y: None
+                height: timestamp.height
+                width: timestamp.width  # + 3
+                spacing: 3
+                MDLabel:
+                    id: timestamp
+                    text: root.time
+                    size: self.texture_size
+                    size_hint_y: None
+                    font_size: 9
+                    bold: True
+                    halign: 'right'
+                    text_size: (None, None)
+                    color: [.8, .8, .8, 1]
+
+            Spacer:
+                id: spacer_3
+                height: 5
+
+        Spacer:
+            id: spacer_2
+
+<Spacer@Widget>:
+    id: spacer
+    width: 5
+    size_hint: (None, None)

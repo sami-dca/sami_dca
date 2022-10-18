@@ -1,10 +1,13 @@
-import os
+"""
+Script for running a Sami beacon.
+"""
+
 import threading as th
 
 from logging import getLogger
 from logging.config import fileConfig
 
-from sami.ui import MainApp
+import sami  # noqa
 from sami.threads.events import GlobalStopEvent
 from sami.config import settings
 from sami.threads import JobsThread, RequestHandlingThread, SenderThread
@@ -21,10 +24,6 @@ def main():
 
     logger.info("Launching")
 
-    # The main thread will be the UI's
-    controller = MainApp()
-    # controller = sami.Controller()
-
     # Define background threads
     request_handling_thread = RequestHandlingThread(global_app_stop_event)
     sender_thread = SenderThread(global_app_stop_event)
@@ -35,12 +34,8 @@ def main():
     sender_thread.start()
     jobs_thread.start()
 
-    # Turns the server up on the user interface.
-    # controller.main_frame.set_server_display(True)
-
-    # Run the UI, holding the application open
-    # controller.app.MainLoop()
-    controller.run()
+    # Idle
+    # TODO
 
     # Stops all threads
     global_app_stop_event.set()
@@ -52,17 +47,6 @@ def main():
     jobs_thread.join()
     sender_thread.join()
     request_handling_thread.join()
-
-
-def update():
-    # Updates the client using Git.
-    try:
-        import git
-
-        g = git.cmd.Git(os.getcwd())
-        g.pull()
-    except ImportError:
-        logger.warning("Could not check for software updates.")
 
 
 if __name__ == "__main__":
