@@ -301,7 +301,7 @@ on a local network.
 This protocol is used when we want to share ``Contacts`` with a peer.
 ![CSP diagram](./doc/CSP.png)
 ### Request structure
-- `List[Contact]` `contacts` - The list of ``Contacts`` we know.
+- `list[Contact]` `contacts` - The list of ``Contacts`` we know.
 
 ## Discover Contacts Protocol - "DCP"
 Asks a peer for a list of ``Contacts``.
@@ -331,7 +331,7 @@ key and nonce.
 - `String` `hash` - The hexadecimal digest of the clear key part
 - `String` `sig` - The cryptographic signature of `hash`
 - `Node` `author` - The ``Node`` information of the author of this key part
-- `List[Node]` `members` - The list of ``Nodes`` member of this conversation
+- `list[Node]` `members` - The list of ``Nodes`` member of this conversation
 ### Technical notes
 #### Hash
 The ``hash`` is computed from the clear key part because if it was on its
@@ -366,7 +366,7 @@ This protocol is used for transmitting a ``Message``.
 This protocol is used for sending ``Nodes`` over the network.
 ![NPP diagram](./doc/NPP.png)
 ### Request structure
-- `List[Node]` `nodes` - The list of ``Nodes`` we know (including ours).
+- `list[Node]` `nodes` - The list of ``Nodes`` we know (including ours).
 
 ## What's Up Protocol - "WUP"
 This protocol is used to gather all the ``Requests`` we missed while we were
@@ -381,7 +381,7 @@ offline.
 ### REP
 ![WUP_REP diagram](./doc/WUP_REP.png)
 #### Request structure
-- `List[Request]` `requests` - The list of `Requests` found in the specified interval
+- `list[Request]` `requests` - The list of `Requests` found in the specified interval
 
 ## Database tables
 

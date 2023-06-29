@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import logging as _logging
+from functools import cached_property
 from pathlib import Path
-from typing import Optional
 
+import pydantic
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pkcs1_15
 
 from ..config import settings
-from ..database.base.models import KeyDBO
 from .hashing import hash_object
 from .serialization import (
     decode_bytes,
@@ -22,7 +22,7 @@ from .serialization import (
 logger = _logging.getLogger("cryptography")
 
 
-class PublicKey:
+class PublicKey(pydantic.BaseModel):
 
     """
     Asymmetric public encryption key.
@@ -31,30 +31,21 @@ class PublicKey:
     To create a new pair, use `PrivateKey.new()`.
     """
 
-    def __init__(self, public_key: RSA.RsaKey):
-        self._rsa = public_key
+    n: int
+    e: int
 
-    @staticmethod
-    def get_key_from_components(n: int, e: int) -> Optional[RSA.RsaKey]:
-        try:
-            public_key = RSA.construct((n, e), consistency_check=True)
-        except ValueError:
-            logger.error("Could not construct RSA public key.")
-            return
-        else:
-            return public_key
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._rsa = RSA.construct((self.n, self.e), consistency_check=False)
 
     @classmethod
-    def from_dbo(cls, dbo: KeyDBO) -> PublicKey:
-        pass
+    @pydantic.root_validator()
+    def _rsa_consistency_check(cls, values):
+        RSA.construct((values["n"], values["e"]), consistency_check=True)
 
     @classmethod
-    def from_components(cls, n: int, e: int) -> Optional[PublicKey]:
-        public_key = PublicKey.get_key_from_components(n, e)
-        if public_key is None:
-            return
-        else:
-            return cls(public_key)
+    def from_rsa(cls, public_key: RSA.RsaKey):
+        return cls(n=public_key.n, e=public_key.e)
 
     def _to_file(self, file: Path) -> None:
         """
@@ -76,65 +67,82 @@ class PublicKey:
     def is_private(self) -> bool:
         return self._rsa.has_private()
 
+    def encrypt_asymmetric_raw(self, data: bytes) -> bytes:
+        return PKCS1_OAEP.new(self._rsa).encrypt(data)
+
     def encrypt_asymmetric(self, data: str) -> str:
         """
         Asymmetrically encrypts and serializes data.
         Must be reversible with `decrypt_asymmetric()`.
         """
+        return serialize_bytes(self.encrypt_asymmetric_raw(encode_string(data)))
 
-        en_data = PKCS1_OAEP.new(self._rsa).encrypt(encode_string(data))
-        se_en_data = serialize_bytes(en_data)
-        return se_en_data
-
-    def is_signature_valid(self, hash_object: SHA256.SHA256Hash, sig: str) -> bool:
+    def is_signature_valid(self, hash_obj: SHA256.SHA256Hash, sig: str) -> bool:
         """
         Takes a signature and checks whether it is valid.
         """
         try:
-            pkcs1_15.new(self._rsa).verify(hash_object, deserialize_string(sig))
+            pkcs1_15.new(self._rsa).verify(hash_obj, deserialize_string(sig))
         except (ValueError, TypeError):
             return False
         return True
 
-    def get_key(self) -> RSA.RsaKey:
-        return self._rsa
-
-    def get_public_key_hash(self) -> SHA256.SHA256Hash:
+    @cached_property
+    def hash(self) -> SHA256.SHA256Hash:
         """
         Returns a hash of the public key.
         """
-        return hash_object(
-            [
-                self._rsa.n,
-                self._rsa.e,
-            ]
-        )
+        return hash_object([self._rsa.n, self._rsa.e])
 
 
-class PrivateKey(PublicKey):
+class PrivateKey(pydantic.BaseModel, PublicKey):
 
     """
     Asymmetric private encryption key.
 
-    Instantiate with `new` to get a brand new key pair.
+    Instantiate with `new` to get a brand-new key pair.
     Instantiate with other classmethods to load an existing key.
     """
 
-    def __init__(self, private_key: RSA.RsaKey):
-        super().__init__(private_key.public_key())
+    n: int
+    e: int
+    d: int
+    p: int
+    q: int
 
-        # Override public key with private one
-        self._rsa = private_key
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._rsa = RSA.construct(
+            (self.n, self.e, self.d, self.p, self.q), consistency_check=False
+        )
+
+    @classmethod
+    @pydantic.root_validator()
+    def _rsa_consistency_check(cls, values):
+        RSA.construct(
+            (values["n"], values["e"], values["d"], values["p"], values["q"]),
+            consistency_check=True,
+        )
+
+    @classmethod
+    def from_rsa(cls, private_key: RSA.RsaKey):
+        return cls(
+            n=private_key.n,
+            e=private_key.e,
+            d=private_key.d,
+            p=private_key.p,
+            q=private_key.q,
+        )
 
     @classmethod
     def new(cls) -> PrivateKey:
         key = RSA.generate(settings.rsa_keys_length)
-        return cls(key)
+        return cls.from_rsa(key)
 
     @staticmethod
     def get_key_from_components(
         n: int, e: int, d: int, p: int, q: int
-    ) -> Optional[RSA.RsaKey]:
+    ) -> RSA.RsaKey | None:
         try:
             private_key = RSA.construct((n, e, d, p, q), consistency_check=True)
         except ValueError:
@@ -152,19 +160,7 @@ class PrivateKey(PublicKey):
         )
 
     @classmethod
-    def from_components(
-        cls, n: int, e: int, d: int, p: int, q: int
-    ) -> Optional[PublicKey]:
-        private_key = PrivateKey.get_key_from_components(n, e, d, p, q)
-        if private_key is None:
-            return
-        else:
-            return cls(private_key)
-
-    @classmethod
-    def from_file(
-        cls, file: Path, passphrase: Optional[str] = None
-    ) -> Optional[PrivateKey]:
+    def from_file(cls, file: Path, passphrase: str | None = None) -> PrivateKey | None:
         with file.open(mode="rb") as k:
             try:
                 private_key = RSA.import_key(k.read(), passphrase=passphrase)
@@ -173,9 +169,9 @@ class PrivateKey(PublicKey):
                 return
 
         if private_key.has_private():
-            return cls(private_key)
+            return cls.from_rsa(private_key)
 
-    def _to_file(self, file: Path, passphrase: Optional[str] = None) -> None:
+    def _to_file(self, file: Path, passphrase: str | None = None) -> None:
         """
         See PublicKey._to_file
         """
@@ -183,36 +179,24 @@ class PrivateKey(PublicKey):
             f.write(self._rsa.export_key(format="DER", passphrase=passphrase))
 
     def get_public_key(self) -> PublicKey:
-        return PublicKey.from_components(
+        return PublicKey(
             n=self._rsa.n,
             e=self._rsa.e,
         )
 
-    def decrypt_asymmetric(self, se_en_data: str) -> Optional[str]:
+    def decrypt_asymmetric_raw(self, en_data: bytes) -> bytes:
+        return PKCS1_OAEP.new(self._rsa).decrypt(en_data)
+
+    def decrypt_asymmetric(self, se_en_data: str) -> str | None:
         """
         Deserializes and decrypts data.
         Returns None if we cannot decrypt.
         """
         en_data = deserialize_string(se_en_data)
-        data = PKCS1_OAEP.new(self._rsa).decrypt(en_data)
-        return decode_bytes(data)
+        return decode_bytes(self.decrypt_asymmetric_raw(en_data))
 
-    def get_signature(self, hash_object: SHA256.SHA256Hash) -> str:
+    def get_signature(self, hash_obj: SHA256.SHA256Hash) -> str:
         """
-        Sign a hash using a RSA private key.
+        Sign a hash using an RSA private key.
         """
-        return serialize_bytes(pkcs1_15.new(self._rsa).sign(hash_object))
-
-    def get_private_key_hash(self) -> SHA256.SHA256Hash:
-        """
-        Returns a hash of the private key.
-        """
-        return hash_object(
-            [
-                self._rsa.n,
-                self._rsa.e,
-                self._rsa.d,
-                self._rsa.p,
-                self._rsa.q,
-            ]
-        )
+        return serialize_bytes(pkcs1_15.new(self._rsa).sign(hash_obj))

@@ -1,35 +1,23 @@
-"""
-Resources for UDP Peer-To-Peer:
-https://resources.infosecinstitute.com/topic/udp-hole-punching/
-https://github.com/dwoz/python-nat-hole-punching
-https://youtu.be/IbzGL_tjmv4
-
-Also, UPnP
-"""
-
 from __future__ import annotations
 
 import ipaddress
-import logging as _logging
-import random
 import socket
 import threading as th
-from queue import Queue
-from typing import Any, Callable, Generator, List, Optional, Tuple, Union
+from typing import Generator
 
-import upnpy
-from upnpy.exceptions import IGDError
+import pydantic
+from loguru import logger
 
 from ..config import settings
-from ..contacts import Beacon, Contact, OwnContact, beacons
-from ..database.common import ContactsDatabase, RawRequestsDatabase
-from ..design import Singleton
-from ..messages import OwnMessage
-from ..utils import get_time, iter_to_dict
-from ..utils.network import get_primary_ip_address, in_same_subnet
-from .requests import BCP, DNP, MPP, WUP_INI, Request
+from ..objects import Contact, OwnContact
+from ..utils import shuffled
+from ._queue import handle_queue, send_queue
+from .requests import BCP, WUP_INI, Request
+from .utils import get_primary_ip_address, in_same_subnet
 
-logger = _logging.getLogger("network")
+
+class ResponseExpected(pydantic.BaseModel):
+    request: Request
 
 
 class Network:
@@ -39,13 +27,9 @@ class Network:
     As such, this Network has its own dedicated contact.
     """
 
-    def __init__(self, parent: Networks, own_contact: OwnContact):
-        self.parent = parent
-        self.own_contact = own_contact
-        self.address = self.own_contact.address
-
-        self.raw_requests_database: RawRequestsDatabase = RawRequestsDatabase()
-        self.contacts_database: ContactsDatabase = ContactsDatabase()
+    def __init__(self, contact: OwnContact):
+        self.contact = contact
+        self.address = self.contact.address
 
         self._stop_event = th.Event()
 
@@ -64,78 +48,40 @@ class Network:
             daemon=True,
         )
 
+        # Cache that keeps track of requests we are expecting a response to
+        self.expecting_response: dict[Contact, ResponseExpected] = {}
+
     def __hash__(self):
         return hash(self.address)
 
     @property
     def is_primary(self) -> bool:
-        return self.address == ipaddress.ip_address(get_primary_ip_address())
+        add = get_primary_ip_address()  # TODO: handle empty
+        return self.address == ipaddress.ip_address(add)
 
     def what_is_up(self) -> None:
         """
         Selects a node and asks for all requests since the last we received.
-        This method is called when a private key is loaded into the client.
+        This method is called when a private value is loaded into the client.
 
         TODO: Keep running until we receive a response,
          timeout and send to another
         """
         # Note: we don't pass the request to the send queue because this
         #  method is only called by the job scheduler.
-        if ContactsDatabase().nunique() < settings.min_peers:
+        if len(Contact.all()) < settings.min_peers:
             # We don't know enough unique contacts
             return
 
-        last_request_received = self.raw_requests_database.get_last_received()
+        last_request_received = Request.get_last()
         if not last_request_received:
             # We didn't receive any request yet
             return
 
-        req = WUP_INI.new(last_request_received.timestamp, self.own_contact)
-        for contact in self.find_valid_contact():
-            if self._send_request(req, contact):
+        req = Request.new(WUP_INI.new(last_request_received.timestamp, self.contact))
+        for contact in self.contacts():
+            if self.send_request(req, contact):
                 return
-
-    def request_nodes(self) -> None:
-        """
-        Discovers nodes by requesting a peer.
-        """
-        # Note: we don't pass the request to the send queue because this
-        #  method is only called by the job scheduler.
-        req = DNP.new(self.own_contact)
-        for contact in self.find_valid_contact():
-            if self._send_request(req, contact):
-                return
-
-    def request_contacts(self) -> None:
-        """
-        Discovers contacts by requesting a peer.
-        """
-        # Note: we don't pass the request to the send queue because this
-        #  method is only called by the job scheduler.
-        req = DNP.new(self.own_contact)
-        for contact in self.find_valid_contact():
-            if self._send_request(req, contact):
-                return
-
-    def iter_known_contacts(
-        self,
-    ) -> Generator[Union[Beacon, Contact], None, None]:  # noqa
-        """
-        Generator used for choosing a contact to send Requests to.
-        Yields beacons first, then contacts.
-        They are shuffled in order to avoid always sending Requests to
-        the same one.
-        Eventually returns None when no more are available.
-        """
-        all_beacons = list(beacons)
-        random.shuffle(all_beacons)
-        for beacon in all_beacons:
-            yield beacon
-
-        all_contacts = self.contacts_database.get_all()
-        random.shuffle(all_contacts)
-        for contact in all_contacts:
-            yield Contact.from_dbo(contact)
 
     def start(self) -> None:
         """
@@ -143,11 +89,6 @@ class Network:
         """
         self.listen_requests_thread.start()
         self.listen_broadcast_thread.start()
-
-    def send_own_message(self, own_message: OwnMessage) -> None:
-        enc_own_message = own_message.to_encrypted()
-        req = MPP.new(enc_own_message)
-        self.broadcast(req)
 
     def can_connect_to(self, contact: Contact) -> bool:
         """
@@ -178,12 +119,23 @@ class Network:
             return False
         return True
 
-    def find_valid_contact(self) -> Generator[Contact, None, None]:
-        for contact in self.iter_known_contacts():
+    def contacts(self) -> Generator[Contact, None, None]:
+        """
+        Iterative over the contacts we know, and that we can contact via
+        this interface.
+        """
+        # First, we yield the beacons
+        for beacon in shuffled(settings.beacons.get()):
+            if self.can_connect_to(beacon):
+                yield beacon
+        # Then, the contacts
+        for contact in shuffled(Contact.all()):
             if self.can_connect_to(contact):
                 yield contact
 
-    def _receive_all(self, sock: socket.socket) -> Tuple[bytes, Tuple[str, int]]:
+    def _receive_all(
+        self, sock: socket.socket, address_check: str | None = None
+    ) -> tuple[bytes, tuple[str, int]]:
         """
         Receives all parts of a network-sent message.
         Takes a socket object and returns a tuple with
@@ -192,14 +144,18 @@ class Network:
         """
         data = bytes()
         while True:
-            # Could there be interlaced packets (two different
-            # addresses gathered during successive loops) ?
-            part, add = sock.recvfrom(settings.network_buffer_size)
-            data += part
+            # FIXME: Could there be interlaced packets (two different
+            #  addresses gathered during successive loops) ?
+            part, addr = sock.recvfrom(settings.network_buffer_size)
+            if address_check:
+                if addr == address_check:
+                    data += part
+            else:
+                data += part
             if len(part) < settings.network_buffer_size:
                 # Either 0 or end of data
                 break
-        return data, add
+        return data, addr
 
     def listen_for_autodiscover_packets(self) -> None:
         """
@@ -207,14 +163,17 @@ class Network:
         FIXME: Currently allows for all kinds of request, but in practice,
          we want to accept BCP exclusively
         """
-        with socket.socket(
-            socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
-        ) as s:  # noqa
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.bind(("", settings.broadcast_port))
             while not self._stop_event.is_set():
                 raw_request, (address, port) = self._receive_all(s)
-                self.parent.handle_queue.put((raw_request, address))
+                try:
+                    request = Request.from_bytes(raw_request)
+                except pydantic.ValidationError:
+                    pass
+                else:
+                    handle_queue.put((request, address))
 
     def listen_for_requests(self) -> None:
         """
@@ -222,31 +181,31 @@ class Network:
         It requires a TCP connection to receive information.
         """
         with socket.socket() as server_socket:
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server_socket.bind((self.address, settings.sami_port))
             server_socket.listen()
             while not self._stop_event.is_set():
                 connection, address = server_socket.accept()
-                raw_request, (address, port) = self._receive_all(connection)
-                self.parent.handle_queue.put((raw_request, address))
+                raw_request, _ = self._receive_all(connection, address)
+                try:
+                    request = Request.from_bytes(raw_request)
+                except pydantic.ValidationError:
+                    pass
+                else:
+                    handle_queue.put((request, address))
                 connection.close()
-
-    def broadcast_autodiscover(self) -> None:
-        if self.contacts_database.nunique() > settings.broadcast_limit:
-            return
-        request = BCP.new(own_contact=self.own_contact)
-        self.broadcast_request_lan(request)
 
     def broadcast(self, request: Request) -> None:
         """
-        Broadcast a Request to all known contacts.
+        Broadcast a Request to all known (and reachable from this NIC) Contacts
         """
-        contacts = list(self.iter_known_contacts())
+        contacts = list(self.contacts())
         for contact in contacts:
-            self.parent.send_queue.put((self, request, contact))
+            send_queue.put((self, request, contact))
 
         logger.info(f"Broadcast request {request.id!r} to {len(contacts)} contacts")
 
-    def broadcast_request_lan(self, bcp_request: BCP) -> None:
+    def broadcast_request_lan(self, bcp_request: Request[BCP]) -> None:
         """
         Broadcasts a Request on the local network (broadcast).
         """
@@ -258,19 +217,19 @@ class Network:
                 address=("<broadcast>", settings.broadcast_port),
             )
 
-    def _send_request(self, request: Request, contact: Contact) -> bool:
+    def send_request(self, request: Request, contact: Contact) -> bool:
         """
         Send a Request to a specific Contact.
         Returns True if we managed to send the Request, False otherwise.
         """
-        address = contact.address
-        port = contact.port
+        if not self.can_connect_to(contact):
+            return False
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_sock:
             client_sock.settimeout(settings.contact_connect_timeout)
             req = request.to_bytes()
             try:
-                client_sock.connect((address, port))
+                client_sock.connect((contact.address, contact.port))
                 total_sent = 0
                 while total_sent < len(req):
                     sent = client_sock.send(req[total_sent:])
@@ -283,145 +242,12 @@ class Network:
                 ConnectionResetError,
                 OSError,
             ):
-                logger.info(
-                    f"Could not send request {request.id!r} to {address}:{port}"
-                )
+                logger.info(f"Could not send request {request.id!r} to {contact!r}")
             except Exception as e:
                 logger.error(f"Unhandled {type(e)} exception caught: {e!r}")
             else:
                 logger.info(
-                    f"Sent {request.status!r} request {request.id!r} "
-                    f"to {address}:{port}"
+                    f"Sent {request.status!r} request {request.id!r} to {contact!r}"
                 )
                 return True
         return False
-
-
-class Networks(Singleton):
-
-    """
-    Mediator for interacting with network interfaces.
-
-    TODO: make the networks "refreshable"
-     Notes on that matter:
-     - Consider a network can change its address
-    """
-
-    networks: List[Network] = []
-
-    # Requests in this queue will be handled by an independent thread
-    handle_queue = Queue()
-    # Requests in this queue will be sent by an independent thread
-    send_queue = Queue()
-
-    # UPnP controller
-    upnp = upnpy.UPnP()
-    _last_upnp_lease_refresh: int
-    # This event is set when no public port could be opened with UPnP
-    no_upnp = th.Event()
-    no_upnp.set()  # It is set by default
-
-    def init(self):
-        self.refresh_upnp(force=True)
-
-    def refresh_upnp(self, /, force: bool = False) -> None:
-        """
-        Update the UPnP port mapping on the router if appropriate.
-        """
-        if force:
-            self._last_upnp_lease_refresh = get_time() - (settings.upnp_lease + 1)
-
-        lease_time_left = get_time() - self._last_upnp_lease_refresh
-        # If more than 90% of the lease time is left, we don't update.
-        if not lease_time_left < (0.1 * settings.upnp_lease):
-            return
-
-        try:
-            router = self.upnp.get_igd()
-        except IGDError:
-            # No Internet Gateway Device on this network.
-            self.no_upnp.set()
-            return
-
-        services = router.get_services()
-
-        could_open: bool = False
-        for service in services:
-            actions = iter_to_dict(
-                service.get_actions(),
-                key=lambda action: action.name,
-            )
-            if "AddPortMapping" in actions:
-                for suitable_service in actions["AddPortMapping"]:
-                    suitable_service.AddPortMapping(
-                        NewRemoteHost="",
-                        NewExternalPort=80,  # FIXME
-                        NewProtocol="TCP",
-                        NewInternalPort=2108,  # FIXME
-                        NewInternalClient="192.168.1.3",  # FIXME
-                        NewEnabled=1,
-                        NewPortMappingDescription="Sami DCA.",
-                        NewLeaseDuration=settings.upnp_lease,
-                    )
-                    self._last_upnp_lease_refresh = get_time()
-                    could_open = True
-
-        if could_open:
-            self.no_upnp.clear()
-        else:
-            self.no_upnp.set()
-
-    def what_is_up(self):
-        """
-        Selects a random beacon or contact, tries to connect to it and sends a
-        WUP_INI request.
-        This method blocks until we receive a WUP_REP, timing out and asking
-        another node if necessary.
-        Once this method is finished, we should be up-to-date on sent requests.
-        """
-
-    def get_primary(self) -> Optional[Network]:
-        """
-        Returns the primary network instance.
-        It is the one which we can use to communicate over the Internet.
-        """
-        for net in self.iter():
-            if net.is_primary:
-                return net
-
-    def register_network(self, network: Network) -> None:
-        network.start()
-        self.networks.append(network)
-
-    def get_corresponding_network(self, contact: Contact) -> Optional[Network]:
-        """
-        Given a Contact, return the Network which can be used to connect to it.
-        Returns None if none of our networks correspond
-        (the Contact is unreachable).
-        """
-        return next(
-            filter(
-                lambda net: in_same_subnet(net.address, contact.address),
-                self.iter(),
-            ),
-            None,
-        )
-
-    def map(self, func: Callable[[Network], Any]) -> List[Any]:
-        """
-        Takes a function and applies it on all network interfaces.
-        `func` will receive a `Network` instance as its only argument.
-        Most of the time, you'll want to use it this way:
-        ```
-        >>> networks = Networks()
-        >>> networks.map(lambda net: net.broadcast(...))
-        ```
-        """
-        return [func(net) for net in self.iter()]
-
-    def iter(self) -> Generator[Network, None, None]:
-        """
-        Iterate over the registered networks.
-        """
-        for net in self.networks:
-            yield net

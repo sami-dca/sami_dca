@@ -1,33 +1,34 @@
-from ..config import settings
-from ..network import Networks
-from ..utils import Job, Jobs
+from ..jobs import Jobs
 from ._base import BaseThread
 
 
 class JobsThread(BaseThread):
+
     """
-    Thread handling synchronous jobs.
+    Background thread handling jobs.
+
+    Example
+    -------
+    Instanciate the thread
+
+    >>> jobs_thread = JobsThread()
+
+    Register jobs in
+
+    >>> jobs_thread.jobs.register(...)
+
+    Run the thread, launching the jobs in the background
+
+    >>> jobs_thread.start()
+
+    Jobs can also be added after the start
+
+    >>> jobs_thread.jobs.register(...)
     """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.jobs = Jobs(condition=lambda: self.running)
 
     def run(self):
-        networks: Networks = Networks()
-        networks.map(lambda net: net.what_is_up())
-
-        j = Jobs(
-            jobs=[
-                Job(
-                    action=lambda: networks.map(lambda net: net.broadcast_autodiscover),
-                    sch=settings.broadcast_schedule,
-                ),
-                Job(
-                    action=lambda: networks.map(lambda net: net.request_nodes),
-                    sch=settings.nodes_discovery_schedule,
-                ),
-                Job(
-                    action=lambda: networks.map(lambda net: net.request_contacts),
-                    sch=settings.contact_discovery_schedule,
-                ),
-            ],
-            stop_event=self.global_app_stop_event,
-        )
-        j.run()
+        self.jobs.run()  # Blocking

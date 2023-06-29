@@ -1,13 +1,9 @@
-import logging
 from pathlib import Path
 
 from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.lang import Builder
-from kivy.properties import DictProperty, ObjectProperty, StringProperty
-
-# from kivy.logger import Logger
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import NoTransition, Screen, ScreenManager
 from kivymd.app import MDApp
@@ -15,33 +11,12 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
 
-from ..config import Setting, settings
-from ..database.private import (
-    ConversationsDatabase,
-    ConversationsMembershipsDatabase,
-    MessagesDatabase,
-)
-from ..messages import EncryptedMessage
-from ..nodes.own import is_private_key_loaded
+from ..config import Identifier, Setting, settings
+from ..events import global_stop_event
+from ..network import Networks
+from ..network.requests import MPP, Request
+from ..objects import Conversation, OwnMessage, is_private_key_loaded
 from ..utils import format_err
-
-Window.size = (320, 600)
-
-
-def load_kv_files(directory: Path):
-    """
-    Recursively search for kivy (.kv) files in a directory, and load them.
-    """
-    for path in directory.iterdir():
-        if path.is_dir():
-            load_kv_files(path)
-        elif path.is_file() or path.is_symlink():
-            if path.suffix == ".kv":
-                logging.debug(f"Loaded {path}")
-                Builder.load_file(str(path))
-
-
-load_kv_files(Path(__file__).parent)
 
 
 class WindowManager(ScreenManager):
@@ -54,7 +29,7 @@ class ErrorPopup(Popup):
 
 class LoadKeyScreen(Screen):
     """
-    A screen prompting the user to load a key!
+    A screen prompting the user to load a value!
     """
 
     name = StringProperty("load_key")
@@ -84,10 +59,10 @@ class ChatListItem(MDCard):
     """
 
     friend_name = StringProperty()
-    msg = StringProperty()
+    message = StringProperty()
     timestamp = StringProperty()
     friend_avatar = StringProperty()
-    profile = DictProperty()
+    conversation = NumericProperty()
 
 
 class ConversationsScreen(Screen):
@@ -101,25 +76,21 @@ class ConversationsScreen(Screen):
         self._populate()
 
     def _populate(self) -> None:
-        conversations = ConversationsDatabase().get_all_conversations()
-        conv_members_db = ConversationsMembershipsDatabase()
-        messages_db = MessagesDatabase()
+        conversations = Conversation.all()
         for conv in conversations:
-            members = conv_members_db.get_members_of_conversation(conv.uid)
-            if len(members) != 2:
+            if len(conv.members) != 2:
                 # It's not a one-on-one conversation,
                 # so it should be displayed in the group conversations.
                 continue
-            last_message = EncryptedMessage.from_dbo(
-                messages_db.get_last_message(conv.uid)
-            ).to_clear()
-            if last_message is None:
+            last_message = conv.messages.clear.get_last()
+            if not last_message:
+                # There are no messages in this conversation
                 continue
 
             chat_item = ChatListItem()
-            chat_item.friend_name = "Friend"  # FIXME
-            chat_item.friend_avatar = "Image"  # FIXME
-            chat_item.msg = last_message.content
+            chat_item.friend_name = last_message.author.name
+            chat_item.friend_avatar = last_message.author.pattern
+            chat_item.message = last_message.value
             chat_item.timestamp = last_message.time_received
             chat_item.sender = last_message.author
             self.ids.chat_list.add_widget(chat_item)
@@ -132,7 +103,7 @@ class GroupListItem(MDCard):
 
     group_name = StringProperty()
     group_avatar = StringProperty()
-    friend_msg = StringProperty()
+    message = StringProperty()
     timestamp = StringProperty()
 
 
@@ -147,25 +118,21 @@ class GroupScreen(Screen):
         self._populate()
 
     def _populate(self) -> None:
-        conversations = ConversationsDatabase().get_all_conversations()
-        conv_members_db = ConversationsMembershipsDatabase()
-        messages_db = MessagesDatabase()
+        conversations = Conversation.all()
         for conv in conversations:
-            members = conv_members_db.get_members_of_conversation(conv.uid)
-            if len(members) == 2:
+            if len(conv.members) == 2:
                 # It's not a group conversation, so it should be displayed
                 # in the one-to-one conversations screen.
                 continue
-            last_message = EncryptedMessage.from_dbo(
-                messages_db.get_last_message(conv.uid)
-            ).to_clear()
+            last_message = conv.messages.clear.get_last()
             if last_message is None:
+                # There are no messages in this conversation
                 continue
 
             chat_item = ChatListItem()
-            chat_item.friend_name = "Group"  # FIXME
-            chat_item.friend_avatar = "Image"  # FIXME
-            chat_item.msg = last_message.content
+            chat_item.friend_name = last_message.author.name
+            chat_item.friend_avatar = last_message.author.pattern
+            chat_item.message = last_message.value
             chat_item.timestamp = last_message.time_received
             chat_item.sender = last_message.author
             self.ids.chat_list.add_widget(chat_item)
@@ -176,8 +143,7 @@ class ChatBubble(MDBoxLayout):
     A chat bubble for the chat screen messages.
     """
 
-    profile = DictProperty()
-    msg = StringProperty()
+    message = StringProperty()
     time = StringProperty()
     sender = StringProperty()
 
@@ -191,23 +157,21 @@ class ChatScreen(Screen):
     text = StringProperty()
     image = ObjectProperty()
 
-    def __init__(self, conversation_uid, **kwargs):
+    def __init__(self, conversation: Conversation, **kwargs):
         super().__init__(**kwargs)
-        self.conversation_uid = conversation_uid
+        self.conversation = conversation
 
     def on_enter(self, *args):
         self._populate()
 
     def _populate(self) -> None:
         displayed: int = 0
-        for message in MessagesDatabase().get_messages(self.conversation_uid):
-            if message is None:
-                continue
-            chat_msg = ChatBubble()
-            chat_msg.msg = message.content
-            chat_msg.time = message.time_received
-            chat_msg.sender = message.author
-            self.ids.msg_list.add_widget(chat_msg)
+        for message in self.conversation.clear_messages:
+            chat_bubble = ChatBubble()
+            chat_bubble.message = message.value
+            chat_bubble.time = message.time_received
+            chat_bubble.sender = message.author
+            self.ids.message_list.add_widget(chat_bubble)
             displayed += 1
 
         if not displayed:
@@ -240,11 +204,16 @@ class SettingsScreen(Screen):
 
 
 class MainApp(MDApp):
-    """
-    The main App class using KivyMD's properties.
-    """
-
     wm: ScreenManager
+
+    def __init__(self, **kwargs):
+        Window.size = (320, 600)
+        self.load_all_kv_files(str(Path(__file__).parent))
+        super().__init__(**kwargs)
+        self.networks = Networks()
+
+    def __del__(self):
+        global_stop_event.set()  # FIXME: remove?
 
     def build(self):
         """
@@ -265,8 +234,11 @@ class MainApp(MDApp):
         self.wm.add_widget(StartScreen())
 
         class E(ExceptionHandler):
+            """
+            Handler with the responsibility of displaying all unhandled errors.
+            """
+
             def handle_exception(self, inst: NameError):
-                print(inst)
                 pop = ErrorPopup()
                 pop.ids.error.text = format_err(inst)
                 pop.open()
@@ -293,12 +265,12 @@ class MainApp(MDApp):
         settings.application_theme = self.theme_cls.theme_style
         settings.save()
 
-    def create_chat(self, conversation_uid):
+    def create_chat(self, conv_id: int):
         """
         Get all messages and create a chat screen.
         """
-        chat_screen = ChatScreen(conversation_uid)
-        chat_screen.text = conversation_uid  # FIXME
+        chat_screen = ChatScreen(Conversation.from_id(Identifier(conv_id)))
+        chat_screen.text = conv_id  # FIXME
         chat_screen.image = ""  # FIXME
         self.wm.switch_to(chat_screen)
 
@@ -307,7 +279,17 @@ class MainApp(MDApp):
 
     def send(self):
         chat_screen = self.wm.get_screen("active_chat")
-        text_input = chat_screen.ids.input.ids.content
-        print(text_input.text)
+        text_input = chat_screen.ids.input.ids.value
+        message = OwnMessage(content=text_input)
+        conversation = Conversation.from_id()
+        conversation.message.append(message)
+        self.networks.broadcast(
+            Request.new(
+                MPP(
+                    conversation_id=conversation.id,
+                    message=message.encrypt(conversation.value),
+                )
+            )
+        )
         # Clear input
         text_input.text = ""

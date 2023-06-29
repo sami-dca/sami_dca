@@ -1,27 +1,19 @@
 from __future__ import annotations
 
-from typing import Optional
+import pydantic
 
-from ...messages import EncryptedMessage
-from ...structures import MPPStructure
-from .base import Request
+from ...objects import EncryptedMessage
+from ._base import RequestData
 
 
-class MPP(Request):
+class MPP(RequestData, pydantic.BaseModel):
+    message: EncryptedMessage
+    conversation_id: pydantic.conint(
+        strict=True,
+        ge=0,
+        le=int("f" * 64, 16),  # noqa
+    )
 
-    full_name = "Message Propagation Protocol"
-    to_store = True
-    inner_struct = MPPStructure
-
-    @staticmethod
-    def validate_data(data: inner_struct) -> Optional[inner_struct]:
-        pass
-
-    @classmethod
-    def new(cls, encrypted_message: EncryptedMessage) -> MPP:
-        return cls(
-            MPPStructure(
-                message=encrypted_message.to_data(),
-                conversation=encrypted_message.conversation.id,
-            )
-        )
+    _full_name = "Message Propagation Protocol"
+    _to_store = True
+    _waiting_for_answer = False

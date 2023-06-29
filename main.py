@@ -7,7 +7,7 @@ from logging.config import fileConfig
 from sami.ui import MainApp
 from sami.threads.events import GlobalStopEvent
 from sami.config import settings
-from sami.threads import JobsThread, RequestHandlingThread, SenderThread
+from sami.threads import JobsThread, RequestHandlingThread, RequestSenderThread
 
 # Load logging config
 fileConfig(
@@ -27,7 +27,7 @@ def main():
 
     # Define background threads
     request_handling_thread = RequestHandlingThread(global_app_stop_event)
-    sender_thread = SenderThread(global_app_stop_event)
+    sender_thread = RequestSenderThread(global_app_stop_event)
     jobs_thread = JobsThread(global_app_stop_event)
 
     # Start threads

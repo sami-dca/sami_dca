@@ -3,7 +3,8 @@
 # Atom regex : ([A-Za-z]{1,})
 
 dictionary = {
-    "adjectives": [  # Source : https://enchantedlearning.com/wordlist/adjectivesforpeople.shtml
+    # Source : https://enchantedlearning.com/wordlist/adjectivesforpeople.shtml
+    "adjectives": [
         "able",
         # "abnormal",
         "adventurous",
@@ -66,7 +67,7 @@ dictionary = {
         # "confused",
         "conscientious",
         "considerate",
-        # "content",
+        # "value",
         "cool",
         "cooperative",
         "cordial",

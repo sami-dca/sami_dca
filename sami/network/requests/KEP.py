@@ -1,60 +1,70 @@
 from __future__ import annotations
 
-from typing import Optional
+import pydantic
 
 from ...cryptography.hashing import hash_object
+from ...cryptography.mix import EncryptedSymmetricKeyPart
 from ...cryptography.serialization import serialize_bytes
-from ...cryptography.symmetric import KeyPart
-from ...messages import Conversation
-from ...nodes import Node
-from ...nodes.own import MasterNode
-from ...structures import KEPStructure
-from .base import Request
+from ...objects import Conversation, MasterNode, Node
+from ._base import RequestData
 
 
-class KEP(Request):
+class KEP(RequestData, pydantic.BaseModel):
+    our_key_part: EncryptedSymmetricKeyPart
+    hash: str
+    sig: str
+    author: Node
+    members: set[Node]
 
-    full_name = "Keys Exchange Protocol"
-    to_store = True
-    inner_struct = KEPStructure
+    _full_name = "Keys Exchange Protocol"
+    _to_store = True
+    _waiting_for_answer = False
 
-    @staticmethod
-    def validate_data(data: inner_struct) -> Optional[inner_struct]:
-        # We do not validate the key part
-
-        author = Node.from_data(data.author)
-        if author is None:
-            # Invalid author info
-            return
-
-        for potential_node in data.members:
-            member = Node.from_data(potential_node)
-            if member is None:
-                return
-
-        return data
+    class Config:
+        allow_mutation = False
 
     @classmethod
-    def new(cls, key_part: KeyPart, to: Node, conversation: Conversation) -> KEP:
-        master_node: MasterNode = MasterNode()
+    @pydantic.validator("hash")
+    def _check_hash(cls, value: str, values: dict) -> str:
+        assert hash_object(values["our_key_part"]).hexdigest() == value, "Invalid hash"
+        return value
 
-        key_part_str = serialize_bytes(key_part._key_part)
-        se_en_half_aes_key = to.public_key.encrypt_asymmetric(key_part_str)
-        h_object = hash_object(key_part_str)
-        h_str = h_object.hexdigest()
-        se_sig = master_node.private_key.get_signature(h_object)
+    @classmethod
+    @pydantic.validator("sig")
+    def _check_sig(cls, sig: str, values: dict) -> str:
+        h = hash_object(values["our_key_part"])
+        assert values["author"].public_key.is_signature_valid(
+            h, sig
+        ), "Invalid signature"
+        return sig
+
+    @classmethod
+    def new(cls, conversation: Conversation, recipient: Node) -> KEP:
+        master_node = MasterNode()
+
+        our_key_part = [
+            key for key in conversation.key if key.author.id == master_node.id
+        ][0]
+
+        key_part_value_str = serialize_bytes(our_key_part.value)
+        se_en_value = recipient.public_key.encrypt_asymmetric(key_part_value_str)
+        h_obj = hash_object(key_part_value_str)
+        h_str = h_obj.hexdigest()
+        se_sig = master_node.private_key.get_signature(h_obj)
 
         own_node = Node(
-            master_node.public_key,
-            master_node.sig,
+            public_key=master_node.public_key,
+            sig=master_node.sig,
+            pattern=master_node.pattern,
         )
 
         return cls(
-            KEPStructure(
-                key_part=se_en_half_aes_key,
-                hash=h_str,
-                sig=se_sig,
-                author=own_node.to_data(),
-                members=[node.to_data() for node in conversation.get_members()],
-            )
+            our_key_part=EncryptedSymmetricKeyPart(
+                value=se_en_value,
+                author=own_node,
+            ),
+            hash=h_str,
+            sig=se_sig,
+            author=own_node,
+            members=conversation.members,
         )

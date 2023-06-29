@@ -1,45 +1,52 @@
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Generic, Literal, TypeVar
 
 from ..design import Singleton
 
-# TODO: fix type hinting, see in __init__.py why that's a problem
+_T = TypeVar("_T")
 
 
 @dataclass
-class Setting:
+class Setting(Generic[_T]):
     def __init__(
         self,
         *,
-        default_value: Any,
+        default_value: _T,
         description: str,
-        hint: Optional[str] = None,
+        hint: str | None = None,
+        user_settable: Literal["yes", "advanced", "no"] = "yes",
     ):
         self.default_value = self._value = default_value
         self.description = description
         self.hint = hint
+        self.user_settable = user_settable
 
     def __repr__(self):
         return f"<Setting {self._value!r}>"
 
-    def set(self, new_value: Any) -> None:
+    def set(self, new_value: _T) -> None:
         self._value = new_value
 
-    def get(self) -> Any:
+    def get(self) -> _T:
         return self._value
 
 
+_S = TypeVar("_S")
+
+
 class Settings(Singleton):
-    _settings: Dict[str, Setting]
+    # TODO: return value directly with correct type hinting.
+
+    _settings: dict[str, Setting]
     _settings_file: Path = Path(__file__).parent.parent / "settings.pkl"
 
     def init(self):
         self.__dict__.update({"_settings": {}})
         self._settings = self._load()
 
-    def _load(self) -> Dict[str, Setting]:
+    def _load(self) -> dict[str, Setting]:
         """
         Tries to read the settings from disk.
         """
@@ -58,23 +65,24 @@ class Settings(Singleton):
     def __repr__(self):
         return f"Settings: {self._settings!r}"
 
-    def __getitem__(self, item: str):
+    def __getitem__(self, item: str) -> Setting[_S]:
         return self.__getattr__(item)
 
-    def __setitem__(self, key: str, value: Union[Any, Setting]):
+    def __setitem__(self, key: str, value: _S | Setting[_S]):
         self.__setattr__(key, value)
 
-    def __getattr__(self, item: str):
+    def __getattr__(self, item: str) -> Setting[_S]:
         if item in self.__dict__:
             return self.__dict__[item]
-        return self._settings[item].get()
+        return self._settings[item]
 
-    def __setattr__(self, key: str, value: Union[Any, Setting]):
+    def __setattr__(self, key: str, value: _S | Setting[_S]):
         if key in self.__dict__:
             self.__dict__.update({key: value})
-            return
-        if isinstance(value, Setting):
-            if key not in self._settings:
-                self._settings.update({key: value})
         else:
-            self._settings[key].set(value)
+            if isinstance(value, Setting):
+                if key not in self._settings:
+                    self._settings.update({key: value})
+            else:
+                self._settings[key].set(value)
+        self.save()

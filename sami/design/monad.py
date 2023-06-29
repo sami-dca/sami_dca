@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Callable
+from typing import Callable, TypeVar
+
+_T = TypeVar("_T")
 
 
 class Monad:
@@ -10,20 +12,19 @@ class Monad:
         pass
 
 
-class MaybeMonad(Monad):
-    def __init__(self, value: object = None):
+class Maybe(Monad):
+    def __init__(self, value: _T = None):
         self.value = value
 
-    @property
     def contains_value(self) -> bool:
         return self.value is not None
 
-    def bind(self, f: Callable) -> MaybeMonad:
-        if not self.contains_value:
-            return MaybeMonad(None)
+    def bind(self, f: Callable[[_T], _T]) -> Maybe:
+        if not self.contains_value():
+            return Maybe(None)
 
         try:
             result = f(self.value)
-            return MaybeMonad(result)
-        except:  # noqa
-            return MaybeMonad(None)
+            return Maybe(result)
+        except Exception:
+            return Maybe(None)

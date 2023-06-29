@@ -1,26 +1,14 @@
 from __future__ import annotations
 
-from typing import List, Optional
+import pydantic
 
-from ...contacts import Contact
-from ...structures import CSPStructure
-from .base import Request
+from ...objects import Contact
+from ._base import RequestData
 
 
-class CSP(Request):
+class CSP(RequestData, pydantic.BaseModel):
+    contacts: set[Contact]
 
-    full_name = "Contact Sharing Protocol"
-    to_store = True
-    inner_struct = CSPStructure
-
-    @staticmethod
-    def validate_data(data: inner_struct) -> Optional[inner_struct]:
-        for potential_contact in data.contacts:
-            contact = Contact.from_data(potential_contact)
-            if contact is None:
-                return
-        return data
-
-    @classmethod
-    def new(cls, contacts: List[Contact]) -> CSP:
-        return cls(CSPStructure(contacts=[contact.to_data() for contact in contacts]))
+    _full_name = "Contact Sharing Protocol"
+    _to_store = True
+    _waiting_for_answer = False

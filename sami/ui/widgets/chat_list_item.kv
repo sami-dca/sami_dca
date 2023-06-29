@@ -6,7 +6,7 @@
     padding: [10, 0, 10, 0]
     spacing: 10
     height: chat_avatar.height + 10
-    on_press: app.create_chat(root.profile)
+    on_press: app.create_chat(root.conversation)
     Avatar:
         id: chat_avatar
         source: root.friend_avatar
@@ -28,7 +28,7 @@
             bold: True
         MDLabel:
             id: last_message
-            text: root.msg
+            text: root.message
             height: self.texture_size[1]
             theme_text_color: 'Custom'
             size_hint_y: None

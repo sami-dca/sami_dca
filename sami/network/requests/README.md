@@ -3,4 +3,6 @@
 **Before reading this, first read `network/README.md`, section _Implementing a new protocol_**
 
 
-Implement the `validate_data` static method:
+1. Create a new file in this directory, with the name of your protocol.
+2. In this file, define the structure as in the other files.
+3. Implement the logic in ``_handle.py``

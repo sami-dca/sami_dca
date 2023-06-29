@@ -1,25 +1,18 @@
 from __future__ import annotations
 
-from typing import Optional
+import pydantic
 
-from ...contacts import Contact, OwnContact
-from ...structures import BCPStructure
-from .base import Request
+from ...objects import Contact, OwnContact
+from ._base import RequestData
 
 
-class BCP(Request):
+class BCP(RequestData, pydantic.BaseModel):
+    author: Contact
 
-    full_name = "Broadcast Contact Protocol"
-    to_store = False
-    inner_struct = BCPStructure
-
-    @staticmethod
-    def validate_data(data: inner_struct) -> Optional[inner_struct]:
-        author = Contact.from_data(data.author)
-        if author is None:
-            return
-        return data
+    _full_name = "Broadcast Contact Protocol"
+    _to_store = False
+    _waiting_for_answer = False
 
     @classmethod
     def new(cls, own_contact: OwnContact) -> BCP:
-        return cls(BCPStructure(author=own_contact.to_data()))
+        return cls(author=own_contact)

@@ -1,1 +1,5 @@
-from .main import MainApp  # noqa
+from .main import MainApp
+
+__all__ = [
+    MainApp,
+]

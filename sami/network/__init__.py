@@ -1,2 +1,7 @@
-from ._handling import RequestsHandler
-from ._network import Network, Networks
+from ._network import Network
+from ._networks import Networks
+
+__all__ = [
+    Network,
+    Networks,
+]
