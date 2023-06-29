@@ -23,8 +23,7 @@ Usually, the larger the network, the better.
 The first and only thing a user needs to participate in the Sami network
 is an identity.
 
-An identity is referred to as a ``Node`` and is an asymmetric key pair
-(a public key and a private key).
+An identity is referred to as a ``Node`` and is a pair of public and private keys.
 It typically represents a person or a bot.
 It is normal for a person to have several identities.
 
@@ -38,7 +37,7 @@ If a user loses their secret key or has it stolen, they will need to generate a
 new identity. Keys are ___only___ stored in the user's local files, and
 therefore **cannot** be recovered by any third-party.
 
-The public key of any ``Node`` is publicly available and transmitted in some
+The public key of any ``Node`` is made available and transmitted in some
 network protocols, as we'll see later in this document.
 
 ## Dark network
@@ -46,7 +45,7 @@ network protocols, as we'll see later in this document.
 Sami adopts a *dark network* architecture.
 
 This means that, by design, a ``Node`` (an identity on the Sami P2P network)
-and a ``Contact`` (an IP address, the user's identity on the Internet)
+and a ``Contact`` (an IP address, a user's identity on the Internet)
 cannot be linked.
 
 # Attacks
@@ -55,9 +54,9 @@ In this section, we'll have a look at a few common attacks, as well as
 Sami-specific known attacks.
 
 The goal of documenting attacks is for current and future maintainers to
-know where security and reliability can be improved in Sami.
-We are aware that documenting attacks might give ideas to some, but we hope
-to interest security researchers to come up together with solutions.
+know where security and reliability should be improved in Sami.
+We are aware that documenting attacks might simplify an attacker's job,
+but we also hope to interest security researchers, so solutions can be implemented.
 
 ## Sybil attacks
 
@@ -67,22 +66,22 @@ Here, two situations apply:
 
 ### Node takeover
 
-By *node takeover*, we mean that an attacker overloads the P2P network with
-Sami identities.
+In a *node takeover* the a attacker overloads the P2P network with
+Sami identities (pairs of keys).
 
-This simply has no effect on the P2P network.
+By itself, this attack has no effect on the network.
 
 ### Contact takeover
 
 On the other hand, *contact takeover* can be a problem.
-This is because while a ``Node`` is a virtual identity, a ``Contact`` is a
-physical identity.
+This is because while a ``Node`` is a virtual identity,
+a ``Contact`` is a physical identity.
 
-Note that technically, anybody with some computer skills could create
-at most 65535 ``Contacts`` on one network interface.
-Multiply this by the number of computers an attacker could have at his disposal,
-and the number of network interfaces each can have, and it's easy to
-understand that *contact takeovers* is pretty simple.
+Note that technically, anybody with a moderate understanding of computers
+could create at most 65535 ``Contacts`` per network interface.
+Multiply this by the number of computers an attacker can have at his disposal,
+and the number of network interfaces each one can be equipped with,
+and it's easy to understand that *contact takeovers* are pretty simple.
 
 Therefore, in the attacks we'll see further on, we'll talk about
 *contact takeover* and not *node takeover*.
@@ -99,8 +98,8 @@ There are two possible ways of seeing the situation:
 ### Configuration corruption
 
 In this case, a group of attackers modifies their client's configuration to one
-that is insecure.
-This will result in a different network from the usual users' - a fork.
+that is insecure or harmful.
+This change will result in a different network from the usual users': a fork.
 This is due to the fact that Sami clients are very rigid regarding other nodes'
 configuration, and will discard any malformed requests.
 
@@ -110,7 +109,7 @@ If a group of seemingly normal users controlled by attackers were to join the ne
 there is next to nothing they will be able to do, unless the network is very small,
 in which case the dark network architecture can be endangered.
 
-To avoid this kind of situation, there is a built-in threshold of unique contacts ^1
+To avoid this kind of situation, there is a built-in threshold of unique contacts
 one must know before starting to send identifying requests.
 However, this preemptive measure will not be enough if 49 out of 50 clients are
 controlled by bad actors !
@@ -119,11 +118,6 @@ A simple measure against this type of attack is simply to have a group of
 legitimate users on the network.
 They don't even need to add up to 50% of the network or more ; for any
 additional user, it becomes exponentially harder to identify each one.
-
-1. two contacts are considered unique if they have a different public
-address.
-   The client will try to translate DNS names to IP addresses.
-   Local network contacts are all considered unique.
 
 ## Flooding attacks
 
@@ -137,15 +131,17 @@ and massively contributes to climate change (cf Bitcoin).
 Another option would be to implement a per-``Contact`` measure,
 which would ignore ``Requests`` sent by a ``Contact`` when spamming.
 
-## Deny attacks
+## Eclipse attacks
 
-A deny attack consists, for an attacker, to not forward any or part of the
+An eclipse attack consists, for an attacker, to not forward any or part of the
 requests he receives.
-While there are statistical ways of finding that (e.g. statistical association),
-none is yet implemented.
+While there are statistical ways of identifying the outliers,
+it is not yet implemented.
 
 However, a simple counter-measure is simply to have a significant part of
 legitimate users on the P2P network.
+Since the network solidifies over time (new connections are created between
+contacts), it becomes exponentially harder to eclipse any part of the network.
 
 # Terms
 
@@ -154,13 +150,14 @@ legitimate users on the P2P network.
 In the structure definition, the format used is :
 - `Type` `value_name` - A quick description of the value
 
-Several times, "timestamps" are mentioned. They are formatted as UNIX seconds ;
-[more on this subject](https://www.unixtimestamp.com/).
+Several times, "timestamps" are mentioned. They are formatted as  ;
+[UNIX timestamps](https://www.unixtimestamp.com/) offset by the date of Sami's
+first release.
 
 ## Client
 
 A ``Client`` is an instance of the Sami software, and an individual on the network.
-One ``Client`` can host multiple ``Nodes`` (identities), while not at the same time.
+One ``Client`` can host multiple ``Nodes`` (identities), though not at the same time.
 It is a relay on the network, and is accessible via its ``Contact`` information.
 
 ## Node

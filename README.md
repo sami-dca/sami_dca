@@ -7,14 +7,14 @@
 ![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=for-the-badge)
 
 **Sami** is a decentralized communication application, written in Python,
-and available for free on [GitHub](https://github.com/sami-dca/sami_dca) !
+and available for free on [GitHub](https://github.com/sami-dca/sami_dca)!
 
 Similar to apps like *Whatsapp* and *Telegram*, it aims at providing an enjoyable
-messaging experience while heavily relying on strong cryptography and a
-decentralized (peer-to-peer) model for maximum anonymity and security !
+messaging experience while relying on strong cryptography and a
+decentralized (peer-to-peer) model for maximum anonymity and security!
 
 For a detailed description of how the system works,
-please refer to the [**Sami Paper**](./PAPER.md)
+please refer to the [**Sami Paper**](./PAPER.md).
 
 ## Installation
 
@@ -25,7 +25,7 @@ Stable and ready-to-use versions are available in the
 
 <hr />
 
-Currently, to set up Sami, you will need Python 3.7 or above.
+Currently, to set up Sami, you will need Python 3.10 or above.
 You can download a copy from https://python.org
 
 *Note: if you're already using Python, we advise you use a virtual environment
